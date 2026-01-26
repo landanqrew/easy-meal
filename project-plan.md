@@ -29,16 +29,16 @@ Easy Meal is a web application that streamlines the meal preparation process—f
 
 ## Tech Stack
 
-| Layer | Technology |
-|-------|------------|
-| Web Frontend | Bun, React, TanStack Query |
-| Backend/API | Bun (Hono or Elysia), TypeScript |
-| Database | PostgreSQL (Cloud SQL prod, local dev) |
-| AI | Vertex AI (Gemini) |
-| Auth | Email/Password + Google OAuth |
-| Deployment | Google Cloud Run |
-| Grocery Export | Google Tasks API |
-| Mobile (Post-MVP) | React Native |
+| Layer | Technology | Status |
+|-------|------------|--------|
+| Web Frontend | Bun, React, TanStack Query, Vite | Scaffolded |
+| Backend/API | Bun, Hono, TypeScript | Scaffolded |
+| Database | PostgreSQL + Drizzle ORM (Cloud SQL prod, local Docker dev) | Implemented |
+| AI | Google AI Studio (Gemini 2.5 Flash) | Prototyped |
+| Auth | Email/Password + Google OAuth | Planned |
+| Deployment | Google Cloud Run | Planned |
+| Grocery Export | Google Tasks API | Planned |
+| Mobile (Post-MVP) | React Native | Planned |
 
 ---
 
@@ -142,17 +142,20 @@ Easy Meal is a web application that streamlines the meal preparation process—f
 
 ## Phases
 
-### Phase 0: Project Scaffolding
+### Phase 0: Project Scaffolding ✅ COMPLETE
 **Objective**: Establish project structure and development environment
 
-| Task | Complexity | Dependencies |
-|------|------------|--------------|
-| Initialize project structure (packages: web, api, shared) | Low | None |
-| Set up Bun + React web app scaffold | Low | Project structure |
-| Set up Bun API scaffold (Hono or Elysia) | Low | Project structure |
-| Configure local PostgreSQL with Docker Compose | Low | None |
-| Set up shared TypeScript types package | Low | Project structure |
-| Configure ESLint, Prettier, shared configs | Low | Project structure |
+| Task | Complexity | Status |
+|------|------------|--------|
+| Initialize project structure (packages: web, api, shared) | Low | ✅ Done |
+| Set up Bun + React web app scaffold | Low | ✅ Done |
+| Set up Bun API scaffold (Hono) | Low | ✅ Done |
+| Configure local PostgreSQL with Docker Compose (port 5433) | Low | ✅ Done |
+| Set up shared TypeScript types package | Low | ✅ Done |
+| Configure ESLint, Prettier, shared configs | Low | ✅ Done |
+| Set up Drizzle ORM with type-safe schema | Low | ✅ Done |
+| Prototype AI recipe generation (Gemini 2.5 Flash) | Medium | ✅ Done |
+| Design recipe creation wizard UI spec | Medium | ✅ Done |
 
 **Deliverable**: Running dev environment with web and API starting successfully
 
@@ -301,6 +304,10 @@ Easy Meal is a web application that streamlines the meal preparation process—f
 | Decision | Resolution |
 |----------|------------|
 | Platform priority | Web-first; mobile browser via responsive design; React Native post-MVP |
+| API framework | Hono (lightweight, fast, good TypeScript support) |
+| ORM | Drizzle ORM (type-safe, schema as code, lightweight) |
+| AI provider | Google AI Studio with Gemini 2.5 Flash (prototyping); Vertex AI for production |
+| Database port | 5433 (avoids conflict with local PostgreSQL on 5432) |
 | Grocery store access | Google Tasks API (free, works with consumer accounts, has iOS/Android apps) |
 | Recipe organization | Recipes in household "marketplace" with user-created tags; personal lists for curation |
 | Lists scope | Personal (per user), not household-shared |
@@ -320,11 +327,13 @@ None currently - all major decisions resolved.
 
 ## Recommended Next Steps
 
-1. **Initialize project structure** - Set up web + api packages (Phase 0)
-2. **Prototype AI integration** - Test Vertex AI recipe generation + ingredient normalization quality early
-3. **Design database schema** - Finalize entity relationships (especially ingredient normalization model)
-4. **Build auth + one vertical slice** - Get a full flow working (auth → recipe creation → save → view)
-5. **Integrate Google Tasks** - Validate export flow works smoothly
+Phase 0 is complete. Next priorities:
+
+1. **Implement recipe creation wizard UI** - Build React components per UI spec (see `docs/ui-spec-recipe-wizard.md`)
+2. **Wire up recipe generation flow** - Connect wizard → API → AI → save to DB
+3. **Build authentication** - Email/password + Google OAuth (Phase 1)
+4. **Add household management** - Create/join households (Phase 2)
+5. **Build recipe browsing UI** - View saved recipes, tags, lists
 
 ---
 
