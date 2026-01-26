@@ -8,8 +8,11 @@
     "dev:api": "bun run --cwd packages/api dev",
     "db:up": "docker compose up -d postgres",
     "db:down": "docker compose down",
-    "db:migrate": "docker exec -i easymeal-postgres psql -U easymeal -d easymeal < migrations/001_initial_schema.sql",
-    "db:reset": "bun run db:down && bun run db:up && sleep 3 && bun run db:migrate",
+    "db:push": "bun run --cwd packages/api db:push",
+    "db:generate": "bun run --cwd packages/api db:generate",
+    "db:migrate": "bun run --cwd packages/api db:migrate",
+    "db:studio": "bun run --cwd packages/api db:studio",
+    "db:reset": "bun run db:down && bun run db:up && sleep 3 && bun run db:push",
     "lint": "eslint packages/*/src",
     "format": "prettier --write \"packages/*/src/**/*.{ts,tsx}\"",
     "typecheck": "tsc --build"
