@@ -1,0 +1,15 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: easymeal-postgres
+    environment:
+      POSTGRES_USER: easymeal
+      POSTGRES_PASSWORD: easymeal_dev
+      POSTGRES_DB: easymeal
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:

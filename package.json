@@ -1,0 +1,24 @@
+{
+  "name": "easy-meal",
+  "private": true,
+  "workspaces": ["packages/*"],
+  "scripts": {
+    "dev": "bun run --parallel dev:web dev:api",
+    "dev:web": "bun run --cwd packages/web dev",
+    "dev:api": "bun run --cwd packages/api dev",
+    "db:up": "docker compose up -d postgres",
+    "db:down": "docker compose down",
+    "db:migrate": "docker exec -i easymeal-postgres psql -U easymeal -d easymeal < migrations/001_initial_schema.sql",
+    "db:reset": "bun run db:down && bun run db:up && sleep 3 && bun run db:migrate",
+    "lint": "eslint packages/*/src",
+    "format": "prettier --write \"packages/*/src/**/*.{ts,tsx}\"",
+    "typecheck": "tsc --build"
+  },
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^7.0.0",
+    "@typescript-eslint/parser": "^7.0.0",
+    "eslint": "^8.57.0",
+    "prettier": "^3.2.0",
+    "typescript": "^5.4.0"
+  }
+}
