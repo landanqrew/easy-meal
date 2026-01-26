@@ -31,6 +31,63 @@ export type RecipeSource = 'ai_generated' | 'manual' | 'imported'
 
 export type GroceryListStatus = 'active' | 'completed' | 'archived'
 
+export type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snack'
+
+export type TimeConstraint = 'quick' | 'medium' | 'leisurely'
+
+export type CookingMethod =
+  | 'stovetop'
+  | 'oven'
+  | 'grill'
+  | 'slow-cooker'
+  | 'instant-pot'
+  | 'air-fryer'
+  | 'no-cook'
+
+export type Cuisine =
+  | 'american'
+  | 'italian'
+  | 'mexican'
+  | 'asian'
+  | 'mediterranean'
+  | 'indian'
+  | 'thai'
+  | 'japanese'
+  | 'french'
+  | 'other'
+
+// Recipe Generation Types
+export type RecipePreferences = {
+  protein?: string
+  vegetables?: string[]
+  cuisine?: string
+  mealType?: MealType
+  cookingMethod?: CookingMethod | string
+  timeConstraint?: TimeConstraint
+  servings?: number
+  dietaryRestrictions?: DietaryRestriction[]
+  additionalNotes?: string
+}
+
+export type GeneratedIngredient = {
+  name: string
+  quantity: number
+  unit: string
+  category: IngredientCategory | string
+  preparation?: string
+}
+
+export type GeneratedRecipe = {
+  title: string
+  description: string
+  servings: number
+  prepTime: number
+  cookTime: number
+  cuisine: string
+  ingredients: GeneratedIngredient[]
+  instructions: { stepNumber: number; text: string }[]
+}
+
 // API Response types
 export type ApiResponse<T> = {
   data: T
