@@ -14,6 +14,7 @@ import {
   index,
 } from 'drizzle-orm/pg-core'
 import { relations } from 'drizzle-orm'
+import { user } from './auth-schema'
 
 // ============================================================================
 // ENUMS
@@ -64,37 +65,12 @@ export const households = pgTable(
 )
 
 // ============================================================================
-// USERS
+// USERS - Managed by Better Auth (see auth-schema.ts)
+// The 'user' table is created by Better Auth with these custom fields:
+// - householdId: text (reference to households)
+// - dietaryRestrictions: text (JSON string)
+// - preferences: text (JSON string)
 // ============================================================================
-
-export const users = pgTable(
-  'users',
-  {
-    id: uuid('id').defaultRandom().primaryKey(),
-    email: varchar('email', { length: 255 }).unique().notNull(),
-    passwordHash: varchar('password_hash', { length: 255 }),
-    name: varchar('name', { length: 255 }).notNull(),
-    googleId: varchar('google_id', { length: 255 }).unique(),
-
-    // User settings
-    dietaryRestrictions: text('dietary_restrictions').array().default([]),
-    preferences: jsonb('preferences').default({}),
-
-    // Household membership
-    householdId: uuid('household_id').references(() => households.id, { onDelete: 'set null' }),
-
-    // Metadata
-    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
-    createdByUserId: uuid('created_by_user_id'),
-    updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
-    updatedByUserId: uuid('updated_by_user_id'),
-  },
-  (table) => [
-    index('idx_users_email').on(table.email),
-    index('idx_users_google_id').on(table.googleId),
-    index('idx_users_household_id').on(table.householdId),
-  ]
-)
 
 // ============================================================================
 // INGREDIENTS
@@ -110,9 +86,9 @@ export const ingredients = pgTable(
 
     // Metadata
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
-    createdByUserId: uuid('created_by_user_id').references(() => users.id, { onDelete: 'set null' }),
+    createdByUserId: text('created_by_user_id').references(() => user.id, { onDelete: 'set null' }),
     updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
-    updatedByUserId: uuid('updated_by_user_id').references(() => users.id, { onDelete: 'set null' }),
+    updatedByUserId: text('updated_by_user_id').references(() => user.id, { onDelete: 'set null' }),
   },
   (table) => [
     index('idx_ingredients_name').on(table.name),
@@ -144,9 +120,9 @@ export const recipes = pgTable(
 
     // Metadata
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
-    createdByUserId: uuid('created_by_user_id').references(() => users.id, { onDelete: 'set null' }),
+    createdByUserId: text('created_by_user_id').references(() => user.id, { onDelete: 'set null' }),
     updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
-    updatedByUserId: uuid('updated_by_user_id').references(() => users.id, { onDelete: 'set null' }),
+    updatedByUserId: text('updated_by_user_id').references(() => user.id, { onDelete: 'set null' }),
   },
   (table) => [
     index('idx_recipes_household_id').on(table.householdId),
@@ -177,9 +153,9 @@ export const recipeIngredients = pgTable(
 
     // Metadata
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
-    createdByUserId: uuid('created_by_user_id').references(() => users.id, { onDelete: 'set null' }),
+    createdByUserId: text('created_by_user_id').references(() => user.id, { onDelete: 'set null' }),
     updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
-    updatedByUserId: uuid('updated_by_user_id').references(() => users.id, { onDelete: 'set null' }),
+    updatedByUserId: text('updated_by_user_id').references(() => user.id, { onDelete: 'set null' }),
   },
   (table) => [
     unique('unique_recipe_ingredient').on(table.recipeId, table.ingredientId),
@@ -205,9 +181,9 @@ export const tags = pgTable(
 
     // Metadata
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
-    createdByUserId: uuid('created_by_user_id').references(() => users.id, { onDelete: 'set null' }),
+    createdByUserId: text('created_by_user_id').references(() => user.id, { onDelete: 'set null' }),
     updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
-    updatedByUserId: uuid('updated_by_user_id').references(() => users.id, { onDelete: 'set null' }),
+    updatedByUserId: text('updated_by_user_id').references(() => user.id, { onDelete: 'set null' }),
   },
   (table) => [
     unique('unique_tag_per_household').on(table.householdId, table.name),
@@ -231,9 +207,9 @@ export const recipeTags = pgTable(
 
     // Metadata
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
-    createdByUserId: uuid('created_by_user_id').references(() => users.id, { onDelete: 'set null' }),
+    createdByUserId: text('created_by_user_id').references(() => user.id, { onDelete: 'set null' }),
     updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
-    updatedByUserId: uuid('updated_by_user_id').references(() => users.id, { onDelete: 'set null' }),
+    updatedByUserId: text('updated_by_user_id').references(() => user.id, { onDelete: 'set null' }),
   },
   (table) => [
     primaryKey({ columns: [table.recipeId, table.tagId] }),
@@ -249,8 +225,8 @@ export const recipeLists = pgTable(
   'recipe_lists',
   {
     id: uuid('id').defaultRandom().primaryKey(),
-    userId: uuid('user_id')
-      .references(() => users.id, { onDelete: 'cascade' })
+    userId: text('user_id')
+      .references(() => user.id, { onDelete: 'cascade' })
       .notNull(),
     householdId: uuid('household_id')
       .references(() => households.id, { onDelete: 'cascade' })
@@ -262,9 +238,9 @@ export const recipeLists = pgTable(
 
     // Metadata
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
-    createdByUserId: uuid('created_by_user_id').references(() => users.id, { onDelete: 'set null' }),
+    createdByUserId: text('created_by_user_id').references(() => user.id, { onDelete: 'set null' }),
     updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
-    updatedByUserId: uuid('updated_by_user_id').references(() => users.id, { onDelete: 'set null' }),
+    updatedByUserId: text('updated_by_user_id').references(() => user.id, { onDelete: 'set null' }),
   },
   (table) => [
     index('idx_recipe_lists_user_id').on(table.userId),
@@ -290,9 +266,9 @@ export const recipeListItems = pgTable(
 
     // Metadata
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
-    createdByUserId: uuid('created_by_user_id').references(() => users.id, { onDelete: 'set null' }),
+    createdByUserId: text('created_by_user_id').references(() => user.id, { onDelete: 'set null' }),
     updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
-    updatedByUserId: uuid('updated_by_user_id').references(() => users.id, { onDelete: 'set null' }),
+    updatedByUserId: text('updated_by_user_id').references(() => user.id, { onDelete: 'set null' }),
   },
   (table) => [
     primaryKey({ columns: [table.recipeListId, table.recipeId] }),
@@ -317,9 +293,9 @@ export const groceryLists = pgTable(
 
     // Metadata
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
-    createdByUserId: uuid('created_by_user_id').references(() => users.id, { onDelete: 'set null' }),
+    createdByUserId: text('created_by_user_id').references(() => user.id, { onDelete: 'set null' }),
     updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
-    updatedByUserId: uuid('updated_by_user_id').references(() => users.id, { onDelete: 'set null' }),
+    updatedByUserId: text('updated_by_user_id').references(() => user.id, { onDelete: 'set null' }),
   },
   (table) => [
     index('idx_grocery_lists_household_id').on(table.householdId),
@@ -354,9 +330,9 @@ export const groceryListItems = pgTable(
 
     // Metadata
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
-    createdByUserId: uuid('created_by_user_id').references(() => users.id, { onDelete: 'set null' }),
+    createdByUserId: text('created_by_user_id').references(() => user.id, { onDelete: 'set null' }),
     updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
-    updatedByUserId: uuid('updated_by_user_id').references(() => users.id, { onDelete: 'set null' }),
+    updatedByUserId: text('updated_by_user_id').references(() => user.id, { onDelete: 'set null' }),
   },
   (table) => [
     index('idx_grocery_list_items_grocery_list_id').on(table.groceryListId),
@@ -370,19 +346,10 @@ export const groceryListItems = pgTable(
 // ============================================================================
 
 export const householdsRelations = relations(households, ({ many }) => ({
-  users: many(users),
   recipes: many(recipes),
   tags: many(tags),
   recipeLists: many(recipeLists),
   groceryLists: many(groceryLists),
-}))
-
-export const usersRelations = relations(users, ({ one, many }) => ({
-  household: one(households, {
-    fields: [users.householdId],
-    references: [households.id],
-  }),
-  recipeLists: many(recipeLists),
 }))
 
 export const ingredientsRelations = relations(ingredients, ({ many }) => ({
@@ -395,9 +362,9 @@ export const recipesRelations = relations(recipes, ({ one, many }) => ({
     fields: [recipes.householdId],
     references: [households.id],
   }),
-  createdBy: one(users, {
+  createdBy: one(user, {
     fields: [recipes.createdByUserId],
-    references: [users.id],
+    references: [user.id],
   }),
   recipeIngredients: many(recipeIngredients),
   recipeTags: many(recipeTags),
@@ -435,9 +402,9 @@ export const recipeTagsRelations = relations(recipeTags, ({ one }) => ({
 }))
 
 export const recipeListsRelations = relations(recipeLists, ({ one, many }) => ({
-  user: one(users, {
+  owner: one(user, {
     fields: [recipeLists.userId],
-    references: [users.id],
+    references: [user.id],
   }),
   household: one(households, {
     fields: [recipeLists.householdId],

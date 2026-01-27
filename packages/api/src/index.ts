@@ -4,10 +4,27 @@ import { sql } from 'drizzle-orm'
 import type { HealthResponse, RecipePreferences } from '@easy-meal/shared'
 import { db } from './db'
 import { generateRecipe } from './services/ai'
+import { auth } from './lib/auth'
 
 const app = new Hono()
 
+// CORS must be before auth routes
+app.use(
+  '/api/auth/*',
+  cors({
+    origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+    allowHeaders: ['Content-Type', 'Authorization'],
+    allowMethods: ['POST', 'GET', 'OPTIONS'],
+    credentials: true,
+  })
+)
+
 app.use('/*', cors())
+
+// Mount Better Auth handler
+app.on(['POST', 'GET'], '/api/auth/*', (c) => {
+  return auth.handler(c.req.raw)
+})
 
 app.get('/health', async (c) => {
   // Test database connection

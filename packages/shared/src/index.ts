@@ -101,3 +101,5 @@ export type HealthResponse = {
   status: 'ok'
   timestamp: string
 }
+
+// Auth types are provided by Better Auth client
