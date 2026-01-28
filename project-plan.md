@@ -35,7 +35,7 @@ Easy Meal is a web application that streamlines the meal preparation process—f
 | Backend/API | Bun, Hono, TypeScript | Scaffolded |
 | Database | PostgreSQL + Drizzle ORM (Cloud SQL prod, local Docker dev) | Implemented |
 | AI | Google AI Studio (Gemini 2.5 Flash) | Prototyped |
-| Auth | Email/Password + Google OAuth | Planned |
+| Auth | Better Auth (Email/Password + Google OAuth) | Implemented |
 | Deployment | Google Cloud Run | Planned |
 | Grocery Export | Google Tasks API | Planned |
 | Mobile (Post-MVP) | React Native | Planned |
@@ -161,17 +161,17 @@ Easy Meal is a web application that streamlines the meal preparation process—f
 
 ---
 
-### Phase 1: Authentication & User Management
+### Phase 1: Authentication & User Management ✅ COMPLETE
 **Objective**: Users can register, log in, and manage their profile
 
-| Task | Complexity | Dependencies |
-|------|------------|--------------|
-| Design and implement auth database schema | Low | Phase 0 |
-| Implement email/password registration & login | Medium | Schema |
-| Implement Google OAuth flow | Medium | Schema |
-| Build JWT session management | Medium | Auth endpoints |
-| Create user profile API (dietary restrictions, preferences) | Low | Auth |
-| Build web auth UI (login, register, profile) | Medium | API |
+| Task | Complexity | Status |
+|------|------------|--------|
+| Design and implement auth database schema | Low | ✅ Done (Better Auth) |
+| Implement email/password registration & login | Medium | ✅ Done |
+| Implement Google OAuth flow | Medium | ✅ Done |
+| Build session management | Medium | ✅ Done (Better Auth sessions) |
+| Create user profile API (dietary restrictions, preferences) | Low | ✅ Done |
+| Build web auth UI (login, register, profile) | Medium | ✅ Done |
 
 **Deliverable**: Users can sign up, log in, and set dietary preferences
 
