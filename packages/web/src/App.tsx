@@ -7,6 +7,9 @@ import Household from './pages/Household'
 import Recipes from './pages/Recipes'
 import CreateRecipe from './pages/CreateRecipe'
 import RecipeDetail from './pages/RecipeDetail'
+import GroceryLists from './pages/GroceryLists'
+import CreateGroceryList from './pages/CreateGroceryList'
+import GroceryListDetail from './pages/GroceryListDetail'
 
 function Home() {
   const { data: session, isPending } = useSession()
@@ -24,6 +27,9 @@ function Home() {
             <>
               <Link to="/recipes" style={styles.navLink}>
                 Recipes
+              </Link>
+              <Link to="/grocery-lists" style={styles.navLink}>
+                Groceries
               </Link>
               <Link to="/household" style={styles.navLink}>
                 Household
@@ -59,6 +65,11 @@ function Home() {
               <Link to="/recipes/create" style={styles.actionButton}>
                 Create Recipe
               </Link>
+              <Link to="/grocery-lists/create" style={styles.actionButton}>
+                Grocery List
+              </Link>
+            </div>
+            <div style={{ ...styles.actions, marginTop: '0.75rem' }}>
               <Link to="/recipes" style={styles.actionButtonSecondary}>
                 Browse Recipes
               </Link>
@@ -134,6 +145,30 @@ export default function App() {
           element={
             <ProtectedRoute>
               <RecipeDetail />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/grocery-lists"
+          element={
+            <ProtectedRoute>
+              <GroceryLists />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/grocery-lists/create"
+          element={
+            <ProtectedRoute>
+              <CreateGroceryList />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/grocery-lists/:id"
+          element={
+            <ProtectedRoute>
+              <GroceryListDetail />
             </ProtectedRoute>
           }
         />
@@ -224,14 +259,17 @@ const styles: Record<string, React.CSSProperties> = {
     color: 'white',
     fontSize: '1rem',
     cursor: 'pointer',
+    textDecoration: 'none',
   },
   actionButtonSecondary: {
     padding: '0.75rem 1.5rem',
     borderRadius: '6px',
     border: '1px solid #ddd',
     background: 'white',
+    color: '#333',
     fontSize: '1rem',
     cursor: 'pointer',
+    textDecoration: 'none',
   },
   cta: {
     marginTop: '2rem',

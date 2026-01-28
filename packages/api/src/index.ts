@@ -9,6 +9,7 @@ import households from './routes/households'
 import recipes from './routes/recipes'
 import tags from './routes/tags'
 import recipeLists from './routes/recipe-lists'
+import groceryLists from './routes/grocery-lists'
 
 const app = new Hono()
 
@@ -34,6 +35,7 @@ app.route('/api/households', households)
 app.route('/api/recipes', recipes)
 app.route('/api/tags', tags)
 app.route('/api/recipe-lists', recipeLists)
+app.route('/api/grocery-lists', groceryLists)
 
 app.get('/health', async (c) => {
   // Test database connection
