@@ -1,28 +1,203 @@
-import { useQuery } from '@tanstack/react-query'
-import type { HealthResponse } from '@easy-meal/shared'
+import { BrowserRouter, Routes, Route, Link, Navigate } from 'react-router-dom'
+import { useSession } from './lib/auth'
+import Login from './pages/Login'
+import Register from './pages/Register'
+import Profile from './pages/Profile'
 
-function App() {
-  const { data, isLoading, error } = useQuery<HealthResponse>({
-    queryKey: ['health'],
-    queryFn: async () => {
-      const res = await fetch('/api/health')
-      return res.json()
-    },
-  })
+function Home() {
+  const { data: session, isPending } = useSession()
+
+  if (isPending) {
+    return <div style={styles.loading}>Loading...</div>
+  }
 
   return (
-    <div style={{ padding: '2rem', fontFamily: 'system-ui, sans-serif' }}>
-      <h1>Easy Meal</h1>
-      <p>Streamline your meal preparation process.</p>
+    <div style={styles.container}>
+      <nav style={styles.nav}>
+        <h1 style={styles.logo}>Easy Meal</h1>
+        <div style={styles.navLinks}>
+          {session ? (
+            <>
+              <Link to="/profile" style={styles.navLink}>
+                {session.user.name || session.user.email}
+              </Link>
+            </>
+          ) : (
+            <>
+              <Link to="/login" style={styles.navLink}>
+                Sign In
+              </Link>
+              <Link to="/register" style={styles.navLinkPrimary}>
+                Get Started
+              </Link>
+            </>
+          )}
+        </div>
+      </nav>
 
-      <div style={{ marginTop: '1rem', padding: '1rem', background: '#f5f5f5', borderRadius: '8px' }}>
-        <strong>API Status: </strong>
-        {isLoading && <span>Checking...</span>}
-        {error && <span style={{ color: 'red' }}>Disconnected</span>}
-        {data && <span style={{ color: 'green' }}>{data.status}</span>}
-      </div>
+      <main style={styles.main}>
+        <h2 style={styles.headline}>Streamline Your Meal Prep</h2>
+        <p style={styles.subheadline}>
+          Generate recipes with AI, organize your favorites, and create grocery lists
+          automatically.
+        </p>
+
+        {session ? (
+          <div style={styles.dashboard}>
+            <p style={styles.welcomeText}>Welcome back, {session.user.name}!</p>
+            <div style={styles.actions}>
+              <button style={styles.actionButton}>Create Recipe</button>
+              <button style={styles.actionButtonSecondary}>Browse Recipes</button>
+            </div>
+          </div>
+        ) : (
+          <div style={styles.cta}>
+            <Link to="/register" style={styles.ctaButton}>
+              Start Free
+            </Link>
+          </div>
+        )}
+      </main>
     </div>
   )
 }
 
-export default App
+function ProtectedRoute({ children }: { children: React.ReactNode }) {
+  const { data: session, isPending } = useSession()
+
+  if (isPending) {
+    return <div style={styles.loading}>Loading...</div>
+  }
+
+  if (!session) {
+    return <Navigate to="/login" replace />
+  }
+
+  return <>{children}</>
+}
+
+export default function App() {
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+        <Route
+          path="/profile"
+          element={
+            <ProtectedRoute>
+              <Profile />
+            </ProtectedRoute>
+          }
+        />
+      </Routes>
+    </BrowserRouter>
+  )
+}
+
+const styles: Record<string, React.CSSProperties> = {
+  loading: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: '100vh',
+    fontFamily: 'system-ui, sans-serif',
+  },
+  container: {
+    minHeight: '100vh',
+    fontFamily: 'system-ui, sans-serif',
+  },
+  nav: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: '1rem 2rem',
+    borderBottom: '1px solid #eee',
+  },
+  logo: {
+    margin: 0,
+    fontSize: '1.25rem',
+    fontWeight: 600,
+  },
+  navLinks: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '1rem',
+  },
+  navLink: {
+    color: '#333',
+    textDecoration: 'none',
+    fontSize: '0.875rem',
+  },
+  navLinkPrimary: {
+    background: '#2563eb',
+    color: 'white',
+    padding: '0.5rem 1rem',
+    borderRadius: '6px',
+    textDecoration: 'none',
+    fontSize: '0.875rem',
+  },
+  main: {
+    maxWidth: '800px',
+    margin: '0 auto',
+    padding: '4rem 2rem',
+    textAlign: 'center',
+  },
+  headline: {
+    fontSize: '2.5rem',
+    fontWeight: 700,
+    marginBottom: '1rem',
+    color: '#111',
+  },
+  subheadline: {
+    fontSize: '1.25rem',
+    color: '#666',
+    marginBottom: '2rem',
+    lineHeight: 1.6,
+  },
+  dashboard: {
+    background: '#f5f5f5',
+    padding: '2rem',
+    borderRadius: '12px',
+  },
+  welcomeText: {
+    fontSize: '1.125rem',
+    marginBottom: '1.5rem',
+  },
+  actions: {
+    display: 'flex',
+    gap: '1rem',
+    justifyContent: 'center',
+  },
+  actionButton: {
+    padding: '0.75rem 1.5rem',
+    borderRadius: '6px',
+    border: 'none',
+    background: '#2563eb',
+    color: 'white',
+    fontSize: '1rem',
+    cursor: 'pointer',
+  },
+  actionButtonSecondary: {
+    padding: '0.75rem 1.5rem',
+    borderRadius: '6px',
+    border: '1px solid #ddd',
+    background: 'white',
+    fontSize: '1rem',
+    cursor: 'pointer',
+  },
+  cta: {
+    marginTop: '2rem',
+  },
+  ctaButton: {
+    display: 'inline-block',
+    padding: '1rem 2rem',
+    borderRadius: '8px',
+    background: '#2563eb',
+    color: 'white',
+    textDecoration: 'none',
+    fontSize: '1.125rem',
+    fontWeight: 500,
+  },
+}
