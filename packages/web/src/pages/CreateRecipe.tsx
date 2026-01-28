@@ -1,0 +1,613 @@
+import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { useSession } from '../lib/auth'
+import type { GeneratedRecipe } from '@easy-meal/shared'
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001'
+
+const PROTEINS = ['Chicken', 'Beef', 'Pork', 'Fish', 'Shrimp', 'Tofu', 'Tempeh', 'Eggs', 'None']
+const VEGETABLES = ['Broccoli', 'Bell Peppers', 'Onions', 'Tomatoes', 'Carrots', 'Mushrooms', 'Spinach', 'Zucchini', 'Corn', 'Garlic']
+const CUISINES = ['American', 'Italian', 'Mexican', 'Asian', 'Mediterranean', 'Indian', 'Thai', 'Japanese', 'French', 'Surprise me']
+const COOKING_METHODS = ['Stovetop', 'Oven', 'Grill', 'Slow Cooker', 'Instant Pot', 'Air Fryer', 'No-Cook']
+const TIME_OPTIONS = [
+  { value: 'quick', label: 'Quick', desc: '< 30 min' },
+  { value: 'medium', label: 'Medium', desc: '30-60 min' },
+  { value: 'leisurely', label: 'Leisurely', desc: '60+ min' },
+]
+
+type WizardStep = 1 | 2 | 3 | 4 | 5
+
+export default function CreateRecipe() {
+  const navigate = useNavigate()
+  const { data: session } = useSession()
+  const [step, setStep] = useState<WizardStep>(1)
+  const [generating, setGenerating] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
+
+  // Selections
+  const [protein, setProtein] = useState<string | null>(null)
+  const [vegetables, setVegetables] = useState<string[]>([])
+  const [cuisine, setCuisine] = useState<string | null>(null)
+  const [cookingMethod, setCookingMethod] = useState<string | null>(null)
+  const [timeConstraint, setTimeConstraint] = useState<string | null>(null)
+  const [servings, setServings] = useState(4)
+
+  // Generated recipe
+  const [recipe, setRecipe] = useState<GeneratedRecipe | null>(null)
+
+  const handleNext = () => {
+    if (step < 4) setStep((step + 1) as WizardStep)
+    else if (step === 4) handleGenerate()
+  }
+
+  const handleBack = () => {
+    if (step > 1) setStep((step - 1) as WizardStep)
+  }
+
+  const handleGenerate = async () => {
+    setError('')
+    setGenerating(true)
+    setStep(5)
+
+    try {
+      const res = await fetch(`${API_URL}/api/recipes/generate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          protein: protein === 'None' ? undefined : protein?.toLowerCase(),
+          vegetables: vegetables.map((v) => v.toLowerCase()),
+          cuisine: cuisine === 'Surprise me' ? undefined : cuisine?.toLowerCase(),
+          cookingMethod: cookingMethod?.toLowerCase().replace(' ', '-'),
+          timeConstraint,
+          servings,
+        }),
+      })
+
+      const data = await res.json()
+      if (!res.ok) {
+        setError(data.error || 'Failed to generate recipe')
+        setStep(4)
+      } else {
+        setRecipe(data.data)
+      }
+    } catch {
+      setError('Failed to generate recipe')
+      setStep(4)
+    } finally {
+      setGenerating(false)
+    }
+  }
+
+  const handleSave = async () => {
+    if (!recipe) return
+    setError('')
+    setSaving(true)
+
+    try {
+      const res = await fetch(`${API_URL}/api/recipes`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          title: recipe.title,
+          description: recipe.description,
+          servings: recipe.servings,
+          prepTime: recipe.prepTime,
+          cookTime: recipe.cookTime,
+          cuisine: recipe.cuisine,
+          instructions: recipe.instructions,
+          ingredients: recipe.ingredients,
+          source: 'ai_generated',
+        }),
+      })
+
+      const data = await res.json()
+      if (!res.ok) {
+        setError(data.error || 'Failed to save recipe')
+      } else {
+        navigate(`/recipes/${data.data.id}`)
+      }
+    } catch {
+      setError('Failed to save recipe')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleTryAgain = () => {
+    setRecipe(null)
+    handleGenerate()
+  }
+
+  if (!session) {
+    navigate('/login')
+    return null
+  }
+
+  return (
+    <div style={styles.container}>
+      <div style={styles.card}>
+        {/* Step indicator */}
+        <div style={styles.stepIndicator}>
+          {[1, 2, 3, 4, 5].map((s) => (
+            <div
+              key={s}
+              style={{
+                ...styles.stepDot,
+                ...(s <= step ? styles.stepDotActive : {}),
+                ...(s === step ? styles.stepDotCurrent : {}),
+              }}
+            />
+          ))}
+        </div>
+
+        {error && <div style={styles.error}>{error}</div>}
+
+        {/* Step 1: Protein */}
+        {step === 1 && (
+          <div style={styles.stepContent}>
+            <h2 style={styles.stepTitle}>What protein would you like?</h2>
+            <div style={styles.selectionGrid}>
+              {PROTEINS.map((p) => (
+                <button
+                  key={p}
+                  onClick={() => setProtein(protein === p ? null : p)}
+                  style={{
+                    ...styles.selectionCard,
+                    ...(protein === p ? styles.selectionCardSelected : {}),
+                  }}
+                >
+                  {p}
+                </button>
+              ))}
+            </div>
+            <div style={styles.stepActions}>
+              <button onClick={() => navigate('/recipes')} style={styles.skipButton}>
+                Cancel
+              </button>
+              <button onClick={handleNext} style={styles.nextButton}>
+                {protein ? 'Next' : 'Skip'} →
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Step 2: Vegetables */}
+        {step === 2 && (
+          <div style={styles.stepContent}>
+            <h2 style={styles.stepTitle}>Which vegetables? (select any)</h2>
+            <div style={styles.selectionGrid}>
+              {VEGETABLES.map((v) => (
+                <button
+                  key={v}
+                  onClick={() =>
+                    setVegetables(
+                      vegetables.includes(v)
+                        ? vegetables.filter((x) => x !== v)
+                        : [...vegetables, v]
+                    )
+                  }
+                  style={{
+                    ...styles.selectionCard,
+                    ...(vegetables.includes(v) ? styles.selectionCardSelected : {}),
+                  }}
+                >
+                  {v}
+                </button>
+              ))}
+            </div>
+            {vegetables.length > 0 && (
+              <p style={styles.selectionSummary}>Selected: {vegetables.join(', ')}</p>
+            )}
+            <div style={styles.stepActions}>
+              <button onClick={handleBack} style={styles.backButton}>
+                ← Back
+              </button>
+              <button onClick={handleNext} style={styles.nextButton}>
+                {vegetables.length > 0 ? 'Next' : 'Skip'} →
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Step 3: Cuisine & Method */}
+        {step === 3 && (
+          <div style={styles.stepContent}>
+            <h2 style={styles.stepTitle}>Cuisine Style</h2>
+            <div style={styles.selectionGrid}>
+              {CUISINES.map((c) => (
+                <button
+                  key={c}
+                  onClick={() => setCuisine(cuisine === c ? null : c)}
+                  style={{
+                    ...styles.selectionCard,
+                    ...(cuisine === c ? styles.selectionCardSelected : {}),
+                  }}
+                >
+                  {c}
+                </button>
+              ))}
+            </div>
+
+            <h2 style={{ ...styles.stepTitle, marginTop: '1.5rem' }}>Cooking Method</h2>
+            <div style={styles.selectionGrid}>
+              {COOKING_METHODS.map((m) => (
+                <button
+                  key={m}
+                  onClick={() => setCookingMethod(cookingMethod === m ? null : m)}
+                  style={{
+                    ...styles.selectionCard,
+                    ...(cookingMethod === m ? styles.selectionCardSelected : {}),
+                  }}
+                >
+                  {m}
+                </button>
+              ))}
+            </div>
+
+            <div style={styles.stepActions}>
+              <button onClick={handleBack} style={styles.backButton}>
+                ← Back
+              </button>
+              <button onClick={handleNext} style={styles.nextButton}>
+                Next →
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Step 4: Time & Servings */}
+        {step === 4 && (
+          <div style={styles.stepContent}>
+            <h2 style={styles.stepTitle}>How much time do you have?</h2>
+            <div style={styles.timeGrid}>
+              {TIME_OPTIONS.map((t) => (
+                <button
+                  key={t.value}
+                  onClick={() => setTimeConstraint(timeConstraint === t.value ? null : t.value)}
+                  style={{
+                    ...styles.timeCard,
+                    ...(timeConstraint === t.value ? styles.selectionCardSelected : {}),
+                  }}
+                >
+                  <div style={styles.timeLabel}>{t.label}</div>
+                  <div style={styles.timeDesc}>{t.desc}</div>
+                </button>
+              ))}
+            </div>
+
+            <h2 style={{ ...styles.stepTitle, marginTop: '1.5rem' }}>How many servings?</h2>
+            <div style={styles.servingsControl}>
+              <button
+                onClick={() => setServings(Math.max(1, servings - 1))}
+                style={styles.servingsButton}
+              >
+                −
+              </button>
+              <span style={styles.servingsValue}>{servings}</span>
+              <button
+                onClick={() => setServings(Math.min(12, servings + 1))}
+                style={styles.servingsButton}
+              >
+                +
+              </button>
+            </div>
+
+            <div style={styles.stepActions}>
+              <button onClick={handleBack} style={styles.backButton}>
+                ← Back
+              </button>
+              <button onClick={handleNext} style={styles.generateButton}>
+                Generate Recipe →
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Step 5: Loading & Preview */}
+        {step === 5 && (
+          <div style={styles.stepContent}>
+            {generating ? (
+              <div style={styles.loadingContainer}>
+                <div style={styles.loadingIcon}>🍳</div>
+                <h2 style={styles.loadingTitle}>Creating your recipe...</h2>
+                <p style={styles.loadingText}>Finding the perfect combination of flavors</p>
+              </div>
+            ) : recipe ? (
+              <div style={styles.previewContainer}>
+                <h2 style={styles.recipeTitle}>{recipe.title}</h2>
+                <div style={styles.recipeMeta}>
+                  <span>🕐 {recipe.prepTime} min prep</span>
+                  <span>🍳 {recipe.cookTime} min cook</span>
+                  <span>🍽 {recipe.servings} servings</span>
+                  {recipe.cuisine && <span>🌍 {recipe.cuisine}</span>}
+                </div>
+                <p style={styles.recipeDescription}>{recipe.description}</p>
+
+                <h3 style={styles.sectionTitle}>Ingredients ({recipe.ingredients.length})</h3>
+                <ul style={styles.ingredientList}>
+                  {recipe.ingredients.slice(0, 5).map((ing, i) => (
+                    <li key={i} style={styles.ingredientItem}>
+                      {ing.quantity} {ing.unit} {ing.name}
+                      {ing.preparation && `, ${ing.preparation}`}
+                    </li>
+                  ))}
+                  {recipe.ingredients.length > 5 && (
+                    <li style={styles.moreItems}>
+                      +{recipe.ingredients.length - 5} more ingredients
+                    </li>
+                  )}
+                </ul>
+
+                <h3 style={styles.sectionTitle}>Instructions ({recipe.instructions.length} steps)</h3>
+                <ol style={styles.instructionList}>
+                  {recipe.instructions.slice(0, 2).map((step) => (
+                    <li key={step.stepNumber} style={styles.instructionItem}>
+                      {step.text}
+                    </li>
+                  ))}
+                  {recipe.instructions.length > 2 && (
+                    <li style={styles.moreItems}>
+                      +{recipe.instructions.length - 2} more steps
+                    </li>
+                  )}
+                </ol>
+
+                <div style={styles.previewActions}>
+                  <button onClick={handleTryAgain} style={styles.tryAgainButton}>
+                    🔄 Try Again
+                  </button>
+                  <button onClick={handleSave} style={styles.saveButton} disabled={saving}>
+                    {saving ? 'Saving...' : '✓ Save Recipe'}
+                  </button>
+                </div>
+              </div>
+            ) : null}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+const styles: Record<string, React.CSSProperties> = {
+  container: {
+    minHeight: '100vh',
+    background: '#f5f5f5',
+    padding: '2rem 1rem',
+  },
+  card: {
+    background: 'white',
+    padding: '2rem',
+    borderRadius: '12px',
+    boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+    maxWidth: '600px',
+    margin: '0 auto',
+  },
+  stepIndicator: {
+    display: 'flex',
+    justifyContent: 'center',
+    gap: '0.5rem',
+    marginBottom: '2rem',
+  },
+  stepDot: {
+    width: '10px',
+    height: '10px',
+    borderRadius: '50%',
+    background: '#ddd',
+  },
+  stepDotActive: {
+    background: '#2563eb',
+  },
+  stepDotCurrent: {
+    width: '12px',
+    height: '12px',
+  },
+  error: {
+    background: '#fee',
+    color: '#c00',
+    padding: '0.75rem',
+    borderRadius: '6px',
+    marginBottom: '1rem',
+    fontSize: '0.875rem',
+  },
+  stepContent: {},
+  stepTitle: {
+    fontSize: '1.25rem',
+    fontWeight: 600,
+    marginBottom: '1rem',
+  },
+  selectionGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(3, 1fr)',
+    gap: '0.75rem',
+  },
+  selectionCard: {
+    padding: '1rem 0.5rem',
+    borderRadius: '8px',
+    border: '1px solid #ddd',
+    background: 'white',
+    cursor: 'pointer',
+    fontSize: '0.875rem',
+    transition: 'all 0.15s',
+  },
+  selectionCardSelected: {
+    borderColor: '#2563eb',
+    background: '#eff6ff',
+    color: '#2563eb',
+    fontWeight: 500,
+  },
+  selectionSummary: {
+    marginTop: '1rem',
+    fontSize: '0.875rem',
+    color: '#666',
+  },
+  stepActions: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    marginTop: '2rem',
+  },
+  backButton: {
+    padding: '0.75rem 1.5rem',
+    borderRadius: '6px',
+    border: '1px solid #ddd',
+    background: 'white',
+    cursor: 'pointer',
+  },
+  skipButton: {
+    padding: '0.75rem 1.5rem',
+    borderRadius: '6px',
+    border: '1px solid #ddd',
+    background: 'white',
+    cursor: 'pointer',
+  },
+  nextButton: {
+    padding: '0.75rem 1.5rem',
+    borderRadius: '6px',
+    border: 'none',
+    background: '#2563eb',
+    color: 'white',
+    cursor: 'pointer',
+  },
+  generateButton: {
+    padding: '0.75rem 1.5rem',
+    borderRadius: '6px',
+    border: 'none',
+    background: '#16a34a',
+    color: 'white',
+    cursor: 'pointer',
+    fontWeight: 500,
+  },
+  timeGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(3, 1fr)',
+    gap: '0.75rem',
+  },
+  timeCard: {
+    padding: '1rem',
+    borderRadius: '8px',
+    border: '1px solid #ddd',
+    background: 'white',
+    cursor: 'pointer',
+    textAlign: 'center',
+  },
+  timeLabel: {
+    fontWeight: 600,
+    marginBottom: '0.25rem',
+  },
+  timeDesc: {
+    fontSize: '0.75rem',
+    color: '#666',
+  },
+  servingsControl: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '1.5rem',
+  },
+  servingsButton: {
+    width: '40px',
+    height: '40px',
+    borderRadius: '50%',
+    border: '1px solid #ddd',
+    background: 'white',
+    fontSize: '1.25rem',
+    cursor: 'pointer',
+  },
+  servingsValue: {
+    fontSize: '2rem',
+    fontWeight: 600,
+    minWidth: '60px',
+    textAlign: 'center',
+  },
+  loadingContainer: {
+    textAlign: 'center',
+    padding: '3rem 0',
+  },
+  loadingIcon: {
+    fontSize: '3rem',
+    marginBottom: '1rem',
+    animation: 'pulse 1.5s infinite',
+  },
+  loadingTitle: {
+    fontSize: '1.25rem',
+    fontWeight: 600,
+    marginBottom: '0.5rem',
+  },
+  loadingText: {
+    color: '#666',
+  },
+  previewContainer: {},
+  recipeTitle: {
+    fontSize: '1.5rem',
+    fontWeight: 600,
+    marginBottom: '0.5rem',
+  },
+  recipeMeta: {
+    display: 'flex',
+    flexWrap: 'wrap',
+    gap: '1rem',
+    fontSize: '0.875rem',
+    color: '#666',
+    marginBottom: '1rem',
+  },
+  recipeDescription: {
+    color: '#444',
+    lineHeight: 1.6,
+    marginBottom: '1.5rem',
+  },
+  sectionTitle: {
+    fontSize: '0.875rem',
+    fontWeight: 600,
+    textTransform: 'uppercase',
+    letterSpacing: '0.5px',
+    color: '#666',
+    marginBottom: '0.5rem',
+    borderTop: '1px solid #eee',
+    paddingTop: '1rem',
+  },
+  ingredientList: {
+    listStyle: 'disc',
+    paddingLeft: '1.5rem',
+    marginBottom: '1rem',
+  },
+  ingredientItem: {
+    marginBottom: '0.25rem',
+  },
+  instructionList: {
+    paddingLeft: '1.5rem',
+    marginBottom: '1.5rem',
+  },
+  instructionItem: {
+    marginBottom: '0.5rem',
+    lineHeight: 1.5,
+  },
+  moreItems: {
+    color: '#666',
+    fontStyle: 'italic',
+  },
+  previewActions: {
+    display: 'flex',
+    gap: '1rem',
+  },
+  tryAgainButton: {
+    flex: 1,
+    padding: '0.75rem',
+    borderRadius: '6px',
+    border: '1px solid #ddd',
+    background: 'white',
+    cursor: 'pointer',
+  },
+  saveButton: {
+    flex: 1,
+    padding: '0.75rem',
+    borderRadius: '6px',
+    border: 'none',
+    background: '#16a34a',
+    color: 'white',
+    cursor: 'pointer',
+    fontWeight: 500,
+  },
+}

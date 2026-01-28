@@ -192,25 +192,27 @@ Easy Meal is a web application that streamlines the meal preparation process—f
 
 ---
 
-### Phase 3: Recipe Creation & Organization
+### Phase 3: Recipe Creation & Organization ✅ COMPLETE
 **Objective**: Users can generate recipes via structured preference selection and organize them with tags and lists
 
-| Task | Complexity | Dependencies |
-|------|------------|--------------|
-| Design recipe, tag, and recipe list database schemas | Low | Phase 2 |
-| Define preference selection options (proteins, vegetables, cuisines, etc.) | Low | None |
-| Build Vertex AI integration layer | Medium | None |
-| Design recipe generation prompt engineering | Medium | Vertex AI |
-| Implement recipe generation API endpoint | Medium | Prompt + Vertex |
-| Implement recipe CRUD API | Low | Schema |
-| Implement tag CRUD API (user-created tags) | Low | Schema |
-| Implement recipe list CRUD API (personal collections) | Low | Schema |
-| Build web recipe creation wizard UI | High | API |
-| Build web recipe "marketplace" view (browse all household recipes) | Medium | CRUD |
-| Build tag management UI (create, assign, filter) | Medium | Tag API |
-| Build recipe list management UI (create lists, add/remove recipes) | Medium | List API |
-| Build web recipe detail view | Medium | CRUD |
-| Implement recipe edit functionality | Medium | CRUD |
+| Task | Complexity | Status |
+|------|------------|--------|
+| Design recipe, tag, and recipe list database schemas | Low | ✅ Done (Phase 0) |
+| Define preference selection options (proteins, vegetables, cuisines, etc.) | Low | ✅ Done |
+| Build Vertex AI integration layer | Medium | ✅ Done (Gemini) |
+| Design recipe generation prompt engineering | Medium | ✅ Done |
+| Implement recipe generation API endpoint | Medium | ✅ Done |
+| Implement recipe CRUD API | Low | ✅ Done |
+| Implement tag CRUD API (user-created tags) | Low | ✅ Done |
+| Implement recipe list CRUD API (personal collections) | Low | ✅ Done |
+| Build web recipe creation wizard UI | High | ✅ Done |
+| Build web recipe "marketplace" view (browse all household recipes) | Medium | ✅ Done |
+| Build tag management UI (create, assign, filter) | Medium | ✅ Done (in Recipes page) |
+| Build recipe list management UI (create lists, add/remove recipes) | Medium | ⏸️ Deferred |
+| Build web recipe detail view | Medium | ✅ Done |
+| Implement recipe edit functionality | Medium | ⏸️ Deferred |
+
+**Note**: Recipe list UI and recipe edit functionality deferred to keep MVP lean. APIs are implemented; UI can be added later.
 
 **Deliverable**: Users can create AI-generated recipes, tag them, organize into personal lists, and browse the household recipe collection
 
@@ -327,13 +329,9 @@ None currently - all major decisions resolved.
 
 ## Recommended Next Steps
 
-Phase 0 is complete. Next priorities:
+Phases 0-3 are complete. Next priority:
 
-1. **Implement recipe creation wizard UI** - Build React components per UI spec (see `docs/ui-spec-recipe-wizard.md`)
-2. **Wire up recipe generation flow** - Connect wizard → API → AI → save to DB
-3. **Build authentication** - Email/password + Google OAuth (Phase 1)
-4. **Add household management** - Create/join households (Phase 2)
-5. **Build recipe browsing UI** - View saved recipes, tags, lists
+1. **Phase 4: Grocery List Generation** - Design grocery list schema, implement servings scaling, ingredient aggregation, and Google Tasks export
 
 ---
 

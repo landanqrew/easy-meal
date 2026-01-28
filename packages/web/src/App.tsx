@@ -4,6 +4,9 @@ import Login from './pages/Login'
 import Register from './pages/Register'
 import Profile from './pages/Profile'
 import Household from './pages/Household'
+import Recipes from './pages/Recipes'
+import CreateRecipe from './pages/CreateRecipe'
+import RecipeDetail from './pages/RecipeDetail'
 
 function Home() {
   const { data: session, isPending } = useSession()
@@ -19,6 +22,9 @@ function Home() {
         <div style={styles.navLinks}>
           {session ? (
             <>
+              <Link to="/recipes" style={styles.navLink}>
+                Recipes
+              </Link>
               <Link to="/household" style={styles.navLink}>
                 Household
               </Link>
@@ -50,8 +56,12 @@ function Home() {
           <div style={styles.dashboard}>
             <p style={styles.welcomeText}>Welcome back, {session.user.name}!</p>
             <div style={styles.actions}>
-              <button style={styles.actionButton}>Create Recipe</button>
-              <button style={styles.actionButtonSecondary}>Browse Recipes</button>
+              <Link to="/recipes/create" style={styles.actionButton}>
+                Create Recipe
+              </Link>
+              <Link to="/recipes" style={styles.actionButtonSecondary}>
+                Browse Recipes
+              </Link>
             </div>
           </div>
         ) : (
@@ -100,6 +110,30 @@ export default function App() {
           element={
             <ProtectedRoute>
               <Household />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/recipes"
+          element={
+            <ProtectedRoute>
+              <Recipes />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/recipes/create"
+          element={
+            <ProtectedRoute>
+              <CreateRecipe />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/recipes/:id"
+          element={
+            <ProtectedRoute>
+              <RecipeDetail />
             </ProtectedRoute>
           }
         />
