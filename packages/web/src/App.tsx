@@ -3,6 +3,7 @@ import { useSession } from './lib/auth'
 import Login from './pages/Login'
 import Register from './pages/Register'
 import Profile from './pages/Profile'
+import Household from './pages/Household'
 
 function Home() {
   const { data: session, isPending } = useSession()
@@ -18,6 +19,9 @@ function Home() {
         <div style={styles.navLinks}>
           {session ? (
             <>
+              <Link to="/household" style={styles.navLink}>
+                Household
+              </Link>
               <Link to="/profile" style={styles.navLink}>
                 {session.user.name || session.user.email}
               </Link>
@@ -88,6 +92,14 @@ export default function App() {
           element={
             <ProtectedRoute>
               <Profile />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/household"
+          element={
+            <ProtectedRoute>
+              <Household />
             </ProtectedRoute>
           }
         />

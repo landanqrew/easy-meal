@@ -6,6 +6,7 @@ import { db } from './db'
 import { generateRecipe } from './services/ai'
 import { auth } from './lib/auth'
 import users from './routes/users'
+import households from './routes/households'
 
 const app = new Hono()
 
@@ -27,6 +28,7 @@ app.on(['POST', 'GET'], '/api/auth/*', (c) => {
 
 // Mount API routes
 app.route('/api/users', users)
+app.route('/api/households', households)
 
 app.get('/health', async (c) => {
   // Test database connection
