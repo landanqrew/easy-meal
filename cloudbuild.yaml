@@ -1,0 +1,111 @@
+# Cloud Build configuration for Easy Meal
+# Builds and deploys API and Web to Cloud Run
+
+substitutions:
+  _REGION: us-central1
+  _API_SERVICE: easy-meal-api
+  _WEB_SERVICE: easy-meal-web
+
+steps:
+  # Build API Docker image
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '-t'
+      - 'gcr.io/$PROJECT_ID/${_API_SERVICE}:$COMMIT_SHA'
+      - '-t'
+      - 'gcr.io/$PROJECT_ID/${_API_SERVICE}:latest'
+      - '-f'
+      - 'packages/api/Dockerfile'
+      - '.'
+    id: 'build-api'
+
+  # Build Web Docker image
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '-t'
+      - 'gcr.io/$PROJECT_ID/${_WEB_SERVICE}:$COMMIT_SHA'
+      - '-t'
+      - 'gcr.io/$PROJECT_ID/${_WEB_SERVICE}:latest'
+      - '-f'
+      - 'packages/web/Dockerfile'
+      - '--build-arg'
+      - 'VITE_API_URL=https://${_API_SERVICE}-${PROJECT_NUMBER}.${_REGION}.run.app'
+      - '.'
+    id: 'build-web'
+
+  # Push API image
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'gcr.io/$PROJECT_ID/${_API_SERVICE}:$COMMIT_SHA']
+    id: 'push-api'
+    waitFor: ['build-api']
+
+  # Push Web image
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'gcr.io/$PROJECT_ID/${_WEB_SERVICE}:$COMMIT_SHA']
+    id: 'push-web'
+    waitFor: ['build-web']
+
+  # Deploy API to Cloud Run
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: 'gcloud'
+    args:
+      - 'run'
+      - 'deploy'
+      - '${_API_SERVICE}'
+      - '--image'
+      - 'gcr.io/$PROJECT_ID/${_API_SERVICE}:$COMMIT_SHA'
+      - '--region'
+      - '${_REGION}'
+      - '--platform'
+      - 'managed'
+      - '--allow-unauthenticated'
+      - '--set-env-vars'
+      - 'NODE_ENV=production'
+      - '--set-secrets'
+      - 'DATABASE_URL=easy-meal-db-url:latest,GOOGLE_AI_API_KEY=easy-meal-ai-key:latest,BETTER_AUTH_SECRET=easy-meal-auth-secret:latest'
+      - '--min-instances'
+      - '0'
+      - '--max-instances'
+      - '10'
+      - '--memory'
+      - '512Mi'
+      - '--cpu'
+      - '1'
+    id: 'deploy-api'
+    waitFor: ['push-api']
+
+  # Deploy Web to Cloud Run
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: 'gcloud'
+    args:
+      - 'run'
+      - 'deploy'
+      - '${_WEB_SERVICE}'
+      - '--image'
+      - 'gcr.io/$PROJECT_ID/${_WEB_SERVICE}:$COMMIT_SHA'
+      - '--region'
+      - '${_REGION}'
+      - '--platform'
+      - 'managed'
+      - '--allow-unauthenticated'
+      - '--min-instances'
+      - '0'
+      - '--max-instances'
+      - '5'
+      - '--memory'
+      - '256Mi'
+      - '--cpu'
+      - '1'
+    id: 'deploy-web'
+    waitFor: ['push-web', 'deploy-api']
+
+images:
+  - 'gcr.io/$PROJECT_ID/${_API_SERVICE}:$COMMIT_SHA'
+  - 'gcr.io/$PROJECT_ID/${_WEB_SERVICE}:$COMMIT_SHA'
+  - 'gcr.io/$PROJECT_ID/${_API_SERVICE}:latest'
+  - 'gcr.io/$PROJECT_ID/${_WEB_SERVICE}:latest'
+
+options:
+  logging: CLOUD_LOGGING_ONLY
