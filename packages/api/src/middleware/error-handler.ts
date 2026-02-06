@@ -7,7 +7,15 @@ export async function errorHandler(c: Context, next: Next) {
   } catch (error) {
     const err = error instanceof Error ? error : new Error(String(error))
 
-    // Log and capture the error
+    // Always log full error to console for debugging
+    console.error('API Error:', {
+      path: c.req.path,
+      method: c.req.method,
+      message: err.message,
+      stack: err.stack,
+    })
+
+    // Capture in Sentry if configured
     captureException(err, {
       path: c.req.path,
       method: c.req.method,

@@ -1,12 +1,12 @@
 import { Hono } from 'hono'
-import { cors } from 'hono/cors'
+// cors import removed - handling CORS manually
 import { sql } from 'drizzle-orm'
 import type { HealthResponse } from '@easy-meal/shared'
 import { db } from './db'
 import { auth } from './lib/auth'
 import { initSentry } from './lib/sentry'
 import { errorHandler, rateLimit } from './middleware/error-handler'
-import { securityHeaders, requestSizeLimit } from './middleware/security'
+import { requestSizeLimit } from './middleware/security'
 import users from './routes/users'
 import households from './routes/households'
 import recipes from './routes/recipes'
@@ -19,11 +19,46 @@ initSentry()
 
 const app = new Hono()
 
+// CORS headers helper
+const addCorsHeaders = (response: Response, origin: string): Response => {
+  const headers = new Headers(response.headers)
+  headers.set('Access-Control-Allow-Origin', origin)
+  headers.set('Access-Control-Allow-Credentials', 'true')
+  headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS')
+  headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With')
+  return new Response(response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers,
+  })
+}
+
+// Handle ALL OPTIONS requests first (CORS preflight)
+app.options('*', (c) => {
+  const origin = c.req.header('origin') || '*'
+  console.log('OPTIONS preflight for:', c.req.path, 'from origin:', origin)
+  return new Response(null, {
+    status: 204,
+    headers: {
+      'Access-Control-Allow-Origin': origin,
+      'Access-Control-Allow-Methods': 'GET, POST, PUT, PATCH, DELETE, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With',
+      'Access-Control-Allow-Credentials': 'true',
+      'Access-Control-Max-Age': '86400',
+    },
+  })
+})
+
+// Add CORS headers to all responses
+app.use('*', async (c, next) => {
+  await next()
+  const origin = c.req.header('origin') || '*'
+  c.res.headers.set('Access-Control-Allow-Origin', origin)
+  c.res.headers.set('Access-Control-Allow-Credentials', 'true')
+})
+
 // Global error handler
 app.use('*', errorHandler)
-
-// Security headers
-app.use('*', securityHeaders)
 
 // Request size limit (1MB)
 app.use('/api/*', requestSizeLimit(1024 * 1024))
@@ -31,20 +66,13 @@ app.use('/api/*', requestSizeLimit(1024 * 1024))
 // Rate limiting for API routes (100 requests per minute)
 app.use('/api/*', rateLimit({ windowMs: 60 * 1000, max: 100 }))
 
-// CORS config for authenticated routes
-const corsConfig = cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
-  allowHeaders: ['Content-Type', 'Authorization'],
-  allowMethods: ['POST', 'GET', 'PATCH', 'DELETE', 'OPTIONS'],
-  credentials: true,
-})
-
-app.use('/api/*', corsConfig)
-app.use('/*', cors())
-
 // Mount Better Auth handler
-app.on(['POST', 'GET'], '/api/auth/*', (c) => {
-  return auth.handler(c.req.raw)
+app.on(['POST', 'GET'], '/api/auth/*', async (c) => {
+  const origin = c.req.header('origin') || '*'
+  console.log('Auth request:', c.req.method, c.req.path, 'from origin:', origin)
+
+  const response = await auth.handler(c.req.raw)
+  return addCorsHeaders(response, origin)
 })
 
 // Mount API routes

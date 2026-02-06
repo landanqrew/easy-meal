@@ -17,13 +17,15 @@ export default function Register() {
 
     try {
       const result = await signUp.email({ name, email, password })
+      console.log('SignUp result:', result)
       if (result.error) {
         setError(result.error.message || 'Registration failed')
       } else {
         navigate('/')
       }
-    } catch (err) {
-      setError('An unexpected error occurred')
+    } catch (err: any) {
+      console.error('SignUp error:', err)
+      setError(err?.message || 'An unexpected error occurred')
     } finally {
       setLoading(false)
     }
