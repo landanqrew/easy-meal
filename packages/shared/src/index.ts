@@ -102,4 +102,18 @@ export type HealthResponse = {
   timestamp: string
 }
 
+// Meal Plan types
+export type MealPlanEntry = {
+  id: string
+  recipeId: string
+  date: string
+  mealType: MealType
+  recipe: {
+    id: string
+    title: string
+    prepTime: number | null
+    cookTime: number | null
+  }
+}
+
 // Auth types are provided by Better Auth client

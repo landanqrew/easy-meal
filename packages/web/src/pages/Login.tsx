@@ -95,7 +95,7 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    background: '#f5f5f5',
+    background: '#FDF8F4',
     padding: '1rem',
   },
   card: {
@@ -110,15 +110,16 @@ const styles: Record<string, React.CSSProperties> = {
     margin: 0,
     fontSize: '1.5rem',
     fontWeight: 600,
+    color: '#2D2420',
   },
   subtitle: {
-    color: '#666',
+    color: '#7A6B60',
     marginTop: '0.5rem',
     marginBottom: '1.5rem',
   },
   error: {
-    background: '#fee',
-    color: '#c00',
+    background: '#FDECEA',
+    color: '#C44536',
     padding: '0.75rem',
     borderRadius: '6px',
     marginBottom: '1rem',
@@ -137,18 +138,19 @@ const styles: Record<string, React.CSSProperties> = {
   label: {
     fontSize: '0.875rem',
     fontWeight: 500,
+    color: '#2D2420',
   },
   input: {
     padding: '0.75rem',
     borderRadius: '6px',
-    border: '1px solid #ddd',
+    border: '1px solid #E8DDD4',
     fontSize: '1rem',
   },
   button: {
     padding: '0.75rem',
     borderRadius: '6px',
     border: 'none',
-    background: '#2563eb',
+    background: '#E07A5F',
     color: 'white',
     fontSize: '1rem',
     fontWeight: 500,
@@ -162,7 +164,7 @@ const styles: Record<string, React.CSSProperties> = {
     gap: '1rem',
   },
   dividerText: {
-    color: '#999',
+    color: '#A89888',
     fontSize: '0.875rem',
     flex: 1,
     textAlign: 'center',
@@ -171,7 +173,7 @@ const styles: Record<string, React.CSSProperties> = {
   googleButton: {
     padding: '0.75rem',
     borderRadius: '6px',
-    border: '1px solid #ddd',
+    border: '1px solid #E8DDD4',
     background: 'white',
     fontSize: '1rem',
     cursor: 'pointer',
@@ -180,7 +182,7 @@ const styles: Record<string, React.CSSProperties> = {
   footer: {
     textAlign: 'center',
     marginTop: '1.5rem',
-    color: '#666',
+    color: '#7A6B60',
     fontSize: '0.875rem',
   },
 }

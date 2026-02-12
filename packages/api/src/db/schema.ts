@@ -44,6 +44,13 @@ export const groceryListStatusEnum = pgEnum('grocery_list_status', [
   'archived',
 ])
 
+export const mealTypeEnum = pgEnum('meal_type', [
+  'breakfast',
+  'lunch',
+  'dinner',
+  'snack',
+])
+
 // ============================================================================
 // HOUSEHOLDS
 // ============================================================================
@@ -342,6 +349,37 @@ export const groceryListItems = pgTable(
 )
 
 // ============================================================================
+// MEAL PLANS
+// ============================================================================
+
+export const mealPlans = pgTable(
+  'meal_plans',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    householdId: uuid('household_id')
+      .references(() => households.id, { onDelete: 'cascade' })
+      .notNull(),
+    recipeId: uuid('recipe_id')
+      .references(() => recipes.id, { onDelete: 'cascade' })
+      .notNull(),
+    date: timestamp('date', { withTimezone: true, mode: 'date' }).notNull(),
+    mealType: mealTypeEnum('meal_type').notNull(),
+
+    // Metadata
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+    createdByUserId: text('created_by_user_id').references(() => user.id, { onDelete: 'set null' }),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+    updatedByUserId: text('updated_by_user_id').references(() => user.id, { onDelete: 'set null' }),
+  },
+  (table) => [
+    unique('unique_meal_plan_slot').on(table.householdId, table.date, table.mealType),
+    index('idx_meal_plans_household_id').on(table.householdId),
+    index('idx_meal_plans_date').on(table.date),
+    index('idx_meal_plans_household_date').on(table.householdId, table.date),
+  ]
+)
+
+// ============================================================================
 // RELATIONS
 // ============================================================================
 
@@ -350,6 +388,7 @@ export const householdsRelations = relations(households, ({ many }) => ({
   tags: many(tags),
   recipeLists: many(recipeLists),
   groceryLists: many(groceryLists),
+  mealPlans: many(mealPlans),
 }))
 
 export const ingredientsRelations = relations(ingredients, ({ many }) => ({
@@ -369,6 +408,7 @@ export const recipesRelations = relations(recipes, ({ one, many }) => ({
   recipeIngredients: many(recipeIngredients),
   recipeTags: many(recipeTags),
   recipeListItems: many(recipeListItems),
+  mealPlans: many(mealPlans),
 }))
 
 export const recipeIngredientsRelations = relations(recipeIngredients, ({ one }) => ({
@@ -444,5 +484,20 @@ export const groceryListItemsRelations = relations(groceryListItems, ({ one }) =
   recipe: one(recipes, {
     fields: [groceryListItems.recipeId],
     references: [recipes.id],
+  }),
+}))
+
+export const mealPlansRelations = relations(mealPlans, ({ one }) => ({
+  household: one(households, {
+    fields: [mealPlans.householdId],
+    references: [households.id],
+  }),
+  recipe: one(recipes, {
+    fields: [mealPlans.recipeId],
+    references: [recipes.id],
+  }),
+  createdBy: one(user, {
+    fields: [mealPlans.createdByUserId],
+    references: [user.id],
   }),
 }))

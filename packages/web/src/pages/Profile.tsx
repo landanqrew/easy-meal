@@ -103,8 +103,8 @@ export default function Profile() {
           <div
             style={{
               ...styles.message,
-              background: message.includes('success') ? '#efe' : '#fee',
-              color: message.includes('success') ? '#060' : '#c00',
+              background: message.includes('success') ? '#EDF5EC' : '#FDECEA',
+              color: message.includes('success') ? '#5B8C5A' : '#C44536',
             }}
           >
             {message}
@@ -120,7 +120,7 @@ export default function Profile() {
               type="email"
               value={session?.user?.email || ''}
               disabled
-              style={{ ...styles.input, background: '#f5f5f5' }}
+              style={{ ...styles.input, background: '#FAF6F2' }}
             />
           </div>
 
@@ -171,7 +171,7 @@ export default function Profile() {
 const styles: Record<string, React.CSSProperties> = {
   container: {
     minHeight: '100vh',
-    background: '#f5f5f5',
+    background: '#FDF8F4',
     padding: '2rem 1rem',
   },
   loading: {
@@ -198,11 +198,12 @@ const styles: Record<string, React.CSSProperties> = {
     margin: 0,
     fontSize: '1.5rem',
     fontWeight: 600,
+    color: '#2D2420',
   },
   signOutButton: {
     padding: '0.5rem 1rem',
     borderRadius: '6px',
-    border: '1px solid #ddd',
+    border: '1px solid #E8DDD4',
     background: 'white',
     cursor: 'pointer',
     fontSize: '0.875rem',
@@ -220,7 +221,7 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: '1rem',
     fontWeight: 600,
     marginBottom: '1rem',
-    color: '#333',
+    color: '#2D2420',
   },
   field: {
     display: 'flex',
@@ -231,16 +232,17 @@ const styles: Record<string, React.CSSProperties> = {
   label: {
     fontSize: '0.875rem',
     fontWeight: 500,
+    color: '#2D2420',
   },
   input: {
     padding: '0.75rem',
     borderRadius: '6px',
-    border: '1px solid #ddd',
+    border: '1px solid #E8DDD4',
     fontSize: '1rem',
   },
   hint: {
     fontSize: '0.875rem',
-    color: '#666',
+    color: '#7A6B60',
     marginBottom: '1rem',
   },
   chips: {
@@ -251,22 +253,22 @@ const styles: Record<string, React.CSSProperties> = {
   chip: {
     padding: '0.5rem 1rem',
     borderRadius: '20px',
-    border: '1px solid #ddd',
+    border: '1px solid #E8DDD4',
     background: 'white',
     cursor: 'pointer',
     fontSize: '0.875rem',
     textTransform: 'capitalize',
   },
   chipSelected: {
-    background: '#2563eb',
+    background: '#E07A5F',
     color: 'white',
-    borderColor: '#2563eb',
+    borderColor: '#E07A5F',
   },
   saveButton: {
     padding: '0.75rem 1.5rem',
     borderRadius: '6px',
     border: 'none',
-    background: '#2563eb',
+    background: '#E07A5F',
     color: 'white',
     fontSize: '1rem',
     fontWeight: 500,

@@ -174,6 +174,12 @@ export default function Recipes() {
         <Link to="/household" style={styles.navLink}>
           Household
         </Link>
+        <Link to="/meal-plan" style={styles.navLink}>
+          Meal Plan
+        </Link>
+        <Link to="/grocery-lists" style={styles.navLink}>
+          Groceries
+        </Link>
         <Link to="/profile" style={styles.navLink}>
           Profile
         </Link>
@@ -191,7 +197,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   container: {
     minHeight: '100vh',
-    background: '#f5f5f5',
+    background: '#FDF8F4',
     padding: '2rem 1rem',
     paddingBottom: '5rem',
   },
@@ -210,21 +216,21 @@ const styles: Record<string, React.CSSProperties> = {
   },
   subtitle: {
     margin: '0.25rem 0 0',
-    color: '#666',
+    color: '#7A6B60',
     fontSize: '0.875rem',
   },
   createButton: {
     padding: '0.75rem 1.25rem',
     borderRadius: '6px',
-    background: '#2563eb',
+    background: '#E07A5F',
     color: 'white',
     textDecoration: 'none',
     fontWeight: 500,
     fontSize: '0.875rem',
   },
   error: {
-    background: '#fee',
-    color: '#c00',
+    background: '#FDECEA',
+    color: '#C44536',
     padding: '0.75rem',
     borderRadius: '6px',
     marginBottom: '1rem',
@@ -242,33 +248,33 @@ const styles: Record<string, React.CSSProperties> = {
   },
   filterLabel: {
     fontSize: '0.875rem',
-    color: '#666',
+    color: '#7A6B60',
   },
   filterChip: {
     padding: '0.375rem 0.75rem',
     borderRadius: '20px',
-    border: '1px solid #ddd',
+    border: '1px solid #E8DDD4',
     background: 'white',
     cursor: 'pointer',
     fontSize: '0.75rem',
     textTransform: 'capitalize',
   },
   filterChipActive: {
-    background: '#2563eb',
+    background: '#E07A5F',
     color: 'white',
-    borderColor: '#2563eb',
+    borderColor: '#E07A5F',
   },
   emptyState: {
     textAlign: 'center',
     padding: '4rem 2rem',
-    color: '#666',
+    color: '#7A6B60',
   },
   emptyButton: {
     display: 'inline-block',
     marginTop: '1rem',
     padding: '0.75rem 1.5rem',
     borderRadius: '6px',
-    background: '#2563eb',
+    background: '#E07A5F',
     color: 'white',
     textDecoration: 'none',
   },
@@ -299,7 +305,7 @@ const styles: Record<string, React.CSSProperties> = {
   recipeDescription: {
     margin: 0,
     fontSize: '0.875rem',
-    color: '#666',
+    color: '#7A6B60',
     lineHeight: 1.5,
     marginBottom: '0.75rem',
     flex: 1,
@@ -308,7 +314,7 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     gap: '0.75rem',
     fontSize: '0.75rem',
-    color: '#666',
+    color: '#7A6B60',
     marginBottom: '0.75rem',
   },
   recipeTags: {
@@ -320,7 +326,7 @@ const styles: Record<string, React.CSSProperties> = {
   recipeTag: {
     padding: '0.25rem 0.5rem',
     borderRadius: '4px',
-    background: '#f0f0f0',
+    background: '#FAF6F2',
     fontSize: '0.625rem',
     textTransform: 'capitalize',
   },
@@ -328,8 +334,8 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     justifyContent: 'space-between',
     fontSize: '0.75rem',
-    color: '#999',
-    borderTop: '1px solid #eee',
+    color: '#A89888',
+    borderTop: '1px solid #E8DDD4',
     paddingTop: '0.75rem',
   },
   recipeSource: {},
@@ -343,10 +349,10 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     justifyContent: 'space-around',
     padding: '0.75rem 0',
-    borderTop: '1px solid #eee',
+    borderTop: '1px solid #E8DDD4',
   },
   navLink: {
-    color: '#666',
+    color: '#7A6B60',
     textDecoration: 'none',
     fontSize: '0.875rem',
   },

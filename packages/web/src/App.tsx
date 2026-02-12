@@ -10,6 +10,7 @@ import RecipeDetail from './pages/RecipeDetail'
 import GroceryLists from './pages/GroceryLists'
 import CreateGroceryList from './pages/CreateGroceryList'
 import GroceryListDetail from './pages/GroceryListDetail'
+import MealPlan from './pages/MealPlan'
 
 function Home() {
   const { data: session, isPending } = useSession()
@@ -27,6 +28,9 @@ function Home() {
             <>
               <Link to="/recipes" style={styles.navLink}>
                 Recipes
+              </Link>
+              <Link to="/meal-plan" style={styles.navLink}>
+                Meal Plan
               </Link>
               <Link to="/grocery-lists" style={styles.navLink}>
                 Groceries
@@ -65,13 +69,16 @@ function Home() {
               <Link to="/recipes/create" style={styles.actionButton}>
                 Create Recipe
               </Link>
-              <Link to="/grocery-lists/create" style={styles.actionButton}>
-                Grocery List
+              <Link to="/meal-plan" style={styles.actionButton}>
+                Meal Plan
               </Link>
             </div>
             <div style={{ ...styles.actions, marginTop: '0.75rem' }}>
               <Link to="/recipes" style={styles.actionButtonSecondary}>
                 Browse Recipes
+              </Link>
+              <Link to="/grocery-lists/create" style={styles.actionButtonSecondary}>
+                Grocery List
               </Link>
             </div>
           </div>
@@ -172,6 +179,14 @@ export default function App() {
             </ProtectedRoute>
           }
         />
+        <Route
+          path="/meal-plan"
+          element={
+            <ProtectedRoute>
+              <MealPlan />
+            </ProtectedRoute>
+          }
+        />
       </Routes>
     </BrowserRouter>
   )
@@ -194,12 +209,13 @@ const styles: Record<string, React.CSSProperties> = {
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: '1rem 2rem',
-    borderBottom: '1px solid #eee',
+    borderBottom: '1px solid #E8DDD4',
   },
   logo: {
     margin: 0,
     fontSize: '1.25rem',
     fontWeight: 600,
+    color: '#2D2420',
   },
   navLinks: {
     display: 'flex',
@@ -207,12 +223,12 @@ const styles: Record<string, React.CSSProperties> = {
     gap: '1rem',
   },
   navLink: {
-    color: '#333',
+    color: '#2D2420',
     textDecoration: 'none',
     fontSize: '0.875rem',
   },
   navLinkPrimary: {
-    background: '#2563eb',
+    background: '#E07A5F',
     color: 'white',
     padding: '0.5rem 1rem',
     borderRadius: '6px',
@@ -229,22 +245,23 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: '2.5rem',
     fontWeight: 700,
     marginBottom: '1rem',
-    color: '#111',
+    color: '#2D2420',
   },
   subheadline: {
     fontSize: '1.25rem',
-    color: '#666',
+    color: '#7A6B60',
     marginBottom: '2rem',
     lineHeight: 1.6,
   },
   dashboard: {
-    background: '#f5f5f5',
+    background: '#FAF6F2',
     padding: '2rem',
     borderRadius: '12px',
   },
   welcomeText: {
     fontSize: '1.125rem',
     marginBottom: '1.5rem',
+    color: '#2D2420',
   },
   actions: {
     display: 'flex',
@@ -255,7 +272,7 @@ const styles: Record<string, React.CSSProperties> = {
     padding: '0.75rem 1.5rem',
     borderRadius: '6px',
     border: 'none',
-    background: '#2563eb',
+    background: '#E07A5F',
     color: 'white',
     fontSize: '1rem',
     cursor: 'pointer',
@@ -264,9 +281,9 @@ const styles: Record<string, React.CSSProperties> = {
   actionButtonSecondary: {
     padding: '0.75rem 1.5rem',
     borderRadius: '6px',
-    border: '1px solid #ddd',
+    border: '1px solid #E8DDD4',
     background: 'white',
-    color: '#333',
+    color: '#2D2420',
     fontSize: '1rem',
     cursor: 'pointer',
     textDecoration: 'none',
@@ -278,7 +295,7 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'inline-block',
     padding: '1rem 2rem',
     borderRadius: '8px',
-    background: '#2563eb',
+    background: '#E07A5F',
     color: 'white',
     textDecoration: 'none',
     fontSize: '1.125rem',

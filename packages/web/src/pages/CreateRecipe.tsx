@@ -375,7 +375,7 @@ export default function CreateRecipe() {
 const styles: Record<string, React.CSSProperties> = {
   container: {
     minHeight: '100vh',
-    background: '#f5f5f5',
+    background: '#FDF8F4',
     padding: '2rem 1rem',
   },
   card: {
@@ -396,18 +396,18 @@ const styles: Record<string, React.CSSProperties> = {
     width: '10px',
     height: '10px',
     borderRadius: '50%',
-    background: '#ddd',
+    background: '#E8DDD4',
   },
   stepDotActive: {
-    background: '#2563eb',
+    background: '#E07A5F',
   },
   stepDotCurrent: {
     width: '12px',
     height: '12px',
   },
   error: {
-    background: '#fee',
-    color: '#c00',
+    background: '#FDECEA',
+    color: '#C44536',
     padding: '0.75rem',
     borderRadius: '6px',
     marginBottom: '1rem',
@@ -427,22 +427,22 @@ const styles: Record<string, React.CSSProperties> = {
   selectionCard: {
     padding: '1rem 0.5rem',
     borderRadius: '8px',
-    border: '1px solid #ddd',
+    border: '1px solid #E8DDD4',
     background: 'white',
     cursor: 'pointer',
     fontSize: '0.875rem',
     transition: 'all 0.15s',
   },
   selectionCardSelected: {
-    borderColor: '#2563eb',
-    background: '#eff6ff',
-    color: '#2563eb',
+    borderColor: '#E07A5F',
+    background: '#FDF0ED',
+    color: '#E07A5F',
     fontWeight: 500,
   },
   selectionSummary: {
     marginTop: '1rem',
     fontSize: '0.875rem',
-    color: '#666',
+    color: '#7A6B60',
   },
   stepActions: {
     display: 'flex',
@@ -452,14 +452,14 @@ const styles: Record<string, React.CSSProperties> = {
   backButton: {
     padding: '0.75rem 1.5rem',
     borderRadius: '6px',
-    border: '1px solid #ddd',
+    border: '1px solid #E8DDD4',
     background: 'white',
     cursor: 'pointer',
   },
   skipButton: {
     padding: '0.75rem 1.5rem',
     borderRadius: '6px',
-    border: '1px solid #ddd',
+    border: '1px solid #E8DDD4',
     background: 'white',
     cursor: 'pointer',
   },
@@ -467,7 +467,7 @@ const styles: Record<string, React.CSSProperties> = {
     padding: '0.75rem 1.5rem',
     borderRadius: '6px',
     border: 'none',
-    background: '#2563eb',
+    background: '#E07A5F',
     color: 'white',
     cursor: 'pointer',
   },
@@ -488,7 +488,7 @@ const styles: Record<string, React.CSSProperties> = {
   timeCard: {
     padding: '1rem',
     borderRadius: '8px',
-    border: '1px solid #ddd',
+    border: '1px solid #E8DDD4',
     background: 'white',
     cursor: 'pointer',
     textAlign: 'center',
@@ -499,7 +499,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   timeDesc: {
     fontSize: '0.75rem',
-    color: '#666',
+    color: '#7A6B60',
   },
   servingsControl: {
     display: 'flex',
@@ -511,7 +511,7 @@ const styles: Record<string, React.CSSProperties> = {
     width: '40px',
     height: '40px',
     borderRadius: '50%',
-    border: '1px solid #ddd',
+    border: '1px solid #E8DDD4',
     background: 'white',
     fontSize: '1.25rem',
     cursor: 'pointer',
@@ -537,7 +537,7 @@ const styles: Record<string, React.CSSProperties> = {
     marginBottom: '0.5rem',
   },
   loadingText: {
-    color: '#666',
+    color: '#7A6B60',
   },
   previewContainer: {},
   recipeTitle: {
@@ -550,11 +550,11 @@ const styles: Record<string, React.CSSProperties> = {
     flexWrap: 'wrap',
     gap: '1rem',
     fontSize: '0.875rem',
-    color: '#666',
+    color: '#7A6B60',
     marginBottom: '1rem',
   },
   recipeDescription: {
-    color: '#444',
+    color: '#3D3028',
     lineHeight: 1.6,
     marginBottom: '1.5rem',
   },
@@ -563,9 +563,9 @@ const styles: Record<string, React.CSSProperties> = {
     fontWeight: 600,
     textTransform: 'uppercase',
     letterSpacing: '0.5px',
-    color: '#666',
+    color: '#7A6B60',
     marginBottom: '0.5rem',
-    borderTop: '1px solid #eee',
+    borderTop: '1px solid #E8DDD4',
     paddingTop: '1rem',
   },
   ingredientList: {
@@ -585,7 +585,7 @@ const styles: Record<string, React.CSSProperties> = {
     lineHeight: 1.5,
   },
   moreItems: {
-    color: '#666',
+    color: '#7A6B60',
     fontStyle: 'italic',
   },
   previewActions: {
@@ -596,7 +596,7 @@ const styles: Record<string, React.CSSProperties> = {
     flex: 1,
     padding: '0.75rem',
     borderRadius: '6px',
-    border: '1px solid #ddd',
+    border: '1px solid #E8DDD4',
     background: 'white',
     cursor: 'pointer',
   },
