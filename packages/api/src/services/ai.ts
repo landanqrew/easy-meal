@@ -45,7 +45,7 @@ Respond ONLY with valid JSON matching this exact structure:
 }`
 
 export async function generateRecipe(preferences: RecipePreferences): Promise<GeneratedRecipe> {
-  const model = genAI.getGenerativeModel({ model: 'gemini-3.0-flash' })
+  const model = genAI.getGenerativeModel({ model: 'gemini-3-flash-preview' })
 
   const userPreferences = buildPreferencesPrompt(preferences)
 
@@ -92,6 +92,114 @@ function buildPreferencesPrompt(prefs: RecipePreferences): string {
   if (prefs.additionalNotes) lines.push(`- Additional notes: ${prefs.additionalNotes}`)
 
   return lines.length > 0 ? lines.join('\n') : 'No specific preferences - create a delicious, balanced meal'
+}
+
+// ============================================================================
+// CHAT-BASED RECIPE GENERATION
+// ============================================================================
+
+const CHAT_SYSTEM_PROMPT = `You are a friendly, enthusiastic chef assistant helping someone decide what to cook. Your goal is to have a short conversation to understand what they want, then generate a complete recipe.
+
+CONVERSATION RULES:
+1. Be warm and conversational but concise (1-3 sentences per response).
+2. If the user's description is vague (e.g., "something easy" or "chicken"), ask 1-2 clarifying questions about things like cuisine style, cooking method, time available, or specific ingredients they have on hand.
+3. Don't ask more than 2 questions before generating a recipe. If the user has given you a protein and a general direction, that's enough.
+4. If the user gives you enough detail to create a recipe right away, go ahead and generate it immediately without asking more questions.
+
+RESPONSE FORMAT:
+- When you are still chatting (asking questions or responding conversationally), respond with ONLY a plain text message. Do NOT include any JSON.
+- When you are ready to present a recipe, respond with your conversational message FOLLOWED BY a JSON code block containing the recipe.
+
+Example conversational response:
+"That sounds great! Do you have a preference for cuisine style, or should I surprise you?"
+
+Example recipe response:
+"Here's a delicious recipe for you!
+
+\`\`\`json
+{
+  "title": "Recipe Title",
+  "description": "Brief appetizing description",
+  "servings": 4,
+  "prepTime": 15,
+  "cookTime": 30,
+  "cuisine": "Italian",
+  "ingredients": [
+    {"name": "ingredient name", "quantity": 1.5, "unit": "cup", "category": "produce", "preparation": "diced"}
+  ],
+  "instructions": [
+    {"stepNumber": 1, "text": "First step..."},
+    {"stepNumber": 2, "text": "Second step..."}
+  ]
+}
+\`\`\`"
+
+RECIPE JSON RULES (same as structured generation):
+1. All ingredient quantities must be numeric (use decimals like 0.5, 0.25, 0.33)
+2. Use standard US cooking units (cup, tbsp, tsp, oz, lb, piece, clove, etc.)
+3. Respect ALL dietary restrictions - never include restricted ingredients
+4. Category must be one of: produce, dairy, meat, seafood, pantry, frozen, bakery, beverages, other
+5. Keep instructions clear and numbered
+6. Prep time and cook time in minutes
+7. Ingredient names must be lowercase, canonical form`
+
+export type ChatMessage = {
+  role: 'user' | 'assistant'
+  content: string
+}
+
+export type ChatRecipeResponse = {
+  message: string
+  recipe?: GeneratedRecipe
+}
+
+export async function chatRecipeGeneration(
+  messages: ChatMessage[],
+  dietaryRestrictions?: string[]
+): Promise<ChatRecipeResponse> {
+  const model = genAI.getGenerativeModel({ model: 'gemini-3-flash-preview' })
+
+  let systemPrompt = CHAT_SYSTEM_PROMPT
+  if (dietaryRestrictions?.length) {
+    systemPrompt += `\n\nIMPORTANT: The user has the following dietary restrictions that MUST be respected: ${dietaryRestrictions.join(', ')}. Never suggest ingredients that violate these restrictions.`
+  }
+
+  // Build Gemini chat history from our messages
+  const history = messages.slice(0, -1).map((msg) => ({
+    role: msg.role === 'assistant' ? 'model' as const : 'user' as const,
+    parts: [{ text: msg.content }],
+  }))
+
+  const chat = model.startChat({
+    history: [
+      { role: 'user', parts: [{ text: systemPrompt }] },
+      { role: 'model', parts: [{ text: "I'm ready to help you find the perfect recipe! What are you in the mood for?" }] },
+      ...history,
+    ],
+  })
+
+  const lastMessage = messages[messages.length - 1]
+  const result = await chat.sendMessage(lastMessage.content)
+  const response = result.response.text()
+
+  // Check if the response contains a recipe JSON
+  const jsonMatch = response.match(/```json\n?([\s\S]*?)\n?```/)
+  if (jsonMatch) {
+    const messageText = response.replace(/```json\n?[\s\S]*?\n?```/, '').trim()
+    try {
+      const recipe = JSON.parse(jsonMatch[1]) as GeneratedRecipe
+      if (recipe.title && recipe.ingredients && recipe.instructions) {
+        return {
+          message: messageText || `Here's your recipe for ${recipe.title}!`,
+          recipe,
+        }
+      }
+    } catch {
+      // JSON parse failed, treat as conversational
+    }
+  }
+
+  return { message: response }
 }
 
 // ============================================================================

@@ -16,7 +16,7 @@ A web application that streamlines meal preparation—from AI-powered recipe cre
 - **Backend**: Bun, Hono, TypeScript
 - **Database**: PostgreSQL with Drizzle ORM
 - **Authentication**: Better Auth (email/password + Google OAuth)
-- **AI**: Google Gemini 2.5 Flash
+- **AI**: Google Gemini 3.0 Flash
 - **Deployment**: Google Cloud Run
 
 ## Prerequisites

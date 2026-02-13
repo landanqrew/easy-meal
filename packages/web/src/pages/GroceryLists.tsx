@@ -81,28 +81,19 @@ export default function GroceryLists() {
       <div style={styles.filterSection}>
         <button
           onClick={() => setFilter('active')}
-          style={{
-            ...styles.filterChip,
-            ...(filter === 'active' ? styles.filterChipActive : {}),
-          }}
+          className={`filter-chip${filter === 'active' ? ' active' : ''}`}
         >
           Active
         </button>
         <button
           onClick={() => setFilter('completed')}
-          style={{
-            ...styles.filterChip,
-            ...(filter === 'completed' ? styles.filterChipActive : {}),
-          }}
+          className={`filter-chip${filter === 'completed' ? ' active' : ''}`}
         >
           Completed
         </button>
         <button
           onClick={() => setFilter('all')}
-          style={{
-            ...styles.filterChip,
-            ...(filter === 'all' ? styles.filterChipActive : {}),
-          }}
+          className={`filter-chip${filter === 'all' ? ' active' : ''}`}
         >
           All
         </button>
@@ -126,7 +117,7 @@ export default function GroceryLists() {
       ) : (
         <div style={styles.listGrid}>
           {filteredLists.map((list) => (
-            <Link key={list.id} to={`/grocery-lists/${list.id}`} style={styles.listCard}>
+            <Link key={list.id} to={`/grocery-lists/${list.id}`} className="list-card">
               <div style={styles.listHeader}>
                 <h3 style={styles.listName}>{list.name}</h3>
                 <span
@@ -147,22 +138,12 @@ export default function GroceryLists() {
         </div>
       )}
 
-      <nav style={styles.bottomNav}>
-        <Link to="/" style={styles.navLink}>
-          Home
-        </Link>
-        <Link to="/recipes" style={styles.navLink}>
-          Recipes
-        </Link>
-        <Link to="/meal-plan" style={styles.navLink}>
-          Meal Plan
-        </Link>
-        <Link to="/grocery-lists" style={styles.navLink}>
-          Groceries
-        </Link>
-        <Link to="/profile" style={styles.navLink}>
-          Profile
-        </Link>
+      <nav className="bottom-nav-bar">
+        <Link to="/">Home</Link>
+        <Link to="/recipes">Recipes</Link>
+        <Link to="/meal-plan">Meal Plan</Link>
+        <Link to="/grocery-lists" className="active">Groceries</Link>
+        <Link to="/profile">Profile</Link>
       </nav>
     </div>
   )

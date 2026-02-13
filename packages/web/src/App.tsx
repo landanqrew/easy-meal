@@ -11,6 +11,7 @@ import GroceryLists from './pages/GroceryLists'
 import CreateGroceryList from './pages/CreateGroceryList'
 import GroceryListDetail from './pages/GroceryListDetail'
 import MealPlan from './pages/MealPlan'
+import ChatRecipe from './pages/ChatRecipe'
 
 function Home() {
   const { data: session, isPending } = useSession()
@@ -66,19 +67,19 @@ function Home() {
           <div style={styles.dashboard}>
             <p style={styles.welcomeText}>Welcome back, {session.user.name}!</p>
             <div style={styles.actions}>
-              <Link to="/recipes/create" style={styles.actionButton}>
-                Create Recipe
+              <Link to="/recipes/create" className="btn-primary" style={{ textDecoration: 'none', fontSize: '1rem', padding: '0.75rem 1.5rem' }}>
+                Recipe Wizard
               </Link>
-              <Link to="/meal-plan" style={styles.actionButton}>
-                Meal Plan
+              <Link to="/recipes/chat" className="btn-primary" style={{ textDecoration: 'none', fontSize: '1rem', padding: '0.75rem 1.5rem' }}>
+                Chat with AI
               </Link>
             </div>
             <div style={{ ...styles.actions, marginTop: '0.75rem' }}>
-              <Link to="/recipes" style={styles.actionButtonSecondary}>
-                Browse Recipes
+              <Link to="/meal-plan" className="btn-secondary" style={{ textDecoration: 'none', fontSize: '1rem', padding: '0.75rem 1.5rem' }}>
+                Meal Plan
               </Link>
-              <Link to="/grocery-lists/create" style={styles.actionButtonSecondary}>
-                Grocery List
+              <Link to="/recipes" className="btn-secondary" style={{ textDecoration: 'none', fontSize: '1rem', padding: '0.75rem 1.5rem' }}>
+                Browse Recipes
               </Link>
             </div>
           </div>
@@ -144,6 +145,14 @@ export default function App() {
           element={
             <ProtectedRoute>
               <CreateRecipe />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/recipes/chat"
+          element={
+            <ProtectedRoute>
+              <ChatRecipe />
             </ProtectedRoute>
           }
         />

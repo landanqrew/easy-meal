@@ -259,32 +259,60 @@ Easy Meal is a web application that streamlines the meal preparation process—f
 
 ---
 
+## Active Phases
+
+### Phase 6: UI Modernization & Responsiveness 🔄 IN PROGRESS
+**Objective**: Elevate the UI to a modern, polished standard with improved responsiveness
+
+| Task | Complexity | Status |
+|------|------------|--------|
+| Add CSS transitions and hover states to all interactive elements | Medium | 🔄 In Progress |
+| Improve card designs with modern shadows and depth | Low | Pending |
+| Add backdrop blur and smooth animations to modals | Low | Pending |
+| Improve responsive layouts across all pages | Medium | Pending |
+| Refine typography hierarchy and spacing consistency | Low | Pending |
+| Add loading skeleton states to replace plain "Loading..." text | Medium | Pending |
+
+### Phase 7: Recipe Creation Enhancements 🔄 IN PROGRESS
+**Objective**: Allow custom inputs in the wizard flow and add conversational recipe creation
+
+| Task | Complexity | Status |
+|------|------------|--------|
+| Add custom item input to wizard categories (protein, vegetables, cuisine, cooking method) | Medium | Pending |
+| Build chat-based recipe creation UI (ChatRecipe page) | High | Pending |
+| Build chat API endpoint with multi-turn conversation support | High | Pending |
+| Add AI clarification flow when user input is insufficient | Medium | Pending |
+| Add chat route to App.tsx and navigation | Low | Pending |
+| Update recipe creation entry point to offer wizard vs. chat choice | Low | Pending |
+
+### Phase 7 (Original): Meal Planner ✅ COMPLETE
+- Calendar view for meal scheduling (implemented)
+- Recipe assignment to meal slots
+- Week navigation
+- Recipe creation from meal plan context
+
+---
+
 ## Future Phases (Post-MVP)
 
-### Phase 6: React Native Mobile App
+### Phase 8: React Native Mobile App
 - Port web experience to React Native
 - Shared component library with web
 - Offline support for recipes and grocery lists
 - Push notifications for household activity
 
-### Phase 7: Meal Planner
-- Calendar view for meal scheduling
-- Drag-and-drop recipe assignment
-- Weekly/monthly views
-- Grocery list generation from date range
-
-### Phase 8: Agent Chat Interface
-- Conversational recipe creation
-- Multi-turn refinement
+### Phase 9: Agent Chat Interface (Extended)
 - Recipe modification via chat
+- Meal plan suggestions via chat
+- Grocery list refinement via chat
 
-### Phase 9: Voice Assistant
+### Phase 10: Voice Assistant
 - Speech-to-text integration
 - Step-by-step voice walkthrough
 - Hands-free cooking mode
 - Contextual Q&A during cooking
 
-### Phase 10: Enhancements
+### Phase 11: Enhancements
 - Recipe import (URL parsing)
 - AI meal suggestions based on history
 - Nutritional information

@@ -1,14 +1,14 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { useSession } from '../lib/auth'
 import type { GeneratedRecipe } from '@easy-meal/shared'
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001'
 
-const PROTEINS = ['Chicken', 'Beef', 'Pork', 'Fish', 'Shrimp', 'Tofu', 'Tempeh', 'Eggs', 'None']
-const VEGETABLES = ['Broccoli', 'Bell Peppers', 'Onions', 'Tomatoes', 'Carrots', 'Mushrooms', 'Spinach', 'Zucchini', 'Corn', 'Garlic']
-const CUISINES = ['American', 'Italian', 'Mexican', 'Asian', 'Mediterranean', 'Indian', 'Thai', 'Japanese', 'French', 'Surprise me']
-const COOKING_METHODS = ['Stovetop', 'Oven', 'Grill', 'Slow Cooker', 'Instant Pot', 'Air Fryer', 'No-Cook']
+const DEFAULT_PROTEINS = ['Chicken', 'Beef', 'Pork', 'Fish', 'Shrimp', 'Tofu', 'Tempeh', 'Eggs', 'None']
+const DEFAULT_VEGETABLES = ['Broccoli', 'Bell Peppers', 'Onions', 'Tomatoes', 'Carrots', 'Mushrooms', 'Spinach', 'Zucchini', 'Corn', 'Garlic']
+const DEFAULT_CUISINES = ['American', 'Italian', 'Mexican', 'Asian', 'Mediterranean', 'Indian', 'Thai', 'Japanese', 'French', 'Surprise me']
+const DEFAULT_COOKING_METHODS = ['Stovetop', 'Oven', 'Grill', 'Slow Cooker', 'Instant Pot', 'Air Fryer', 'No-Cook']
 const TIME_OPTIONS = [
   { value: 'quick', label: 'Quick', desc: '< 30 min' },
   { value: 'medium', label: 'Medium', desc: '30-60 min' },
@@ -19,11 +19,25 @@ type WizardStep = 1 | 2 | 3 | 4 | 5
 
 export default function CreateRecipe() {
   const navigate = useNavigate()
+  const location = useLocation()
   const { data: session } = useSession()
+  const returnTo = (location.state as { returnTo?: string } | null)?.returnTo
   const [step, setStep] = useState<WizardStep>(1)
   const [generating, setGenerating] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+
+  // Custom items added by user
+  const [customProteins, setCustomProteins] = useState<string[]>([])
+  const [customVegetables, setCustomVegetables] = useState<string[]>([])
+  const [customCuisines, setCustomCuisines] = useState<string[]>([])
+  const [customMethods, setCustomMethods] = useState<string[]>([])
+
+  // Custom input fields
+  const [customProteinInput, setCustomProteinInput] = useState('')
+  const [customVegetableInput, setCustomVegetableInput] = useState('')
+  const [customCuisineInput, setCustomCuisineInput] = useState('')
+  const [customMethodInput, setCustomMethodInput] = useState('')
 
   // Selections
   const [protein, setProtein] = useState<string | null>(null)
@@ -35,6 +49,26 @@ export default function CreateRecipe() {
 
   // Generated recipe
   const [recipe, setRecipe] = useState<GeneratedRecipe | null>(null)
+
+  const allProteins = [...DEFAULT_PROTEINS, ...customProteins]
+  const allVegetables = [...DEFAULT_VEGETABLES, ...customVegetables]
+  const allCuisines = [...DEFAULT_CUISINES, ...customCuisines]
+  const allMethods = [...DEFAULT_COOKING_METHODS, ...customMethods]
+
+  const addCustomItem = (
+    value: string,
+    existing: string[],
+    setCustom: React.Dispatch<React.SetStateAction<string[]>>,
+    setInput: React.Dispatch<React.SetStateAction<string>>,
+  ) => {
+    const trimmed = value.trim()
+    if (!trimmed) return
+    const titleCased = trimmed.charAt(0).toUpperCase() + trimmed.slice(1)
+    if (!existing.some((item) => item.toLowerCase() === titleCased.toLowerCase())) {
+      setCustom((prev) => [...prev, titleCased])
+    }
+    setInput('')
+  }
 
   const handleNext = () => {
     if (step < 4) setStep((step + 1) as WizardStep)
@@ -107,7 +141,7 @@ export default function CreateRecipe() {
       if (!res.ok) {
         setError(data.error || 'Failed to save recipe')
       } else {
-        navigate(`/recipes/${data.data.id}`)
+        navigate(returnTo || `/recipes/${data.data.id}`)
       }
     } catch {
       setError('Failed to save recipe')
@@ -150,24 +184,39 @@ export default function CreateRecipe() {
           <div style={styles.stepContent}>
             <h2 style={styles.stepTitle}>What protein would you like?</h2>
             <div style={styles.selectionGrid}>
-              {PROTEINS.map((p) => (
+              {allProteins.map((p) => (
                 <button
                   key={p}
                   onClick={() => setProtein(protein === p ? null : p)}
-                  style={{
-                    ...styles.selectionCard,
-                    ...(protein === p ? styles.selectionCardSelected : {}),
-                  }}
+                  className={`selection-card${protein === p ? ' selected' : ''}`}
                 >
                   {p}
                 </button>
               ))}
             </div>
+            <div className="custom-input-row">
+              <input
+                type="text"
+                placeholder="Add other protein..."
+                value={customProteinInput}
+                onChange={(e) => setCustomProteinInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    addCustomItem(customProteinInput, allProteins, setCustomProteins, setCustomProteinInput)
+                  }
+                }}
+              />
+              <button
+                onClick={() => addCustomItem(customProteinInput, allProteins, setCustomProteins, setCustomProteinInput)}
+              >
+                Add
+              </button>
+            </div>
             <div style={styles.stepActions}>
-              <button onClick={() => navigate('/recipes')} style={styles.skipButton}>
+              <button onClick={() => navigate(returnTo || '/recipes')} className="btn-secondary">
                 Cancel
               </button>
-              <button onClick={handleNext} style={styles.nextButton}>
+              <button onClick={handleNext} className="btn-primary">
                 {protein ? 'Next' : 'Skip'} →
               </button>
             </div>
@@ -179,7 +228,7 @@ export default function CreateRecipe() {
           <div style={styles.stepContent}>
             <h2 style={styles.stepTitle}>Which vegetables? (select any)</h2>
             <div style={styles.selectionGrid}>
-              {VEGETABLES.map((v) => (
+              {allVegetables.map((v) => (
                 <button
                   key={v}
                   onClick={() =>
@@ -189,23 +238,38 @@ export default function CreateRecipe() {
                         : [...vegetables, v]
                     )
                   }
-                  style={{
-                    ...styles.selectionCard,
-                    ...(vegetables.includes(v) ? styles.selectionCardSelected : {}),
-                  }}
+                  className={`selection-card${vegetables.includes(v) ? ' selected' : ''}`}
                 >
                   {v}
                 </button>
               ))}
             </div>
+            <div className="custom-input-row">
+              <input
+                type="text"
+                placeholder="Add other vegetable..."
+                value={customVegetableInput}
+                onChange={(e) => setCustomVegetableInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    addCustomItem(customVegetableInput, allVegetables, setCustomVegetables, setCustomVegetableInput)
+                  }
+                }}
+              />
+              <button
+                onClick={() => addCustomItem(customVegetableInput, allVegetables, setCustomVegetables, setCustomVegetableInput)}
+              >
+                Add
+              </button>
+            </div>
             {vegetables.length > 0 && (
               <p style={styles.selectionSummary}>Selected: {vegetables.join(', ')}</p>
             )}
             <div style={styles.stepActions}>
-              <button onClick={handleBack} style={styles.backButton}>
+              <button onClick={handleBack} className="btn-secondary">
                 ← Back
               </button>
-              <button onClick={handleNext} style={styles.nextButton}>
+              <button onClick={handleNext} className="btn-primary">
                 {vegetables.length > 0 ? 'Next' : 'Skip'} →
               </button>
             </div>
@@ -217,41 +281,71 @@ export default function CreateRecipe() {
           <div style={styles.stepContent}>
             <h2 style={styles.stepTitle}>Cuisine Style</h2>
             <div style={styles.selectionGrid}>
-              {CUISINES.map((c) => (
+              {allCuisines.map((c) => (
                 <button
                   key={c}
                   onClick={() => setCuisine(cuisine === c ? null : c)}
-                  style={{
-                    ...styles.selectionCard,
-                    ...(cuisine === c ? styles.selectionCardSelected : {}),
-                  }}
+                  className={`selection-card${cuisine === c ? ' selected' : ''}`}
                 >
                   {c}
                 </button>
               ))}
             </div>
+            <div className="custom-input-row">
+              <input
+                type="text"
+                placeholder="Add other cuisine..."
+                value={customCuisineInput}
+                onChange={(e) => setCustomCuisineInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    addCustomItem(customCuisineInput, allCuisines, setCustomCuisines, setCustomCuisineInput)
+                  }
+                }}
+              />
+              <button
+                onClick={() => addCustomItem(customCuisineInput, allCuisines, setCustomCuisines, setCustomCuisineInput)}
+              >
+                Add
+              </button>
+            </div>
 
             <h2 style={{ ...styles.stepTitle, marginTop: '1.5rem' }}>Cooking Method</h2>
             <div style={styles.selectionGrid}>
-              {COOKING_METHODS.map((m) => (
+              {allMethods.map((m) => (
                 <button
                   key={m}
                   onClick={() => setCookingMethod(cookingMethod === m ? null : m)}
-                  style={{
-                    ...styles.selectionCard,
-                    ...(cookingMethod === m ? styles.selectionCardSelected : {}),
-                  }}
+                  className={`selection-card${cookingMethod === m ? ' selected' : ''}`}
                 >
                   {m}
                 </button>
               ))}
             </div>
+            <div className="custom-input-row">
+              <input
+                type="text"
+                placeholder="Add other method..."
+                value={customMethodInput}
+                onChange={(e) => setCustomMethodInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    addCustomItem(customMethodInput, allMethods, setCustomMethods, setCustomMethodInput)
+                  }
+                }}
+              />
+              <button
+                onClick={() => addCustomItem(customMethodInput, allMethods, setCustomMethods, setCustomMethodInput)}
+              >
+                Add
+              </button>
+            </div>
 
             <div style={styles.stepActions}>
-              <button onClick={handleBack} style={styles.backButton}>
+              <button onClick={handleBack} className="btn-secondary">
                 ← Back
               </button>
-              <button onClick={handleNext} style={styles.nextButton}>
+              <button onClick={handleNext} className="btn-primary">
                 Next →
               </button>
             </div>
@@ -267,10 +361,8 @@ export default function CreateRecipe() {
                 <button
                   key={t.value}
                   onClick={() => setTimeConstraint(timeConstraint === t.value ? null : t.value)}
-                  style={{
-                    ...styles.timeCard,
-                    ...(timeConstraint === t.value ? styles.selectionCardSelected : {}),
-                  }}
+                  className={`selection-card${timeConstraint === t.value ? ' selected' : ''}`}
+                  style={{ textAlign: 'center' }}
                 >
                   <div style={styles.timeLabel}>{t.label}</div>
                   <div style={styles.timeDesc}>{t.desc}</div>
@@ -282,24 +374,26 @@ export default function CreateRecipe() {
             <div style={styles.servingsControl}>
               <button
                 onClick={() => setServings(Math.max(1, servings - 1))}
-                style={styles.servingsButton}
+                className="btn-secondary"
+                style={{ width: '40px', height: '40px', borderRadius: '50%', padding: 0, fontSize: '1.25rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
               >
                 −
               </button>
               <span style={styles.servingsValue}>{servings}</span>
               <button
                 onClick={() => setServings(Math.min(12, servings + 1))}
-                style={styles.servingsButton}
+                className="btn-secondary"
+                style={{ width: '40px', height: '40px', borderRadius: '50%', padding: 0, fontSize: '1.25rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
               >
                 +
               </button>
             </div>
 
             <div style={styles.stepActions}>
-              <button onClick={handleBack} style={styles.backButton}>
+              <button onClick={handleBack} className="btn-secondary">
                 ← Back
               </button>
-              <button onClick={handleNext} style={styles.generateButton}>
+              <button onClick={handleNext} className="btn-primary" style={{ background: '#16a34a' }}>
                 Generate Recipe →
               </button>
             </div>
@@ -356,10 +450,10 @@ export default function CreateRecipe() {
                 </ol>
 
                 <div style={styles.previewActions}>
-                  <button onClick={handleTryAgain} style={styles.tryAgainButton}>
+                  <button onClick={handleTryAgain} className="btn-secondary" style={{ flex: 1 }}>
                     🔄 Try Again
                   </button>
-                  <button onClick={handleSave} style={styles.saveButton} disabled={saving}>
+                  <button onClick={handleSave} className="btn-primary" style={{ flex: 1, background: '#16a34a' }} disabled={saving}>
                     {saving ? 'Saving...' : '✓ Save Recipe'}
                   </button>
                 </div>
@@ -382,7 +476,7 @@ const styles: Record<string, React.CSSProperties> = {
     background: 'white',
     padding: '2rem',
     borderRadius: '12px',
-    boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+    boxShadow: '0 4px 12px rgba(0,0,0,0.08), 0 2px 4px rgba(0,0,0,0.04)',
     maxWidth: '600px',
     margin: '0 auto',
   },
@@ -397,6 +491,7 @@ const styles: Record<string, React.CSSProperties> = {
     height: '10px',
     borderRadius: '50%',
     background: '#E8DDD4',
+    transition: 'all 0.2s ease',
   },
   stepDotActive: {
     background: '#E07A5F',
@@ -424,21 +519,6 @@ const styles: Record<string, React.CSSProperties> = {
     gridTemplateColumns: 'repeat(3, 1fr)',
     gap: '0.75rem',
   },
-  selectionCard: {
-    padding: '1rem 0.5rem',
-    borderRadius: '8px',
-    border: '1px solid #E8DDD4',
-    background: 'white',
-    cursor: 'pointer',
-    fontSize: '0.875rem',
-    transition: 'all 0.15s',
-  },
-  selectionCardSelected: {
-    borderColor: '#E07A5F',
-    background: '#FDF0ED',
-    color: '#E07A5F',
-    fontWeight: 500,
-  },
   selectionSummary: {
     marginTop: '1rem',
     fontSize: '0.875rem',
@@ -449,49 +529,10 @@ const styles: Record<string, React.CSSProperties> = {
     justifyContent: 'space-between',
     marginTop: '2rem',
   },
-  backButton: {
-    padding: '0.75rem 1.5rem',
-    borderRadius: '6px',
-    border: '1px solid #E8DDD4',
-    background: 'white',
-    cursor: 'pointer',
-  },
-  skipButton: {
-    padding: '0.75rem 1.5rem',
-    borderRadius: '6px',
-    border: '1px solid #E8DDD4',
-    background: 'white',
-    cursor: 'pointer',
-  },
-  nextButton: {
-    padding: '0.75rem 1.5rem',
-    borderRadius: '6px',
-    border: 'none',
-    background: '#E07A5F',
-    color: 'white',
-    cursor: 'pointer',
-  },
-  generateButton: {
-    padding: '0.75rem 1.5rem',
-    borderRadius: '6px',
-    border: 'none',
-    background: '#16a34a',
-    color: 'white',
-    cursor: 'pointer',
-    fontWeight: 500,
-  },
   timeGrid: {
     display: 'grid',
     gridTemplateColumns: 'repeat(3, 1fr)',
     gap: '0.75rem',
-  },
-  timeCard: {
-    padding: '1rem',
-    borderRadius: '8px',
-    border: '1px solid #E8DDD4',
-    background: 'white',
-    cursor: 'pointer',
-    textAlign: 'center',
   },
   timeLabel: {
     fontWeight: 600,
@@ -506,15 +547,6 @@ const styles: Record<string, React.CSSProperties> = {
     alignItems: 'center',
     justifyContent: 'center',
     gap: '1.5rem',
-  },
-  servingsButton: {
-    width: '40px',
-    height: '40px',
-    borderRadius: '50%',
-    border: '1px solid #E8DDD4',
-    background: 'white',
-    fontSize: '1.25rem',
-    cursor: 'pointer',
   },
   servingsValue: {
     fontSize: '2rem',
@@ -591,23 +623,5 @@ const styles: Record<string, React.CSSProperties> = {
   previewActions: {
     display: 'flex',
     gap: '1rem',
-  },
-  tryAgainButton: {
-    flex: 1,
-    padding: '0.75rem',
-    borderRadius: '6px',
-    border: '1px solid #E8DDD4',
-    background: 'white',
-    cursor: 'pointer',
-  },
-  saveButton: {
-    flex: 1,
-    padding: '0.75rem',
-    borderRadius: '6px',
-    border: 'none',
-    background: '#16a34a',
-    color: 'white',
-    cursor: 'pointer',
-    fontWeight: 500,
   },
 }

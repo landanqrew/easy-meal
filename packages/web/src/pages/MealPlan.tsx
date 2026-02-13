@@ -355,7 +355,7 @@ export default function MealPlan() {
       {/* Recipe picker modal */}
       {pickerOpen && (
         <div
-          style={styles.overlay}
+          className="modal-overlay"
           onClick={(e) => {
             if (e.target === e.currentTarget) {
               setPickerOpen(null)
@@ -363,7 +363,7 @@ export default function MealPlan() {
             }
           }}
         >
-          <div style={styles.pickerCard}>
+          <div className="modal-card">
             <div style={styles.pickerHeader}>
               <h2 style={styles.pickerTitle}>Pick a Recipe</h2>
               <button
@@ -397,7 +397,7 @@ export default function MealPlan() {
                   <button
                     key={recipe.id}
                     onClick={() => handleAssignRecipe(recipe.id)}
-                    style={styles.pickerRecipe}
+                    className="picker-recipe"
                   >
                     <span style={styles.pickerRecipeTitle}>{recipe.title}</span>
                     {(recipe.prepTime || recipe.cookTime) && (
@@ -411,16 +411,42 @@ export default function MealPlan() {
                 ))
               )}
             </div>
+            <div style={styles.pickerCreateRow}>
+              <button
+                onClick={() => {
+                  setPickerOpen(null)
+                  setSearchQuery('')
+                  navigate('/recipes/create', {
+                    state: { returnTo: '/meal-plan' },
+                  })
+                }}
+                style={styles.pickerCreateButton}
+              >
+                + Wizard
+              </button>
+              <button
+                onClick={() => {
+                  setPickerOpen(null)
+                  setSearchQuery('')
+                  navigate('/recipes/chat', {
+                    state: { returnTo: '/meal-plan' },
+                  })
+                }}
+                style={styles.pickerCreateButton}
+              >
+                + Chat with AI
+              </button>
+            </div>
           </div>
         </div>
       )}
 
-      <nav style={styles.bottomNav}>
-        <Link to="/" style={styles.bottomNavLink}>Home</Link>
-        <Link to="/recipes" style={styles.bottomNavLink}>Recipes</Link>
-        <Link to="/meal-plan" style={{ ...styles.bottomNavLink, color: '#E07A5F', fontWeight: 600 }}>Meal Plan</Link>
-        <Link to="/grocery-lists" style={styles.bottomNavLink}>Groceries</Link>
-        <Link to="/profile" style={styles.bottomNavLink}>Profile</Link>
+      <nav className="bottom-nav-bar">
+        <Link to="/">Home</Link>
+        <Link to="/recipes">Recipes</Link>
+        <Link to="/meal-plan" className="active">Meal Plan</Link>
+        <Link to="/grocery-lists">Groceries</Link>
+        <Link to="/profile">Profile</Link>
       </nav>
     </div>
   )
@@ -697,6 +723,22 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: '0.75rem',
     color: '#7A6B60',
     marginTop: '0.25rem',
+  },
+  pickerCreateRow: {
+    display: 'flex',
+    gap: '0.5rem',
+    marginTop: '0.5rem',
+  },
+  pickerCreateButton: {
+    flex: 1,
+    padding: '0.75rem',
+    borderRadius: '6px',
+    border: '1px dashed #E07A5F',
+    background: '#FDF8F4',
+    color: '#E07A5F',
+    cursor: 'pointer',
+    fontSize: '0.8125rem',
+    fontWeight: 500,
   },
   // Bottom nav
   bottomNav: {

@@ -84,9 +84,14 @@ export default function Recipes() {
             {recipes.length} recipe{recipes.length !== 1 ? 's' : ''} in your household
           </p>
         </div>
-        <Link to="/recipes/create" style={styles.createButton}>
-          + Create Recipe
-        </Link>
+        <div style={{ display: 'flex', gap: '0.5rem' }}>
+          <Link to="/recipes/create" className="btn-primary" style={{ textDecoration: 'none', fontSize: '0.8125rem', padding: '0.625rem 1rem' }}>
+            Wizard
+          </Link>
+          <Link to="/recipes/chat" className="btn-secondary" style={{ textDecoration: 'none', fontSize: '0.8125rem', padding: '0.625rem 1rem' }}>
+            Chat
+          </Link>
+        </div>
       </div>
 
       {error && <div style={styles.error}>{error}</div>}
@@ -96,10 +101,7 @@ export default function Recipes() {
           <span style={styles.filterLabel}>Filter:</span>
           <button
             onClick={() => setFilterTag(null)}
-            style={{
-              ...styles.filterChip,
-              ...(filterTag === null ? styles.filterChipActive : {}),
-            }}
+            className={`filter-chip${filterTag === null ? ' active' : ''}`}
           >
             All
           </button>
@@ -107,10 +109,7 @@ export default function Recipes() {
             <button
               key={tag.id}
               onClick={() => setFilterTag(filterTag === tag.id ? null : tag.id)}
-              style={{
-                ...styles.filterChip,
-                ...(filterTag === tag.id ? styles.filterChipActive : {}),
-              }}
+              className={`filter-chip${filterTag === tag.id ? ' active' : ''}`}
             >
               {tag.name}
             </button>
@@ -131,7 +130,7 @@ export default function Recipes() {
             <Link
               key={recipe.id}
               to={`/recipes/${recipe.id}`}
-              style={styles.recipeCard}
+              className="recipe-card"
             >
               <h3 style={styles.recipeTitle}>{recipe.title}</h3>
               {recipe.description && (
@@ -167,22 +166,12 @@ export default function Recipes() {
         </div>
       )}
 
-      <nav style={styles.bottomNav}>
-        <Link to="/" style={styles.navLink}>
-          Home
-        </Link>
-        <Link to="/household" style={styles.navLink}>
-          Household
-        </Link>
-        <Link to="/meal-plan" style={styles.navLink}>
-          Meal Plan
-        </Link>
-        <Link to="/grocery-lists" style={styles.navLink}>
-          Groceries
-        </Link>
-        <Link to="/profile" style={styles.navLink}>
-          Profile
-        </Link>
+      <nav className="bottom-nav-bar">
+        <Link to="/">Home</Link>
+        <Link to="/recipes" className="active">Recipes</Link>
+        <Link to="/meal-plan">Meal Plan</Link>
+        <Link to="/grocery-lists">Groceries</Link>
+        <Link to="/profile">Profile</Link>
       </nav>
     </div>
   )
