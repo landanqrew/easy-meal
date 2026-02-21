@@ -32,6 +32,25 @@ type Recipe = {
   tags: Tag[]
 }
 
+type EditIngredient = {
+  name: string
+  quantity: string
+  unit: string
+  preparation: string
+  category: string
+}
+
+type EditData = {
+  title: string
+  description: string
+  servings: number
+  prepTime: number | null
+  cookTime: number | null
+  cuisine: string
+  instructions: { stepNumber: number; text: string }[]
+  ingredients: EditIngredient[]
+}
+
 export default function RecipeDetail() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
@@ -40,6 +59,9 @@ export default function RecipeDetail() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [deleting, setDeleting] = useState(false)
+  const [editing, setEditing] = useState(false)
+  const [editData, setEditData] = useState<EditData | null>(null)
+  const [saving, setSaving] = useState(false)
 
   useEffect(() => {
     if (!isPending && !session) {
@@ -92,6 +114,115 @@ export default function RecipeDetail() {
     }
   }
 
+  const startEditing = () => {
+    if (!recipe) return
+    setEditData({
+      title: recipe.title,
+      description: recipe.description || '',
+      servings: recipe.servings,
+      prepTime: recipe.prepTime,
+      cookTime: recipe.cookTime,
+      cuisine: recipe.cuisine || '',
+      instructions: recipe.instructions.map((s) => ({ ...s })),
+      ingredients: recipe.ingredients.map((ing) => ({
+        name: ing.name,
+        quantity: ing.quantity,
+        unit: ing.unit,
+        preparation: ing.preparation || '',
+        category: ing.category,
+      })),
+    })
+    setEditing(true)
+    setError('')
+  }
+
+  const cancelEditing = () => {
+    setEditing(false)
+    setEditData(null)
+    setError('')
+  }
+
+  const handleSave = async () => {
+    if (!editData) return
+    setSaving(true)
+    setError('')
+
+    try {
+      const res = await fetch(`${API_URL}/api/recipes/${id}`, {
+        method: 'PATCH',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: editData.title,
+          description: editData.description || null,
+          servings: editData.servings,
+          prepTime: editData.prepTime,
+          cookTime: editData.cookTime,
+          cuisine: editData.cuisine || null,
+          instructions: editData.instructions.map((s, i) => ({
+            stepNumber: i + 1,
+            text: s.text,
+          })),
+          ingredients: editData.ingredients,
+        }),
+      })
+
+      const data = await res.json()
+      if (res.ok) {
+        setRecipe(data.data)
+        setEditing(false)
+        setEditData(null)
+      } else {
+        setError(data.error || 'Failed to save recipe')
+      }
+    } catch {
+      setError('Failed to save recipe')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  // Edit helpers
+  const updateIngredient = (index: number, field: keyof EditIngredient, value: string) => {
+    if (!editData) return
+    const updated = [...editData.ingredients]
+    updated[index] = { ...updated[index], [field]: value }
+    setEditData({ ...editData, ingredients: updated })
+  }
+
+  const removeIngredient = (index: number) => {
+    if (!editData) return
+    setEditData({ ...editData, ingredients: editData.ingredients.filter((_, i) => i !== index) })
+  }
+
+  const addIngredient = () => {
+    if (!editData) return
+    setEditData({
+      ...editData,
+      ingredients: [...editData.ingredients, { name: '', quantity: '', unit: '', preparation: '', category: 'other' }],
+    })
+  }
+
+  const updateInstruction = (index: number, text: string) => {
+    if (!editData) return
+    const updated = [...editData.instructions]
+    updated[index] = { ...updated[index], text }
+    setEditData({ ...editData, instructions: updated })
+  }
+
+  const removeInstruction = (index: number) => {
+    if (!editData) return
+    setEditData({ ...editData, instructions: editData.instructions.filter((_, i) => i !== index) })
+  }
+
+  const addInstruction = () => {
+    if (!editData) return
+    setEditData({
+      ...editData,
+      instructions: [...editData.instructions, { stepNumber: editData.instructions.length + 1, text: '' }],
+    })
+  }
+
   if (isPending || loading) {
     return <div style={styles.loading}>Loading...</div>
   }
@@ -112,27 +243,109 @@ export default function RecipeDetail() {
   return (
     <div style={styles.container}>
       <div style={styles.card}>
+        {/* Header */}
         <div style={styles.header}>
           <Link to="/recipes" style={styles.backLink}>
             ← Back
           </Link>
-          <button onClick={handleDelete} style={styles.deleteButton} disabled={deleting}>
-            {deleting ? 'Deleting...' : 'Delete'}
-          </button>
+          <div style={{ display: 'flex', gap: '0.5rem' }}>
+            {editing ? (
+              <>
+                <button onClick={cancelEditing} style={styles.cancelButton} disabled={saving}>
+                  Cancel
+                </button>
+                <button onClick={handleSave} style={styles.saveButton} disabled={saving}>
+                  {saving ? 'Saving...' : 'Save'}
+                </button>
+              </>
+            ) : (
+              <>
+                <button onClick={startEditing} style={styles.editButton}>
+                  Edit
+                </button>
+                <button onClick={handleDelete} style={styles.deleteButton} disabled={deleting}>
+                  {deleting ? 'Deleting...' : 'Delete'}
+                </button>
+              </>
+            )}
+          </div>
         </div>
 
         {error && <div style={styles.error}>{error}</div>}
 
-        <h1 style={styles.title}>{recipe.title}</h1>
+        {/* Title */}
+        {editing && editData ? (
+          <input
+            className="edit-input"
+            style={{ fontSize: '1.75rem', fontWeight: 600, marginBottom: '0.75rem' }}
+            value={editData.title}
+            onChange={(e) => setEditData({ ...editData, title: e.target.value })}
+          />
+        ) : (
+          <h1 style={styles.title}>{recipe.title}</h1>
+        )}
 
-        <div style={styles.meta}>
-          {recipe.prepTime && <span>🕐 {recipe.prepTime}m prep</span>}
-          {recipe.cookTime && <span>🍳 {recipe.cookTime}m cook</span>}
-          {totalTime > 0 && <span>⏱ {totalTime}m total</span>}
-          <span>🍽 {recipe.servings} servings</span>
-          {recipe.cuisine && <span>🌍 {recipe.cuisine}</span>}
-        </div>
+        {/* Meta row */}
+        {editing && editData ? (
+          <div style={styles.meta}>
+            <span style={styles.metaEditGroup}>
+              🕐
+              <input
+                className="edit-input"
+                type="number"
+                style={{ width: '50px', textAlign: 'center' }}
+                value={editData.prepTime ?? ''}
+                onChange={(e) => setEditData({ ...editData, prepTime: e.target.value ? Number(e.target.value) : null })}
+                placeholder="—"
+              />
+              m prep
+            </span>
+            <span style={styles.metaEditGroup}>
+              🍳
+              <input
+                className="edit-input"
+                type="number"
+                style={{ width: '50px', textAlign: 'center' }}
+                value={editData.cookTime ?? ''}
+                onChange={(e) => setEditData({ ...editData, cookTime: e.target.value ? Number(e.target.value) : null })}
+                placeholder="—"
+              />
+              m cook
+            </span>
+            <span style={styles.metaEditGroup}>
+              🍽
+              <input
+                className="edit-input"
+                type="number"
+                style={{ width: '40px', textAlign: 'center' }}
+                value={editData.servings}
+                onChange={(e) => setEditData({ ...editData, servings: Number(e.target.value) || 1 })}
+                min={1}
+              />
+              servings
+            </span>
+            <span style={styles.metaEditGroup}>
+              🌍
+              <input
+                className="edit-input"
+                style={{ width: '100px' }}
+                value={editData.cuisine}
+                onChange={(e) => setEditData({ ...editData, cuisine: e.target.value })}
+                placeholder="Cuisine"
+              />
+            </span>
+          </div>
+        ) : (
+          <div style={styles.meta}>
+            {recipe.prepTime && <span>🕐 {recipe.prepTime}m prep</span>}
+            {recipe.cookTime && <span>🍳 {recipe.cookTime}m cook</span>}
+            {totalTime > 0 && <span>⏱ {totalTime}m total</span>}
+            <span>🍽 {recipe.servings} servings</span>
+            {recipe.cuisine && <span>🌍 {recipe.cuisine}</span>}
+          </div>
+        )}
 
+        {/* Tags (view-only) */}
         {recipe.tags.length > 0 && (
           <div style={styles.tags}>
             {recipe.tags.map((tag) => (
@@ -143,37 +356,118 @@ export default function RecipeDetail() {
           </div>
         )}
 
-        {recipe.description && <p style={styles.description}>{recipe.description}</p>}
+        {/* Description */}
+        {editing && editData ? (
+          <textarea
+            className="edit-textarea"
+            style={{ marginBottom: '1.5rem', fontSize: '1.0625rem', lineHeight: 1.6 }}
+            rows={3}
+            value={editData.description}
+            onChange={(e) => setEditData({ ...editData, description: e.target.value })}
+            placeholder="Recipe description..."
+          />
+        ) : (
+          recipe.description && <p style={styles.description}>{recipe.description}</p>
+        )}
 
+        {/* Ingredients */}
         <section style={styles.section}>
           <h2 style={styles.sectionTitle}>Ingredients</h2>
-          <ul style={styles.ingredientList}>
-            {recipe.ingredients.map((ing) => (
-              <li key={ing.id} style={styles.ingredientItem}>
-                <span style={styles.ingredientQty}>
-                  {ing.quantity} {ing.unit}
-                </span>
-                <span style={styles.ingredientName}>
-                  {ing.name}
-                  {ing.preparation && (
-                    <span style={styles.ingredientPrep}>, {ing.preparation}</span>
-                  )}
-                </span>
-              </li>
-            ))}
-          </ul>
+          {editing && editData ? (
+            <div>
+              {editData.ingredients.map((ing, i) => (
+                <div key={i} className="edit-row">
+                  <input
+                    className="edit-input"
+                    style={{ width: '55px', textAlign: 'right' }}
+                    value={ing.quantity}
+                    onChange={(e) => updateIngredient(i, 'quantity', e.target.value)}
+                    placeholder="Qty"
+                  />
+                  <input
+                    className="edit-input"
+                    style={{ width: '55px' }}
+                    value={ing.unit}
+                    onChange={(e) => updateIngredient(i, 'unit', e.target.value)}
+                    placeholder="Unit"
+                  />
+                  <input
+                    className="edit-input"
+                    style={{ flex: 1 }}
+                    value={ing.name}
+                    onChange={(e) => updateIngredient(i, 'name', e.target.value)}
+                    placeholder="Ingredient"
+                  />
+                  <input
+                    className="edit-input"
+                    style={{ width: '100px' }}
+                    value={ing.preparation}
+                    onChange={(e) => updateIngredient(i, 'preparation', e.target.value)}
+                    placeholder="Prep"
+                  />
+                  <button className="edit-remove-btn" onClick={() => removeIngredient(i)} title="Remove ingredient">
+                    ×
+                  </button>
+                </div>
+              ))}
+              <button className="edit-add-btn" onClick={addIngredient}>
+                + Add ingredient
+              </button>
+            </div>
+          ) : (
+            <ul style={styles.ingredientList}>
+              {recipe.ingredients.map((ing) => (
+                <li key={ing.id} style={styles.ingredientItem}>
+                  <span style={styles.ingredientQty}>
+                    {ing.quantity} {ing.unit}
+                  </span>
+                  <span style={styles.ingredientName}>
+                    {ing.name}
+                    {ing.preparation && (
+                      <span style={styles.ingredientPrep}>, {ing.preparation}</span>
+                    )}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
         </section>
 
+        {/* Instructions */}
         <section style={styles.section}>
           <h2 style={styles.sectionTitle}>Instructions</h2>
-          <ol style={styles.instructionList}>
-            {recipe.instructions.map((step) => (
-              <li key={step.stepNumber} style={styles.instructionItem}>
-                <span style={styles.stepNumber}>{step.stepNumber}</span>
-                <span style={styles.stepText}>{step.text}</span>
-              </li>
-            ))}
-          </ol>
+          {editing && editData ? (
+            <div>
+              {editData.instructions.map((step, i) => (
+                <div key={i} className="edit-row" style={{ alignItems: 'flex-start' }}>
+                  <span style={styles.stepNumber}>{i + 1}</span>
+                  <textarea
+                    className="edit-textarea"
+                    style={{ flex: 1 }}
+                    rows={2}
+                    value={step.text}
+                    onChange={(e) => updateInstruction(i, e.target.value)}
+                    placeholder={`Step ${i + 1}...`}
+                  />
+                  <button className="edit-remove-btn" onClick={() => removeInstruction(i)} title="Remove step">
+                    ×
+                  </button>
+                </div>
+              ))}
+              <button className="edit-add-btn" onClick={addInstruction}>
+                + Add step
+              </button>
+            </div>
+          ) : (
+            <ol style={styles.instructionList}>
+              {recipe.instructions.map((step) => (
+                <li key={step.stepNumber} style={styles.instructionItem}>
+                  <span style={styles.stepNumber}>{step.stepNumber}</span>
+                  <span style={styles.stepText}>{step.text}</span>
+                </li>
+              ))}
+            </ol>
+          )}
         </section>
 
         <div style={styles.footer}>
@@ -220,6 +514,34 @@ const styles: Record<string, React.CSSProperties> = {
     textDecoration: 'none',
     fontSize: '0.875rem',
   },
+  editButton: {
+    padding: '0.5rem 1rem',
+    borderRadius: '6px',
+    border: '1px solid #E07A5F',
+    background: 'white',
+    color: '#E07A5F',
+    cursor: 'pointer',
+    fontSize: '0.875rem',
+  },
+  saveButton: {
+    padding: '0.5rem 1rem',
+    borderRadius: '6px',
+    border: 'none',
+    background: '#E07A5F',
+    color: 'white',
+    cursor: 'pointer',
+    fontSize: '0.875rem',
+    fontWeight: 500,
+  },
+  cancelButton: {
+    padding: '0.5rem 1rem',
+    borderRadius: '6px',
+    border: '1px solid #E8DDD4',
+    background: 'white',
+    color: '#7A6B60',
+    cursor: 'pointer',
+    fontSize: '0.875rem',
+  },
   deleteButton: {
     padding: '0.5rem 1rem',
     borderRadius: '6px',
@@ -250,6 +572,11 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: '0.875rem',
     color: '#7A6B60',
     marginBottom: '1rem',
+  },
+  metaEditGroup: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '0.25rem',
   },
   tags: {
     display: 'flex',

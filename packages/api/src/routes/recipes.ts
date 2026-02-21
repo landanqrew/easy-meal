@@ -268,7 +268,7 @@ recipesRouter.patch('/:id', async (c) => {
   }
 
   const body = await c.req.json()
-  const { title, description, servings, prepTime, cookTime, cuisine, instructions } = body
+  const { title, description, servings, prepTime, cookTime, cuisine, instructions, ingredients: recipeIngs } = body
 
   const updates: Record<string, any> = { updatedAt: new Date(), updatedByUserId: session.user.id }
   if (title !== undefined) updates.title = title
@@ -285,7 +285,87 @@ recipesRouter.patch('/:id', async (c) => {
     .where(eq(recipes.id, recipeId))
     .returning()
 
-  return c.json({ data: updated })
+  // Replace ingredients if provided
+  if (recipeIngs && Array.isArray(recipeIngs)) {
+    await db.delete(recipeIngredients).where(eq(recipeIngredients.recipeId, recipeId))
+
+    for (const ing of recipeIngs) {
+      let ingredient = await db.query.ingredients.findFirst({
+        where: eq(ingredients.name, ing.name.toLowerCase()),
+      })
+
+      if (!ingredient) {
+        const [newIng] = await db
+          .insert(ingredients)
+          .values({
+            name: ing.name.toLowerCase(),
+            category: ing.category || 'other',
+            createdByUserId: session.user.id,
+            updatedByUserId: session.user.id,
+          })
+          .returning()
+        ingredient = newIng
+      }
+
+      await db.insert(recipeIngredients).values({
+        recipeId,
+        ingredientId: ingredient.id,
+        quantity: String(ing.quantity),
+        unit: ing.unit,
+        preparation: ing.preparation,
+        createdByUserId: session.user.id,
+        updatedByUserId: session.user.id,
+      })
+    }
+  }
+
+  // Return full recipe with ingredients
+  const fullRecipe = await db.query.recipes.findFirst({
+    where: eq(recipes.id, recipeId),
+    with: {
+      recipeIngredients: {
+        with: {
+          ingredient: true,
+        },
+      },
+      recipeTags: {
+        with: {
+          tag: true,
+        },
+      },
+      createdBy: true,
+    },
+  })
+
+  return c.json({
+    data: {
+      id: fullRecipe!.id,
+      title: fullRecipe!.title,
+      description: fullRecipe!.description,
+      servings: fullRecipe!.servings,
+      prepTime: fullRecipe!.prepTime,
+      cookTime: fullRecipe!.cookTime,
+      cuisine: fullRecipe!.cuisine,
+      instructions: fullRecipe!.instructions,
+      source: fullRecipe!.source,
+      createdAt: fullRecipe!.createdAt,
+      updatedAt: fullRecipe!.updatedAt,
+      createdBy: fullRecipe!.createdBy ? { id: fullRecipe!.createdBy.id, name: fullRecipe!.createdBy.name } : null,
+      ingredients: fullRecipe!.recipeIngredients.map((ri) => ({
+        id: ri.ingredient.id,
+        name: ri.ingredient.name,
+        quantity: ri.quantity,
+        unit: ri.unit,
+        preparation: ri.preparation,
+        category: ri.ingredient.category,
+      })),
+      tags: fullRecipe!.recipeTags.map((rt) => ({
+        id: rt.tag.id,
+        name: rt.tag.name,
+        color: rt.tag.color,
+      })),
+    },
+  })
 })
 
 // DELETE /recipes/:id - Delete a recipe
