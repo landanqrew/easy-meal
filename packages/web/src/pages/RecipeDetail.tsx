@@ -224,7 +224,41 @@ export default function RecipeDetail() {
   }
 
   if (isPending || loading) {
-    return <div style={styles.loading}>Loading...</div>
+    return (
+      <div style={styles.container}>
+        <div style={styles.card}>
+          <div style={styles.header}>
+            <div className="skeleton" style={{ width: '60px', height: '0.875rem' }} />
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
+              <div className="skeleton" style={{ width: '50px', height: '32px', borderRadius: '6px' }} />
+              <div className="skeleton" style={{ width: '60px', height: '32px', borderRadius: '6px' }} />
+            </div>
+          </div>
+          <div className="skeleton" style={{ width: '65%', height: '1.75rem', marginBottom: '0.75rem' }} />
+          <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem' }}>
+            <div className="skeleton" style={{ width: '80px', height: '0.875rem' }} />
+            <div className="skeleton" style={{ width: '80px', height: '0.875rem' }} />
+            <div className="skeleton" style={{ width: '80px', height: '0.875rem' }} />
+          </div>
+          <div className="skeleton" style={{ width: '100%', height: '1rem', marginBottom: '0.5rem' }} />
+          <div className="skeleton" style={{ width: '90%', height: '1rem', marginBottom: '1.5rem' }} />
+          <div className="skeleton" style={{ width: '100px', height: '1.125rem', marginBottom: '1rem' }} />
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} style={{ display: 'flex', gap: '1rem', padding: '0.5rem 0', borderBottom: '1px solid #F0E8E0' }}>
+              <div className="skeleton" style={{ width: '80px', height: '0.875rem' }} />
+              <div className="skeleton" style={{ width: '60%', height: '0.875rem' }} />
+            </div>
+          ))}
+          <div className="skeleton" style={{ width: '100px', height: '1.125rem', margin: '2rem 0 1rem' }} />
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} style={{ display: 'flex', gap: '1rem', padding: '1rem 0', borderBottom: '1px solid #F0E8E0' }}>
+              <div className="skeleton" style={{ width: '28px', height: '28px', borderRadius: '50%' }} />
+              <div className="skeleton" style={{ width: '85%', height: '0.875rem' }} />
+            </div>
+          ))}
+        </div>
+      </div>
+    )
   }
 
   if (!recipe) {

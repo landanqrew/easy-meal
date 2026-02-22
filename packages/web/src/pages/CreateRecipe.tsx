@@ -516,7 +516,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   selectionGrid: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(3, 1fr)',
+    gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))',
     gap: '0.75rem',
   },
   selectionSummary: {
@@ -531,7 +531,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   timeGrid: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(3, 1fr)',
+    gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))',
     gap: '0.75rem',
   },
   timeLabel: {

@@ -59,7 +59,43 @@ export default function GroceryLists() {
   const completedLists = lists.filter((l) => l.status === 'completed')
 
   if (isPending || loading) {
-    return <div style={styles.loading}>Loading...</div>
+    return (
+      <div style={styles.container}>
+        <div style={styles.header}>
+          <div>
+            <div className="skeleton" style={{ width: '140px', height: '1.5rem', marginBottom: '0.5rem' }} />
+            <div className="skeleton" style={{ width: '160px', height: '0.875rem' }} />
+          </div>
+          <div className="skeleton" style={{ width: '90px', height: '36px', borderRadius: '6px' }} />
+        </div>
+        <div style={styles.filterSection}>
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="skeleton" style={{ width: '70px', height: '30px', borderRadius: '20px' }} />
+          ))}
+        </div>
+        <div style={styles.listGrid}>
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="skeleton-card" style={{ padding: '1rem 1.25rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                <div className="skeleton" style={{ width: '55%', height: '1rem' }} />
+                <div className="skeleton" style={{ width: '55px', height: '0.6875rem', borderRadius: '4px' }} />
+              </div>
+              <div style={{ display: 'flex', gap: '0.75rem' }}>
+                <div className="skeleton" style={{ width: '80px', height: '0.8125rem' }} />
+                <div className="skeleton" style={{ width: '70px', height: '0.8125rem' }} />
+              </div>
+            </div>
+          ))}
+        </div>
+        <nav className="bottom-nav-bar">
+          <Link to="/">Home</Link>
+          <Link to="/recipes">Recipes</Link>
+          <Link to="/meal-plan">Meal Plan</Link>
+          <Link to="/grocery-lists" className="active">Groceries</Link>
+          <Link to="/profile">Profile</Link>
+        </nav>
+      </div>
+    )
   }
 
   return (

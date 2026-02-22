@@ -171,7 +171,36 @@ export default function HouseholdPage() {
   }
 
   if (isPending || loading) {
-    return <div style={styles.loading}>Loading...</div>
+    return (
+      <div style={styles.container}>
+        <div style={styles.card}>
+          <div style={styles.header}>
+            <div className="skeleton" style={{ width: '110px', height: '1.5rem' }} />
+            <div className="skeleton" style={{ width: '55px', height: '36px', borderRadius: '6px' }} />
+          </div>
+          <div style={{ marginBottom: '1.5rem' }}>
+            <div className="skeleton" style={{ width: '50%', height: '1.25rem', marginBottom: '0.25rem' }} />
+            <div className="skeleton" style={{ width: '80px', height: '0.875rem' }} />
+          </div>
+          <div style={{ marginBottom: '1.5rem' }}>
+            <div className="skeleton" style={{ width: '80px', height: '0.875rem', marginBottom: '0.5rem' }} />
+            <div className="skeleton" style={{ width: '100%', height: '56px', borderRadius: '8px' }} />
+          </div>
+          <div>
+            <div className="skeleton" style={{ width: '70px', height: '0.875rem', marginBottom: '0.5rem' }} />
+            {Array.from({ length: 2 }).map((_, i) => (
+              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.75rem 0', borderBottom: '1px solid #E8DDD4' }}>
+                <div className="skeleton" style={{ width: '40px', height: '40px', borderRadius: '50%' }} />
+                <div>
+                  <div className="skeleton" style={{ width: '100px', height: '0.9375rem', marginBottom: '0.25rem' }} />
+                  <div className="skeleton" style={{ width: '140px', height: '0.75rem' }} />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (

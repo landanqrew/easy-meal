@@ -12,6 +12,8 @@ import CreateGroceryList from './pages/CreateGroceryList'
 import GroceryListDetail from './pages/GroceryListDetail'
 import MealPlan from './pages/MealPlan'
 import ChatRecipe from './pages/ChatRecipe'
+import RecipeLists from './pages/RecipeLists'
+import RecipeListDetail from './pages/RecipeListDetail'
 
 function Home() {
   const { data: session, isPending } = useSession()
@@ -189,6 +191,22 @@ export default function App() {
           }
         />
         <Route
+          path="/recipe-lists"
+          element={
+            <ProtectedRoute>
+              <RecipeLists />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/recipe-lists/:id"
+          element={
+            <ProtectedRoute>
+              <RecipeListDetail />
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path="/meal-plan"
           element={
             <ProtectedRoute>
@@ -219,6 +237,8 @@ const styles: Record<string, React.CSSProperties> = {
     alignItems: 'center',
     padding: '1rem 2rem',
     borderBottom: '1px solid #E8DDD4',
+    flexWrap: 'wrap',
+    gap: '0.75rem',
   },
   logo: {
     margin: 0,
@@ -230,6 +250,7 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     alignItems: 'center',
     gap: '1rem',
+    flexWrap: 'wrap',
   },
   navLink: {
     color: '#2D2420',

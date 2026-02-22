@@ -115,7 +115,36 @@ export default function CreateGroceryList() {
   }
 
   if (isPending || loading) {
-    return <div style={styles.loading}>Loading...</div>
+    return (
+      <div style={styles.container}>
+        <div style={styles.card}>
+          <div style={styles.header}>
+            <div className="skeleton" style={{ width: '60px', height: '0.875rem' }} />
+            <div className="skeleton" style={{ width: '180px', height: '1.5rem', marginTop: '0.5rem' }} />
+          </div>
+          <div style={{ marginBottom: '1.5rem' }}>
+            <div className="skeleton" style={{ width: '70px', height: '0.875rem', marginBottom: '0.5rem' }} />
+            <div className="skeleton" style={{ width: '100%', height: '44px', borderRadius: '6px' }} />
+          </div>
+          <div>
+            <div className="skeleton" style={{ width: '120px', height: '0.875rem', marginBottom: '0.5rem' }} />
+            <div className="skeleton" style={{ width: '280px', height: '0.8125rem', marginBottom: '1rem' }} />
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} style={{ border: '1px solid #E8DDD4', borderRadius: '8px', padding: '1rem', marginBottom: '0.75rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                  <div className="skeleton" style={{ width: '24px', height: '24px', borderRadius: '4px' }} />
+                  <div style={{ flex: 1 }}>
+                    <div className="skeleton" style={{ width: '60%', height: '0.9375rem', marginBottom: '0.25rem' }} />
+                    <div className="skeleton" style={{ width: '100px', height: '0.8125rem' }} />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="skeleton" style={{ width: '100%', height: '44px', borderRadius: '6px', marginTop: '0.5rem' }} />
+        </div>
+      </div>
+    )
   }
 
   return (

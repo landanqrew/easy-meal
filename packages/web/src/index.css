@@ -27,6 +27,14 @@
   --transition-fast: 150ms ease;
   --transition-base: 200ms ease;
   --transition-slow: 300ms ease;
+  --font-xs: 0.6875rem;
+  --font-sm: 0.75rem;
+  --font-base: 0.875rem;
+  --font-lg: 1rem;
+  --font-xl: 1.125rem;
+  --font-2xl: 1.5rem;
+  --font-3xl: 1.75rem;
+  --font-4xl: 2.5rem;
 }
 
 /* Reset and base styles */
@@ -571,6 +579,21 @@ body {
   background-size: 200px 100%;
   animation: shimmer 1.5s infinite;
   border-radius: var(--radius-sm);
+}
+
+.skeleton-card {
+  background: white;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  padding: 1.25rem;
+}
+
+/* Responsive selection cards */
+@media (max-width: 480px) {
+  .selection-card {
+    font-size: 0.8125rem;
+    padding: 0.75rem 0.375rem;
+  }
 }
 
 /* ============================================================ */

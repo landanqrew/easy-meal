@@ -156,7 +156,29 @@ export default function ChatRecipe() {
   }
 
   if (isPending) {
-    return <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>Loading...</div>
+    return (
+      <div style={styles.page}>
+        <div className="chat-container">
+          <div style={styles.header}>
+            <div className="skeleton" style={{ width: '60px', height: '0.875rem' }} />
+            <div className="skeleton" style={{ width: '100px', height: '1.125rem' }} />
+            <div style={{ width: '48px' }} />
+          </div>
+          <div className="chat-messages">
+            <div style={{ alignSelf: 'flex-start', maxWidth: '85%' }}>
+              <div className="skeleton" style={{ width: '260px', height: '52px', borderRadius: '16px' }} />
+            </div>
+            <div style={{ alignSelf: 'flex-end', maxWidth: '85%' }}>
+              <div className="skeleton" style={{ width: '180px', height: '42px', borderRadius: '16px' }} />
+            </div>
+          </div>
+          <div className="chat-input-area">
+            <div className="skeleton" style={{ flex: 1, height: '44px', borderRadius: '24px' }} />
+            <div className="skeleton" style={{ width: '44px', height: '44px', borderRadius: '50%' }} />
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (

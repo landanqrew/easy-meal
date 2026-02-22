@@ -240,7 +240,35 @@ export default function GroceryListDetail() {
   }
 
   if (isPending || loading) {
-    return <div style={styles.loading}>Loading...</div>
+    return (
+      <div style={styles.container}>
+        <div style={styles.card}>
+          <div style={styles.header}>
+            <div className="skeleton" style={{ width: '60px', height: '0.875rem' }} />
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
+              <div className="skeleton" style={{ width: '45px', height: '30px', borderRadius: '4px' }} />
+              <div className="skeleton" style={{ width: '55px', height: '30px', borderRadius: '4px' }} />
+            </div>
+          </div>
+          <div className="skeleton" style={{ width: '60%', height: '1.5rem', marginBottom: '1rem' }} />
+          <div style={{ marginBottom: '1rem' }}>
+            <div className="skeleton" style={{ width: '100%', height: '8px', borderRadius: '4px', marginBottom: '0.375rem' }} />
+            <div className="skeleton" style={{ width: '80px', height: '0.8125rem' }} />
+          </div>
+          {Array.from({ length: 2 }).map((_, ci) => (
+            <div key={ci} style={{ marginBottom: '1.25rem' }}>
+              <div className="skeleton" style={{ width: '80px', height: '0.8125rem', marginBottom: '0.5rem' }} />
+              {Array.from({ length: 3 }).map((_, ii) => (
+                <div key={ii} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.625rem 0', borderBottom: '1px solid #F0E8E0' }}>
+                  <div className="skeleton" style={{ width: '24px', height: '24px', borderRadius: '50%' }} />
+                  <div className="skeleton" style={{ width: '60%', height: '0.9375rem' }} />
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
+      </div>
+    )
   }
 
   if (!groceryList) {
@@ -460,7 +488,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   title: {
     margin: '0 0 1rem',
-    fontSize: '1.25rem',
+    fontSize: '1.5rem',
     fontWeight: 600,
   },
   progressSection: {

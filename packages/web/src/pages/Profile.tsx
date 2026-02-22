@@ -86,7 +86,36 @@ export default function Profile() {
   }
 
   if (isPending) {
-    return <div style={styles.loading}>Loading...</div>
+    return (
+      <div style={styles.container}>
+        <div style={styles.card}>
+          <div style={styles.header}>
+            <div className="skeleton" style={{ width: '80px', height: '1.5rem' }} />
+            <div className="skeleton" style={{ width: '75px', height: '36px', borderRadius: '6px' }} />
+          </div>
+          <div style={{ marginBottom: '2rem' }}>
+            <div className="skeleton" style={{ width: '60px', height: '1rem', marginBottom: '1rem' }} />
+            <div style={{ marginBottom: '1rem' }}>
+              <div className="skeleton" style={{ width: '40px', height: '0.875rem', marginBottom: '0.25rem' }} />
+              <div className="skeleton" style={{ width: '100%', height: '44px', borderRadius: '6px' }} />
+            </div>
+            <div>
+              <div className="skeleton" style={{ width: '40px', height: '0.875rem', marginBottom: '0.25rem' }} />
+              <div className="skeleton" style={{ width: '100%', height: '44px', borderRadius: '6px' }} />
+            </div>
+          </div>
+          <div style={{ marginBottom: '2rem' }}>
+            <div className="skeleton" style={{ width: '150px', height: '1rem', marginBottom: '1rem' }} />
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+              {Array.from({ length: 5 }).map((_, i) => (
+                <div key={i} className="skeleton" style={{ width: '80px', height: '36px', borderRadius: '20px' }} />
+              ))}
+            </div>
+          </div>
+          <div className="skeleton" style={{ width: '100%', height: '44px', borderRadius: '6px' }} />
+        </div>
+      </div>
+    )
   }
 
   return (

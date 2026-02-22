@@ -72,7 +72,42 @@ export default function Recipes() {
     : recipes
 
   if (isPending || loading) {
-    return <div style={styles.loading}>Loading...</div>
+    return (
+      <div style={styles.container}>
+        <div style={styles.header}>
+          <div>
+            <div className="skeleton" style={{ width: '120px', height: '1.5rem', marginBottom: '0.5rem' }} />
+            <div className="skeleton" style={{ width: '180px', height: '0.875rem' }} />
+          </div>
+          <div style={{ display: 'flex', gap: '0.5rem' }}>
+            <div className="skeleton" style={{ width: '70px', height: '36px', borderRadius: '6px' }} />
+            <div className="skeleton" style={{ width: '70px', height: '36px', borderRadius: '6px' }} />
+          </div>
+        </div>
+        <div style={styles.recipeGrid}>
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="skeleton-card">
+              <div className="skeleton" style={{ width: '70%', height: '1.125rem', marginBottom: '0.5rem' }} />
+              <div className="skeleton" style={{ width: '100%', height: '0.875rem', marginBottom: '0.375rem' }} />
+              <div className="skeleton" style={{ width: '85%', height: '0.875rem', marginBottom: '0.75rem' }} />
+              <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '0.75rem' }}>
+                <div className="skeleton" style={{ width: '60px', height: '0.75rem' }} />
+                <div className="skeleton" style={{ width: '60px', height: '0.75rem' }} />
+              </div>
+              <div className="skeleton" style={{ width: '100%', height: '1px', marginBottom: '0.75rem' }} />
+              <div className="skeleton" style={{ width: '40%', height: '0.75rem' }} />
+            </div>
+          ))}
+        </div>
+        <nav className="bottom-nav-bar">
+          <Link to="/">Home</Link>
+          <Link to="/recipes" className="active">Recipes</Link>
+          <Link to="/meal-plan">Meal Plan</Link>
+          <Link to="/grocery-lists">Groceries</Link>
+          <Link to="/profile">Profile</Link>
+        </nav>
+      </div>
+    )
   }
 
   return (
@@ -85,6 +120,9 @@ export default function Recipes() {
           </p>
         </div>
         <div style={{ display: 'flex', gap: '0.5rem' }}>
+          <Link to="/recipe-lists" className="btn-secondary" style={{ textDecoration: 'none', fontSize: '0.8125rem', padding: '0.625rem 1rem' }}>
+            My Lists
+          </Link>
           <Link to="/recipes/create" className="btn-primary" style={{ textDecoration: 'none', fontSize: '0.8125rem', padding: '0.625rem 1rem' }}>
             Wizard
           </Link>
@@ -316,7 +354,7 @@ const styles: Record<string, React.CSSProperties> = {
     padding: '0.25rem 0.5rem',
     borderRadius: '4px',
     background: '#FAF6F2',
-    fontSize: '0.625rem',
+    fontSize: '0.6875rem',
     textTransform: 'capitalize',
   },
   recipeFooter: {

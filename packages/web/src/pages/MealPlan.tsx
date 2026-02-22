@@ -211,7 +211,65 @@ export default function MealPlan() {
   )
 
   if (isPending || loading) {
-    return <div style={styles.loading}>Loading...</div>
+    return (
+      <div style={styles.container}>
+        <div style={styles.content}>
+          <div style={styles.header}>
+            <div className="skeleton" style={{ width: '120px', height: '1.5rem' }} />
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+              <div className="skeleton" style={{ width: '36px', height: '36px', borderRadius: '6px' }} />
+              <div className="skeleton" style={{ width: '140px', height: '0.9375rem' }} />
+              <div className="skeleton" style={{ width: '36px', height: '36px', borderRadius: '6px' }} />
+              <div className="skeleton" style={{ width: '55px', height: '32px', borderRadius: '6px' }} />
+            </div>
+          </div>
+          {isMobile ? (
+            <div style={styles.mobileList}>
+              {Array.from({ length: 7 }).map((_, i) => (
+                <div key={i} style={styles.mobileDay}>
+                  <div style={{ ...styles.mobileDayHeader, display: 'flex', justifyContent: 'space-between', padding: '0.75rem 1rem' }}>
+                    <div className="skeleton" style={{ width: '30px', height: '0.75rem', background: 'rgba(255,255,255,0.3)' }} />
+                    <div className="skeleton" style={{ width: '24px', height: '1.125rem', background: 'rgba(255,255,255,0.3)' }} />
+                  </div>
+                  <div style={styles.mobileMeals}>
+                    {Array.from({ length: 3 }).map((_, j) => (
+                      <div key={j} style={styles.mealSlot}>
+                        <div className="skeleton" style={{ width: '50px', height: '0.625rem', marginBottom: '0.375rem' }} />
+                        <div className="skeleton" style={{ width: '60px', height: '0.75rem' }} />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div style={styles.calendarGrid}>
+              {Array.from({ length: 7 }).map((_, i) => (
+                <div key={i} style={styles.dayColumn}>
+                  <div style={{ ...styles.dayHeader, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.125rem' }}>
+                    <div className="skeleton" style={{ width: '24px', height: '0.75rem', background: 'rgba(255,255,255,0.3)' }} />
+                    <div className="skeleton" style={{ width: '20px', height: '1.125rem', background: 'rgba(255,255,255,0.3)' }} />
+                  </div>
+                  {Array.from({ length: 3 }).map((_, j) => (
+                    <div key={j} style={styles.mealSlot}>
+                      <div className="skeleton" style={{ width: '50px', height: '0.625rem', marginBottom: '0.375rem' }} />
+                      <div className="skeleton" style={{ width: '70%', height: '0.75rem' }} />
+                    </div>
+                  ))}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+        <nav className="bottom-nav-bar">
+          <Link to="/">Home</Link>
+          <Link to="/recipes">Recipes</Link>
+          <Link to="/meal-plan" className="active">Meal Plan</Link>
+          <Link to="/grocery-lists">Groceries</Link>
+          <Link to="/profile">Profile</Link>
+        </nav>
+      </div>
+    )
   }
 
   return (
