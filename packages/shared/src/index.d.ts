@@ -7,6 +7,7 @@ export type IngredientCategory = 'produce' | 'dairy' | 'meat' | 'seafood' | 'pan
 export type RecipeSource = 'ai_generated' | 'manual' | 'imported';
 export type GroceryListStatus = 'active' | 'completed' | 'archived';
 export type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snack';
+export type RecipeType = 'full_meal' | 'entree' | 'side' | 'dessert' | 'appetizer' | 'snack' | 'drink' | 'other';
 export type TimeConstraint = 'quick' | 'medium' | 'leisurely';
 export type CookingMethod = 'stovetop' | 'oven' | 'grill' | 'slow-cooker' | 'instant-pot' | 'air-fryer' | 'no-cook';
 export type Cuisine = 'american' | 'italian' | 'mexican' | 'asian' | 'mediterranean' | 'indian' | 'thai' | 'japanese' | 'french' | 'other';
@@ -16,6 +17,7 @@ export type RecipePreferences = {
     fruits?: string[];
     cuisine?: string;
     mealType?: MealType;
+    recipeType?: RecipeType;
     cookingMethod?: CookingMethod | string;
     timeConstraint?: TimeConstraint;
     servings?: number;
@@ -36,6 +38,7 @@ export type GeneratedRecipe = {
     prepTime: number;
     cookTime: number;
     cuisine: string;
+    type?: RecipeType;
     ingredients: GeneratedIngredient[];
     instructions: {
         stepNumber: number;
@@ -58,11 +61,13 @@ export type MealPlanEntry = {
     recipeId: string;
     date: string;
     mealType: MealType;
+    sortOrder: number;
     recipe: {
         id: string;
         title: string;
         prepTime: number | null;
         cookTime: number | null;
+        type: RecipeType;
     };
 };
 //# sourceMappingURL=index.d.ts.map

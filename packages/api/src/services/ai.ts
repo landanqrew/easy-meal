@@ -20,6 +20,7 @@ IMPORTANT RULES:
 4. Category must be one of: produce, dairy, meat, seafood, pantry, frozen, bakery, beverages, other
 5. Keep instructions clear and numbered
 6. Prep time and cook time in minutes
+7. Type must be one of: full_meal, entree, side, dessert, appetizer, snack, drink, other. Use "full_meal" for complete meals, "entree" for main dishes, "side" for side dishes, etc.
 
 Respond ONLY with valid JSON matching this exact structure:
 {
@@ -29,6 +30,7 @@ Respond ONLY with valid JSON matching this exact structure:
   "prepTime": 15,
   "cookTime": 30,
   "cuisine": "Italian",
+  "type": "entree",
   "ingredients": [
     {
       "name": "ingredient name (lowercase, canonical form)",
@@ -81,6 +83,7 @@ function buildPreferencesPrompt(prefs: RecipePreferences): string {
   if (prefs.fruits?.length) lines.push(`- Fruits: ${prefs.fruits.join(', ')}`)
   if (prefs.cuisine) lines.push(`- Cuisine style: ${prefs.cuisine}`)
   if (prefs.mealType) lines.push(`- Meal type: ${prefs.mealType}`)
+  if (prefs.recipeType) lines.push(`- Recipe type: ${prefs.recipeType}`)
   if (prefs.cookingMethod) lines.push(`- Cooking method: ${prefs.cookingMethod}`)
   if (prefs.timeConstraint) {
     const timeMap = { quick: 'under 30 minutes', medium: '30-60 minutes', leisurely: 'over 60 minutes' }
@@ -125,6 +128,7 @@ Example recipe response:
   "prepTime": 15,
   "cookTime": 30,
   "cuisine": "Italian",
+  "type": "entree",
   "ingredients": [
     {"name": "ingredient name", "quantity": 1.5, "unit": "cup", "category": "produce", "preparation": "diced"}
   ],
@@ -142,7 +146,8 @@ RECIPE JSON RULES (same as structured generation):
 4. Category must be one of: produce, dairy, meat, seafood, pantry, frozen, bakery, beverages, other
 5. Keep instructions clear and numbered
 6. Prep time and cook time in minutes
-7. Ingredient names must be lowercase, canonical form`
+7. Ingredient names must be lowercase, canonical form
+8. Type must be one of: full_meal, entree, side, dessert, appetizer, snack, drink, other`
 
 export type ChatMessage = {
   role: 'user' | 'assistant'
@@ -223,6 +228,8 @@ When the PDF mentions an ingredient, check the provided list of existing databas
 
 If the PDF contains no recognizable recipe, respond with: {"error": "no_recipe_found"}
 
+8. Type must be one of: full_meal, entree, side, dessert, appetizer, snack, drink, other. Classify based on the recipe content.
+
 Otherwise respond ONLY with valid JSON matching this exact structure:
 {
   "title": "Recipe Title",
@@ -231,6 +238,7 @@ Otherwise respond ONLY with valid JSON matching this exact structure:
   "prepTime": 15,
   "cookTime": 30,
   "cuisine": "Italian",
+  "type": "entree",
   "ingredients": [
     {
       "name": "ingredient name (lowercase, canonical form)",

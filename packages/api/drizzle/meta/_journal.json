@@ -15,6 +15,13 @@
       "when": 1770868870685,
       "tag": "0001_third_mister_fear",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1771798277830,
+      "tag": "0002_exotic_wolfpack",
+      "breakpoints": true
     }
   ]
 }

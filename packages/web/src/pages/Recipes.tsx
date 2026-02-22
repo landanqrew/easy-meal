@@ -2,8 +2,32 @@ import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useSession } from '../lib/auth'
 import { colors, radius } from '../lib/theme'
+import type { RecipeType } from '@easy-meal/shared'
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001'
+
+const RECIPE_TYPE_LABELS: Record<RecipeType, string> = {
+  full_meal: 'Full Meal',
+  entree: 'Entree',
+  side: 'Side',
+  dessert: 'Dessert',
+  appetizer: 'Appetizer',
+  snack: 'Snack',
+  drink: 'Drink',
+  other: 'Other',
+}
+
+const RECIPE_TYPE_FILTERS: { value: RecipeType | null; label: string }[] = [
+  { value: null, label: 'All Types' },
+  { value: 'full_meal', label: 'Full Meal' },
+  { value: 'entree', label: 'Entree' },
+  { value: 'side', label: 'Side' },
+  { value: 'dessert', label: 'Dessert' },
+  { value: 'appetizer', label: 'Appetizer' },
+  { value: 'snack', label: 'Snack' },
+  { value: 'drink', label: 'Drink' },
+  { value: 'other', label: 'Other' },
+]
 
 type Tag = { id: string; name: string; color: string | null }
 type Recipe = {
@@ -15,6 +39,7 @@ type Recipe = {
   cookTime: number | null
   cuisine: string | null
   source: string
+  type: RecipeType
   createdAt: string
   createdBy: { id: string; name: string } | null
   tags: Tag[]
@@ -28,6 +53,7 @@ export default function Recipes() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [filterTag, setFilterTag] = useState<string | null>(null)
+  const [filterType, setFilterType] = useState<RecipeType | null>(null)
 
   useEffect(() => {
     if (!isPending && !session) {
@@ -68,9 +94,9 @@ export default function Recipes() {
     } catch {}
   }
 
-  const filteredRecipes = filterTag
-    ? recipes.filter((r) => r.tags.some((t) => t.id === filterTag))
-    : recipes
+  const filteredRecipes = recipes
+    .filter((r) => !filterTag || r.tags.some((t) => t.id === filterTag))
+    .filter((r) => !filterType || r.type === filterType)
 
   if (isPending || loading) {
     return (
@@ -131,9 +157,22 @@ export default function Recipes() {
 
       {error && <div className="error-message" style={{ maxWidth: '900px', margin: '0 auto 1rem' }}>{error}</div>}
 
+      <div style={styles.filterSection}>
+        <span style={styles.filterLabel}>Type:</span>
+        {RECIPE_TYPE_FILTERS.map((t) => (
+          <button
+            key={t.label}
+            onClick={() => setFilterType(filterType === t.value ? null : t.value)}
+            className={`filter-chip${filterType === t.value ? ' active' : ''}`}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+
       {tags.length > 0 && (
         <div style={styles.filterSection}>
-          <span style={styles.filterLabel}>Filter:</span>
+          <span style={styles.filterLabel}>Tag:</span>
           <button
             onClick={() => setFilterTag(null)}
             className={`filter-chip${filterTag === null ? ' active' : ''}`}
@@ -190,8 +229,11 @@ export default function Recipes() {
                 </div>
               )}
               <div style={styles.recipeFooter}>
-                <span>
+                <span style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
                   {recipe.source === 'ai_generated' ? '✨ AI' : recipe.source === 'imported' ? '📄 Imported' : recipe.source === 'community' ? '🌍 Community' : '✏️ Manual'}
+                  <span style={{ padding: '0.125rem 0.375rem', borderRadius: radius.full, background: colors.warmBg, fontSize: '0.625rem' }}>
+                    {RECIPE_TYPE_LABELS[recipe.type] || recipe.type}
+                  </span>
                 </span>
                 {recipe.createdBy && (
                   <span>by {recipe.createdBy.name}</span>

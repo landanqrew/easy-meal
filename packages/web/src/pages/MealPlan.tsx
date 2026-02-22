@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useSession } from '../lib/auth'
 import { colors, radius } from '../lib/theme'
-import type { MealType } from '@easy-meal/shared'
+import type { MealType, RecipeType } from '@easy-meal/shared'
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001'
 
@@ -11,11 +11,13 @@ type MealPlanEntry = {
   recipeId: string
   date: string
   mealType: MealType
+  sortOrder: number
   recipe: {
     id: string
     title: string
     prepTime: number | null
     cookTime: number | null
+    type: RecipeType
   }
 }
 
@@ -24,7 +26,30 @@ type Recipe = {
   title: string
   prepTime: number | null
   cookTime: number | null
+  type: RecipeType
 }
+
+const RECIPE_TYPE_LABELS: Record<RecipeType, string> = {
+  full_meal: 'Full Meal',
+  entree: 'Entree',
+  side: 'Side',
+  dessert: 'Dessert',
+  appetizer: 'Appetizer',
+  snack: 'Snack',
+  drink: 'Drink',
+  other: 'Other',
+}
+
+const PICKER_TYPE_FILTERS: { value: RecipeType | null; label: string }[] = [
+  { value: null, label: 'All' },
+  { value: 'full_meal', label: 'Full Meal' },
+  { value: 'entree', label: 'Entree' },
+  { value: 'side', label: 'Side' },
+  { value: 'dessert', label: 'Dessert' },
+  { value: 'appetizer', label: 'Appetizer' },
+  { value: 'snack', label: 'Snack' },
+  { value: 'drink', label: 'Drink' },
+]
 
 const MEAL_TYPES: MealType[] = ['breakfast', 'lunch', 'dinner']
 const DAY_NAMES = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
@@ -81,6 +106,7 @@ export default function MealPlan() {
   const [error, setError] = useState('')
   const [pickerOpen, setPickerOpen] = useState<{ date: string; mealType: MealType } | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
+  const [pickerTypeFilter, setPickerTypeFilter] = useState<RecipeType | null>(null)
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768)
 
   useEffect(() => {
@@ -137,12 +163,14 @@ export default function MealPlan() {
     }
   }, [session, fetchRecipes])
 
-  const getEntryForSlot = (date: Date, mealType: MealType): MealPlanEntry | undefined => {
+  const getEntriesForSlot = (date: Date, mealType: MealType): MealPlanEntry[] => {
     const dateStr = formatDateParam(date)
-    return entries.find((e) => {
-      const entryDate = e.date.slice(0, 10)
-      return entryDate === dateStr && e.mealType === mealType
-    })
+    return entries
+      .filter((e) => {
+        const entryDate = e.date.slice(0, 10)
+        return entryDate === dateStr && e.mealType === mealType
+      })
+      .sort((a, b) => a.sortOrder - b.sortOrder)
   }
 
   const handleAssignRecipe = async (recipeId: string) => {
@@ -164,6 +192,7 @@ export default function MealPlan() {
       if (res.ok) {
         setPickerOpen(null)
         setSearchQuery('')
+        setPickerTypeFilter(null)
         fetchEntries()
       } else {
         const data = await res.json()
@@ -207,9 +236,9 @@ export default function MealPlan() {
 
   const today = new Date()
   const days = getDaysOfWeek(weekStart)
-  const filteredRecipes = recipes.filter((r) =>
-    r.title.toLowerCase().includes(searchQuery.toLowerCase())
-  )
+  const filteredRecipes = recipes
+    .filter((r) => r.title.toLowerCase().includes(searchQuery.toLowerCase()))
+    .filter((r) => !pickerTypeFilter || r.type === pickerTypeFilter)
 
   if (isPending || loading) {
     return (
@@ -303,14 +332,14 @@ export default function MealPlan() {
                   </div>
                   <div style={styles.mobileMeals}>
                     {MEAL_TYPES.map((mealType) => {
-                      const entry = getEntryForSlot(day, mealType)
+                      const slotEntries = getEntriesForSlot(day, mealType)
                       return (
                         <div key={mealType} style={styles.mealSlot}>
                           <div style={styles.mealSlotLabel}>
                             {mealType}
                           </div>
-                          {entry ? (
-                            <div style={styles.assignedRecipeRow}>
+                          {slotEntries.map((entry) => (
+                            <div key={entry.id} style={styles.assignedRecipeRow}>
                               <Link
                                 to={`/recipes/${entry.recipe.id}`}
                                 style={styles.assignedRecipe}
@@ -324,19 +353,18 @@ export default function MealPlan() {
                                 ×
                               </button>
                             </div>
-                          ) : (
-                            <button
-                              onClick={() =>
-                                setPickerOpen({
-                                  date: formatDateParam(day),
-                                  mealType,
-                                })
-                              }
-                              style={styles.addButton}
-                            >
-                              + Add
-                            </button>
-                          )}
+                          ))}
+                          <button
+                            onClick={() =>
+                              setPickerOpen({
+                                date: formatDateParam(day),
+                                mealType,
+                              })
+                            }
+                            style={styles.addButton}
+                          >
+                            + Add
+                          </button>
                         </div>
                       )
                     })}
@@ -360,14 +388,14 @@ export default function MealPlan() {
                     <div style={styles.dayNumber}>{day.getDate()}</div>
                   </div>
                   {MEAL_TYPES.map((mealType) => {
-                    const entry = getEntryForSlot(day, mealType)
+                    const slotEntries = getEntriesForSlot(day, mealType)
                     return (
                       <div key={mealType} style={styles.mealSlot}>
                         <div style={styles.mealSlotLabel}>
                           {mealType}
                         </div>
-                        {entry ? (
-                          <>
+                        {slotEntries.map((entry) => (
+                          <div key={entry.id} style={styles.assignedRecipeRow}>
                             <Link
                               to={`/recipes/${entry.recipe.id}`}
                               style={styles.assignedRecipe}
@@ -380,20 +408,19 @@ export default function MealPlan() {
                             >
                               ×
                             </button>
-                          </>
-                        ) : (
-                          <button
-                            onClick={() =>
-                              setPickerOpen({
-                                date: formatDateParam(day),
-                                mealType,
-                              })
-                            }
-                            style={styles.addButton}
-                          >
-                            + Add
-                          </button>
-                        )}
+                          </div>
+                        ))}
+                        <button
+                          onClick={() =>
+                            setPickerOpen({
+                              date: formatDateParam(day),
+                              mealType,
+                            })
+                          }
+                          style={styles.addButton}
+                        >
+                          + Add
+                        </button>
                       </div>
                     )
                   })}
@@ -412,6 +439,7 @@ export default function MealPlan() {
             if (e.target === e.currentTarget) {
               setPickerOpen(null)
               setSearchQuery('')
+              setPickerTypeFilter(null)
             }
           }}
         >
@@ -422,6 +450,7 @@ export default function MealPlan() {
                 onClick={() => {
                   setPickerOpen(null)
                   setSearchQuery('')
+                  setPickerTypeFilter(null)
                 }}
                 style={styles.pickerClose}
               >
@@ -431,6 +460,18 @@ export default function MealPlan() {
             <p style={styles.pickerSubtitle}>
               {pickerOpen.mealType.charAt(0).toUpperCase() + pickerOpen.mealType.slice(1)} · {pickerOpen.date}
             </p>
+            <div style={styles.pickerTypeFilters}>
+              {PICKER_TYPE_FILTERS.map((t) => (
+                <button
+                  key={t.label}
+                  onClick={() => setPickerTypeFilter(pickerTypeFilter === t.value ? null : t.value)}
+                  className={`filter-chip${pickerTypeFilter === t.value ? ' active' : ''}`}
+                  style={{ fontSize: '0.6875rem', padding: '0.25rem 0.5rem' }}
+                >
+                  {t.label}
+                </button>
+              ))}
+            </div>
             <input
               type="text"
               placeholder="Search recipes..."
@@ -452,13 +493,14 @@ export default function MealPlan() {
                     className="picker-recipe"
                   >
                     <span style={styles.pickerRecipeTitle}>{recipe.title}</span>
-                    {(recipe.prepTime || recipe.cookTime) && (
-                      <span style={styles.pickerRecipeMeta}>
-                        {recipe.prepTime && `${recipe.prepTime}m prep`}
-                        {recipe.prepTime && recipe.cookTime && ' · '}
-                        {recipe.cookTime && `${recipe.cookTime}m cook`}
+                    <span style={styles.pickerRecipeMeta}>
+                      <span style={{ padding: '0.0625rem 0.375rem', borderRadius: radius.full, background: colors.warmBg, fontSize: '0.625rem', marginRight: '0.375rem' }}>
+                        {RECIPE_TYPE_LABELS[recipe.type] || recipe.type}
                       </span>
-                    )}
+                      {recipe.prepTime && `${recipe.prepTime}m prep`}
+                      {recipe.prepTime && recipe.cookTime && ' · '}
+                      {recipe.cookTime && `${recipe.cookTime}m cook`}
+                    </span>
                   </button>
                 ))
               )}
@@ -468,6 +510,7 @@ export default function MealPlan() {
                 onClick={() => {
                   setPickerOpen(null)
                   setSearchQuery('')
+                  setPickerTypeFilter(null)
                   navigate('/recipes/create', {
                     state: { returnTo: '/meal-plan' },
                   })
@@ -480,6 +523,7 @@ export default function MealPlan() {
                 onClick={() => {
                   setPickerOpen(null)
                   setSearchQuery('')
+                  setPickerTypeFilter(null)
                   navigate('/recipes/chat', {
                     state: { returnTo: '/meal-plan' },
                   })
@@ -669,7 +713,13 @@ const styles: Record<string, React.CSSProperties> = {
   pickerSubtitle: {
     fontSize: '0.8125rem',
     color: colors.textSecondary,
-    margin: '0.25rem 0 1rem',
+    margin: '0.25rem 0 0.75rem',
+  },
+  pickerTypeFilters: {
+    display: 'flex',
+    flexWrap: 'wrap',
+    gap: '0.375rem',
+    marginBottom: '0.75rem',
   },
   pickerSearch: {
     width: '100%',

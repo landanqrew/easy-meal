@@ -115,7 +115,7 @@ recipesRouter.post('/', async (c) => {
   }
 
   const body = await c.req.json()
-  const { title, description, servings, prepTime, cookTime, cuisine, instructions, ingredients: recipeIngs, source = 'ai_generated' } = body
+  const { title, description, servings, prepTime, cookTime, cuisine, instructions, ingredients: recipeIngs, source = 'ai_generated', type = 'full_meal' } = body
 
   if (!title) {
     return c.json({ error: 'Recipe title is required' }, 400)
@@ -134,6 +134,7 @@ recipesRouter.post('/', async (c) => {
       cuisine,
       instructions: instructions || [],
       source,
+      type,
       createdByUserId: session.user.id,
       updatedByUserId: session.user.id,
     })
@@ -211,6 +212,7 @@ recipesRouter.get('/', async (c) => {
       cookTime: r.cookTime,
       cuisine: r.cuisine,
       source: r.source,
+      type: r.type,
       isPublic: r.isPublic,
       copiedFromRecipeId: r.copiedFromRecipeId,
       createdAt: r.createdAt,
@@ -273,6 +275,7 @@ recipesRouter.get('/:id', async (c) => {
       cuisine: recipe.cuisine,
       instructions: recipe.instructions,
       source: recipe.source,
+      type: recipe.type,
       isPublic: recipe.isPublic,
       copiedFromRecipeId: recipe.copiedFromRecipeId,
       createdAt: recipe.createdAt,
@@ -322,7 +325,7 @@ recipesRouter.patch('/:id', async (c) => {
   }
 
   const body = await c.req.json()
-  const { title, description, servings, prepTime, cookTime, cuisine, instructions, ingredients: recipeIngs } = body
+  const { title, description, servings, prepTime, cookTime, cuisine, instructions, ingredients: recipeIngs, type } = body
 
   const updates: Record<string, any> = { updatedAt: new Date(), updatedByUserId: session.user.id }
   if (title !== undefined) updates.title = title
@@ -332,6 +335,7 @@ recipesRouter.patch('/:id', async (c) => {
   if (cookTime !== undefined) updates.cookTime = cookTime
   if (cuisine !== undefined) updates.cuisine = cuisine
   if (instructions !== undefined) updates.instructions = instructions
+  if (type !== undefined) updates.type = type
 
   const [updated] = await db
     .update(recipes)
@@ -402,6 +406,7 @@ recipesRouter.patch('/:id', async (c) => {
       cuisine: fullRecipe!.cuisine,
       instructions: fullRecipe!.instructions,
       source: fullRecipe!.source,
+      type: fullRecipe!.type,
       createdAt: fullRecipe!.createdAt,
       updatedAt: fullRecipe!.updatedAt,
       createdBy: fullRecipe!.createdBy ? { id: fullRecipe!.createdBy.id, name: fullRecipe!.createdBy.name } : null,

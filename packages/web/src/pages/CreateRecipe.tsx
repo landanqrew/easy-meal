@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useSession } from '../lib/auth'
 import { colors, shadows, radius } from '../lib/theme'
-import type { GeneratedRecipe } from '@easy-meal/shared'
+import type { GeneratedRecipe, RecipeType } from '@easy-meal/shared'
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001'
 
@@ -15,6 +15,17 @@ const TIME_OPTIONS = [
   { value: 'quick', label: 'Quick', desc: '< 30 min' },
   { value: 'medium', label: 'Medium', desc: '30-60 min' },
   { value: 'leisurely', label: 'Leisurely', desc: '60+ min' },
+]
+
+const RECIPE_TYPE_OPTIONS: { value: RecipeType; label: string }[] = [
+  { value: 'full_meal', label: 'Full Meal' },
+  { value: 'entree', label: 'Entree' },
+  { value: 'side', label: 'Side' },
+  { value: 'dessert', label: 'Dessert' },
+  { value: 'appetizer', label: 'Appetizer' },
+  { value: 'snack', label: 'Snack' },
+  { value: 'drink', label: 'Drink' },
+  { value: 'other', label: 'Other' },
 ]
 
 type WizardStep = 1 | 2 | 3 | 4 | 5
@@ -51,6 +62,7 @@ export default function CreateRecipe() {
   const [cookingMethods, setCookingMethods] = useState<string[]>([])
   const [timeConstraint, setTimeConstraint] = useState<string | null>(null)
   const [servings, setServings] = useState(4)
+  const [recipeType, setRecipeType] = useState<RecipeType>('full_meal')
 
   // Generated recipe
   const [recipe, setRecipe] = useState<GeneratedRecipe | null>(null)
@@ -103,6 +115,7 @@ export default function CreateRecipe() {
           cookingMethod: cookingMethods.length > 0 ? cookingMethods.map((m) => m.toLowerCase().replace(' ', '-')).join(', ') : undefined,
           timeConstraint,
           servings,
+          recipeType,
         }),
       })
 
@@ -141,6 +154,7 @@ export default function CreateRecipe() {
           instructions: recipe.instructions,
           ingredients: recipe.ingredients,
           source: 'ai_generated',
+          type: recipe.type || recipeType,
         }),
       })
 
@@ -444,6 +458,19 @@ export default function CreateRecipe() {
               >
                 +
               </button>
+            </div>
+
+            <h2 style={{ ...styles.stepTitle, marginTop: '1.5rem' }}>Recipe type</h2>
+            <div style={styles.selectionGrid}>
+              {RECIPE_TYPE_OPTIONS.map((t) => (
+                <button
+                  key={t.value}
+                  onClick={() => setRecipeType(t.value)}
+                  className={`selection-card${recipeType === t.value ? ' selected' : ''}`}
+                >
+                  {t.label}
+                </button>
+              ))}
             </div>
 
             <div style={styles.stepActions}>

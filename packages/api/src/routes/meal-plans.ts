@@ -1,5 +1,5 @@
 import { Hono } from 'hono'
-import { eq, and, gte, lt } from 'drizzle-orm'
+import { eq, and, gte, lt, max, asc } from 'drizzle-orm'
 import { db } from '../db'
 import { mealPlans, recipes } from '../db/schema'
 import { user } from '../db/auth-schema'
@@ -51,9 +51,11 @@ mealPlansRouter.get('/', async (c) => {
       recipeId: mealPlans.recipeId,
       date: mealPlans.date,
       mealType: mealPlans.mealType,
+      sortOrder: mealPlans.sortOrder,
       recipeTitle: recipes.title,
       recipePrepTime: recipes.prepTime,
       recipeCookTime: recipes.cookTime,
+      recipeType: recipes.type,
     })
     .from(mealPlans)
     .innerJoin(recipes, eq(mealPlans.recipeId, recipes.id))
@@ -64,17 +66,20 @@ mealPlansRouter.get('/', async (c) => {
         lt(mealPlans.date, weekEnd)
       )
     )
+    .orderBy(asc(mealPlans.date), asc(mealPlans.mealType), asc(mealPlans.sortOrder))
 
   const data = entries.map((e) => ({
     id: e.id,
     recipeId: e.recipeId,
     date: e.date.toISOString(),
     mealType: e.mealType,
+    sortOrder: e.sortOrder,
     recipe: {
       id: e.recipeId,
       title: e.recipeTitle,
       prepTime: e.recipePrepTime,
       cookTime: e.recipeCookTime,
+      type: e.recipeType,
     },
   }))
 
@@ -111,39 +116,32 @@ mealPlansRouter.post('/', async (c) => {
 
   const dateValue = new Date(date + 'T00:00:00Z')
 
-  // Check if slot already has an entry
-  const existing = await db.query.mealPlans.findFirst({
-    where: and(
-      eq(mealPlans.householdId, currentUser.householdId),
-      eq(mealPlans.date, dateValue),
-      eq(mealPlans.mealType, mealType)
-    ),
-  })
+  // Get max sortOrder for this slot
+  const [maxResult] = await db
+    .select({ maxSort: max(mealPlans.sortOrder) })
+    .from(mealPlans)
+    .where(
+      and(
+        eq(mealPlans.householdId, currentUser.householdId),
+        eq(mealPlans.date, dateValue),
+        eq(mealPlans.mealType, mealType)
+      )
+    )
 
-  let entry
-  if (existing) {
-    ;[entry] = await db
-      .update(mealPlans)
-      .set({
-        recipeId,
-        updatedByUserId: session.user.id,
-        updatedAt: new Date(),
-      })
-      .where(eq(mealPlans.id, existing.id))
-      .returning()
-  } else {
-    ;[entry] = await db
-      .insert(mealPlans)
-      .values({
-        householdId: currentUser.householdId,
-        recipeId,
-        date: dateValue,
-        mealType,
-        createdByUserId: session.user.id,
-        updatedByUserId: session.user.id,
-      })
-      .returning()
-  }
+  const nextSortOrder = (maxResult?.maxSort ?? -1) + 1
+
+  const [entry] = await db
+    .insert(mealPlans)
+    .values({
+      householdId: currentUser.householdId,
+      recipeId,
+      date: dateValue,
+      mealType,
+      sortOrder: nextSortOrder,
+      createdByUserId: session.user.id,
+      updatedByUserId: session.user.id,
+    })
+    .returning()
 
   return c.json(
     {
@@ -152,11 +150,13 @@ mealPlansRouter.post('/', async (c) => {
         recipeId: entry.recipeId,
         date: entry.date.toISOString(),
         mealType: entry.mealType,
+        sortOrder: entry.sortOrder,
         recipe: {
           id: recipe.id,
           title: recipe.title,
           prepTime: recipe.prepTime,
           cookTime: recipe.cookTime,
+          type: recipe.type,
         },
       },
     },

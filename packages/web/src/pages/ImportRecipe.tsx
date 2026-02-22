@@ -92,6 +92,7 @@ export default function ImportRecipe() {
           instructions: recipe.instructions,
           ingredients: recipe.ingredients,
           source: 'imported',
+          type: recipe.type || 'full_meal',
         }),
       })
 

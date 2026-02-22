@@ -104,6 +104,7 @@ export default function ChatRecipe() {
           instructions: recipe.instructions,
           ingredients: recipe.ingredients,
           source: 'ai_generated',
+          type: recipe.type || 'full_meal',
         }),
       })
 

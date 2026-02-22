@@ -2,8 +2,22 @@ import { useState, useEffect } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useSession } from '../lib/auth'
 import { colors, shadows, radius } from '../lib/theme'
+import type { RecipeType } from '@easy-meal/shared'
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001'
+
+const RECIPE_TYPE_LABELS: Record<RecipeType, string> = {
+  full_meal: 'Full Meal',
+  entree: 'Entree',
+  side: 'Side',
+  dessert: 'Dessert',
+  appetizer: 'Appetizer',
+  snack: 'Snack',
+  drink: 'Drink',
+  other: 'Other',
+}
+
+const RECIPE_TYPES: RecipeType[] = ['full_meal', 'entree', 'side', 'dessert', 'appetizer', 'snack', 'drink', 'other']
 
 type Ingredient = {
   id: string
@@ -26,6 +40,7 @@ type Recipe = {
   cuisine: string | null
   instructions: { stepNumber: number; text: string }[]
   source: string
+  type: RecipeType
   isPublic: boolean
   copiedFromRecipeId: string | null
   createdAt: string
@@ -50,6 +65,7 @@ type EditData = {
   prepTime: number | null
   cookTime: number | null
   cuisine: string
+  type: RecipeType
   instructions: { stepNumber: number; text: string }[]
   ingredients: EditIngredient[]
 }
@@ -249,6 +265,7 @@ export default function RecipeDetail() {
       prepTime: recipe.prepTime,
       cookTime: recipe.cookTime,
       cuisine: recipe.cuisine || '',
+      type: recipe.type,
       instructions: recipe.instructions.map((s) => ({ ...s })),
       ingredients: recipe.ingredients.map((ing) => ({
         name: ing.name,
@@ -285,6 +302,7 @@ export default function RecipeDetail() {
           prepTime: editData.prepTime,
           cookTime: editData.cookTime,
           cuisine: editData.cuisine || null,
+          type: editData.type,
           instructions: editData.instructions.map((s, i) => ({
             stepNumber: i + 1,
             text: s.text,
@@ -502,6 +520,19 @@ export default function RecipeDetail() {
                 placeholder="Cuisine"
               />
             </span>
+            <span style={styles.metaEditGroup}>
+              🏷
+              <select
+                className="edit-input"
+                style={{ padding: '0.25rem 0.5rem' }}
+                value={editData.type}
+                onChange={(e) => setEditData({ ...editData, type: e.target.value as RecipeType })}
+              >
+                {RECIPE_TYPES.map((t) => (
+                  <option key={t} value={t}>{RECIPE_TYPE_LABELS[t]}</option>
+                ))}
+              </select>
+            </span>
           </div>
         ) : (
           <div style={styles.meta}>
@@ -510,6 +541,9 @@ export default function RecipeDetail() {
             {totalTime > 0 && <span>⏱ {totalTime}m total</span>}
             <span>🍽 {recipe.servings} servings</span>
             {recipe.cuisine && <span>🌍 {recipe.cuisine}</span>}
+            <span style={{ padding: '0.125rem 0.5rem', borderRadius: radius.full, background: colors.warmBg, fontSize: '0.8125rem' }}>
+              {RECIPE_TYPE_LABELS[recipe.type] || recipe.type}
+            </span>
           </div>
         )}
 

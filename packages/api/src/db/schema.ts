@@ -53,6 +53,17 @@ export const mealTypeEnum = pgEnum('meal_type', [
   'snack',
 ])
 
+export const recipeTypeEnum = pgEnum('recipe_type', [
+  'full_meal',
+  'entree',
+  'side',
+  'dessert',
+  'appetizer',
+  'snack',
+  'drink',
+  'other',
+])
+
 // ============================================================================
 // HOUSEHOLDS
 // ============================================================================
@@ -126,6 +137,7 @@ export const recipes = pgTable(
     prepTime: integer('prep_time'), // minutes
     cookTime: integer('cook_time'), // minutes
     source: recipeSourceEnum('source').default('manual').notNull(),
+    type: recipeTypeEnum('type').default('full_meal').notNull(),
     isPublic: boolean('is_public').default(false).notNull(),
     copiedFromRecipeId: uuid('copied_from_recipe_id')
       .references((): AnyPgColumn => recipes.id, { onDelete: 'set null' }),
@@ -142,6 +154,7 @@ export const recipes = pgTable(
     index('idx_recipes_source').on(table.source),
     index('idx_recipes_created_at').on(table.createdAt),
     index('idx_recipes_is_public').on(table.isPublic),
+    index('idx_recipes_type').on(table.type),
   ]
 )
 
@@ -370,6 +383,7 @@ export const mealPlans = pgTable(
       .notNull(),
     date: timestamp('date', { withTimezone: true, mode: 'date' }).notNull(),
     mealType: mealTypeEnum('meal_type').notNull(),
+    sortOrder: integer('sort_order').default(0).notNull(),
 
     // Metadata
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
@@ -378,7 +392,6 @@ export const mealPlans = pgTable(
     updatedByUserId: text('updated_by_user_id').references(() => user.id, { onDelete: 'set null' }),
   },
   (table) => [
-    unique('unique_meal_plan_slot').on(table.householdId, table.date, table.mealType),
     index('idx_meal_plans_household_id').on(table.householdId),
     index('idx_meal_plans_date').on(table.date),
     index('idx_meal_plans_household_date').on(table.householdId, table.date),
