@@ -27,7 +27,7 @@ export type IngredientCategory =
   | 'beverages'
   | 'other'
 
-export type RecipeSource = 'ai_generated' | 'manual' | 'imported'
+export type RecipeSource = 'ai_generated' | 'manual' | 'imported' | 'community'
 
 export type GroceryListStatus = 'active' | 'completed' | 'archived'
 

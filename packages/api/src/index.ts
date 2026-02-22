@@ -15,6 +15,8 @@ import recipeLists from './routes/recipe-lists'
 import groceryLists from './routes/grocery-lists'
 import mealPlans from './routes/meal-plans'
 import chat from './routes/chat'
+import discover from './routes/discover'
+import checkins from './routes/checkins'
 
 // Initialize error tracking
 initSentry()
@@ -86,6 +88,8 @@ app.route('/api/recipe-lists', recipeLists)
 app.route('/api/grocery-lists', groceryLists)
 app.route('/api/meal-plans', mealPlans)
 app.route('/api/chat', chat)
+app.route('/api/discover', discover)
+app.route('/api/checkins', checkins)
 
 // Request logging in production
 if (process.env.NODE_ENV === 'production') {

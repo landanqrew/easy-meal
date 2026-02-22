@@ -1,5 +1,5 @@
 import { Hono } from 'hono'
-import { eq, and, desc } from 'drizzle-orm'
+import { eq, and, not, desc } from 'drizzle-orm'
 import { db } from '../db'
 import { recipes, recipeIngredients, ingredients, recipeTags, tags } from '../db/schema'
 import { user } from '../db/auth-schema'
@@ -161,6 +161,8 @@ recipesRouter.get('/', async (c) => {
       cookTime: r.cookTime,
       cuisine: r.cuisine,
       source: r.source,
+      isPublic: r.isPublic,
+      copiedFromRecipeId: r.copiedFromRecipeId,
       createdAt: r.createdAt,
       createdBy: r.createdBy ? { id: r.createdBy.id, name: r.createdBy.name } : null,
       tags: r.recipeTags.map((rt) => ({
@@ -221,6 +223,8 @@ recipesRouter.get('/:id', async (c) => {
       cuisine: recipe.cuisine,
       instructions: recipe.instructions,
       source: recipe.source,
+      isPublic: recipe.isPublic,
+      copiedFromRecipeId: recipe.copiedFromRecipeId,
       createdAt: recipe.createdAt,
       updatedAt: recipe.updatedAt,
       createdBy: recipe.createdBy ? { id: recipe.createdBy.id, name: recipe.createdBy.name } : null,
@@ -366,6 +370,44 @@ recipesRouter.patch('/:id', async (c) => {
       })),
     },
   })
+})
+
+// POST /recipes/:id/publish - Toggle public visibility
+recipesRouter.post('/:id/publish', async (c) => {
+  const session = await getSession(c)
+  if (!session) {
+    return c.json({ error: 'Unauthorized' }, 401)
+  }
+
+  const currentUser = await getUserWithHousehold(session.user.id)
+  if (!currentUser?.householdId) {
+    return c.json({ error: 'You must be in a household' }, 400)
+  }
+
+  const recipeId = c.req.param('id')
+
+  const existing = await db.query.recipes.findFirst({
+    where: and(
+      eq(recipes.id, recipeId),
+      eq(recipes.householdId, currentUser.householdId)
+    ),
+  })
+
+  if (!existing) {
+    return c.json({ error: 'Recipe not found' }, 404)
+  }
+
+  const [updated] = await db
+    .update(recipes)
+    .set({
+      isPublic: not(recipes.isPublic),
+      updatedAt: new Date(),
+      updatedByUserId: session.user.id,
+    })
+    .where(eq(recipes.id, recipeId))
+    .returning({ id: recipes.id, isPublic: recipes.isPublic })
+
+  return c.json({ data: updated })
 })
 
 // DELETE /recipes/:id - Delete a recipe

@@ -26,6 +26,8 @@ type Recipe = {
   cuisine: string | null
   instructions: { stepNumber: number; text: string }[]
   source: string
+  isPublic: boolean
+  copiedFromRecipeId: string | null
   createdAt: string
   updatedAt: string
   createdBy: { id: string; name: string } | null
@@ -52,6 +54,45 @@ type EditData = {
   ingredients: EditIngredient[]
 }
 
+type Checkin = {
+  id: string
+  recipeId: string
+  notes: string | null
+  enjoymentRating: number
+  instructionRating: number
+  createdAt: string
+  userId: string
+  userName: string | null
+}
+
+function StarInput({ value, onChange }: { value: number; onChange: (v: number) => void }) {
+  return (
+    <span style={{ display: 'inline-flex', gap: '0.125rem', cursor: 'pointer' }}>
+      {[1, 2, 3, 4, 5].map((star) => (
+        <span
+          key={star}
+          onClick={() => onChange(star)}
+          style={{
+            fontSize: '1.5rem',
+            color: star <= value ? colors.warning : colors.border,
+            transition: 'color 0.15s',
+          }}
+        >
+          &#9733;
+        </span>
+      ))}
+    </span>
+  )
+}
+
+function StarDisplay({ rating }: { rating: number }) {
+  const stars = []
+  for (let i = 1; i <= 5; i++) {
+    stars.push(<span key={i} style={{ color: i <= rating ? colors.warning : colors.border }}>&#9733;</span>)
+  }
+  return <span style={{ fontSize: '0.8125rem' }}>{stars}</span>
+}
+
 export default function RecipeDetail() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
@@ -63,6 +104,13 @@ export default function RecipeDetail() {
   const [editing, setEditing] = useState(false)
   const [editData, setEditData] = useState<EditData | null>(null)
   const [saving, setSaving] = useState(false)
+  const [publishing, setPublishing] = useState(false)
+  const [checkins, setCheckins] = useState<Checkin[]>([])
+  const [showCheckinForm, setShowCheckinForm] = useState(false)
+  const [enjoymentRating, setEnjoymentRating] = useState(0)
+  const [instructionRating, setInstructionRating] = useState(0)
+  const [checkinNotes, setCheckinNotes] = useState('')
+  const [submittingCheckin, setSubmittingCheckin] = useState(false)
 
   useEffect(() => {
     if (!isPending && !session) {
@@ -73,6 +121,7 @@ export default function RecipeDetail() {
   useEffect(() => {
     if (session && id) {
       fetchRecipe()
+      fetchCheckins()
     }
   }, [session, id])
 
@@ -113,6 +162,82 @@ export default function RecipeDetail() {
     } finally {
       setDeleting(false)
     }
+  }
+
+  const handlePublish = async () => {
+    setPublishing(true)
+    try {
+      const res = await fetch(`${API_URL}/api/recipes/${id}/publish`, {
+        method: 'POST',
+        credentials: 'include',
+      })
+      const data = await res.json()
+      if (res.ok && recipe) {
+        setRecipe({ ...recipe, isPublic: data.data.isPublic })
+      }
+    } catch {
+      setError('Failed to update publish status')
+    } finally {
+      setPublishing(false)
+    }
+  }
+
+  const fetchCheckins = async () => {
+    try {
+      const res = await fetch(`${API_URL}/api/checkins/recipe/${id}`, { credentials: 'include' })
+      const data = await res.json()
+      if (res.ok) {
+        setCheckins(data.data)
+      }
+    } catch {}
+  }
+
+  const handleCheckin = async () => {
+    if (enjoymentRating < 1 || instructionRating < 1) {
+      setError('Please select both ratings')
+      return
+    }
+    setSubmittingCheckin(true)
+    setError('')
+    try {
+      const res = await fetch(`${API_URL}/api/checkins`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          recipeId: id,
+          notes: checkinNotes || undefined,
+          enjoymentRating,
+          instructionRating,
+        }),
+      })
+      if (res.ok) {
+        setEnjoymentRating(0)
+        setInstructionRating(0)
+        setCheckinNotes('')
+        setShowCheckinForm(false)
+        fetchCheckins()
+      } else {
+        const data = await res.json()
+        setError(data.error || 'Failed to submit check-in')
+      }
+    } catch {
+      setError('Failed to submit check-in')
+    } finally {
+      setSubmittingCheckin(false)
+    }
+  }
+
+  const handleDeleteCheckin = async (checkinId: string) => {
+    try {
+      const res = await fetch(`${API_URL}/api/checkins/${checkinId}`, {
+        method: 'DELETE',
+        credentials: 'include',
+      })
+      if (res.ok) {
+        fetchCheckins()
+      }
+    } catch {}
   }
 
   const startEditing = () => {
@@ -295,6 +420,14 @@ export default function RecipeDetail() {
               </>
             ) : (
               <>
+                <button
+                  onClick={handlePublish}
+                  className={recipe.isPublic ? 'btn-primary' : 'btn-secondary'}
+                  style={{ fontSize: '0.875rem', padding: '0.5rem 1rem' }}
+                  disabled={publishing}
+                >
+                  {publishing ? '...' : recipe.isPublic ? 'Public \u2713' : 'Make Public'}
+                </button>
                 <button onClick={startEditing} className="btn-secondary" style={{ fontSize: '0.875rem', padding: '0.5rem 1rem' }}>
                   Edit
                 </button>
@@ -505,9 +638,83 @@ export default function RecipeDetail() {
           )}
         </section>
 
+        {/* Check-ins */}
+        <section style={styles.section}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', paddingBottom: '0.5rem', borderBottom: `1px solid ${colors.border}` }}>
+            <h2 style={{ fontSize: '1.125rem', fontWeight: 700, margin: 0 }}>Check-Ins ({checkins.length})</h2>
+            {!showCheckinForm && (
+              <button onClick={() => setShowCheckinForm(true)} className="btn-secondary" style={{ fontSize: '0.8125rem', padding: '0.375rem 0.75rem' }}>
+                Check In
+              </button>
+            )}
+          </div>
+
+          {showCheckinForm && (
+            <div style={{ background: colors.warmBg, padding: '1.25rem', borderRadius: radius.md, marginBottom: '1rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '0.75rem' }}>
+                <label style={{ fontSize: '0.875rem', fontWeight: 600, color: colors.text, minWidth: '90px' }}>Enjoyment</label>
+                <StarInput value={enjoymentRating} onChange={setEnjoymentRating} />
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '0.75rem' }}>
+                <label style={{ fontSize: '0.875rem', fontWeight: 600, color: colors.text, minWidth: '90px' }}>Instructions</label>
+                <StarInput value={instructionRating} onChange={setInstructionRating} />
+              </div>
+              <textarea
+                className="edit-textarea"
+                placeholder="Notes (optional)"
+                rows={3}
+                value={checkinNotes}
+                onChange={(e) => setCheckinNotes(e.target.value)}
+                style={{ width: '100%', boxSizing: 'border-box', marginBottom: '0.5rem' }}
+              />
+              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                <button onClick={handleCheckin} className="btn-primary" style={{ fontSize: '0.8125rem', padding: '0.5rem 1rem' }} disabled={submittingCheckin}>
+                  {submittingCheckin ? 'Submitting...' : 'Submit'}
+                </button>
+                <button onClick={() => setShowCheckinForm(false)} className="btn-secondary" style={{ fontSize: '0.8125rem', padding: '0.5rem 1rem' }}>
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
+
+          {checkins.length === 0 && !showCheckinForm && (
+            <p style={{ color: colors.textMuted, fontSize: '0.875rem' }}>No check-ins yet. Be the first to check in!</p>
+          )}
+
+          {checkins.map((ch) => (
+            <div key={ch.id} style={{ padding: '0.75rem 0', borderBottom: `1px solid ${colors.borderLight}` }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.375rem', fontSize: '0.875rem' }}>
+                <strong>{ch.userName || 'Anonymous'}</strong>
+                <span style={{ color: colors.textMuted, fontSize: '0.75rem' }}>{new Date(ch.createdAt).toLocaleDateString()}</span>
+              </div>
+              <div style={{ display: 'flex', gap: '1.5rem', fontSize: '0.8125rem', color: colors.textSecondary, marginBottom: '0.375rem' }}>
+                <span>Enjoyment: <StarDisplay rating={ch.enjoymentRating} /></span>
+                <span>Instructions: <StarDisplay rating={ch.instructionRating} /></span>
+              </div>
+              {ch.notes && <p style={{ fontSize: '0.875rem', color: colors.text, lineHeight: 1.5, margin: '0.25rem 0 0' }}>{ch.notes}</p>}
+              {session && ch.userId === session.user.id && (
+                <button
+                  onClick={() => handleDeleteCheckin(ch.id)}
+                  style={{ background: 'none', border: 'none', color: colors.danger, cursor: 'pointer', fontSize: '0.75rem', padding: '0.25rem 0', marginTop: '0.25rem' }}
+                >
+                  Delete
+                </button>
+              )}
+            </div>
+          ))}
+        </section>
+
         <div style={styles.footer}>
           <span style={styles.source}>
-            {recipe.source === 'ai_generated' ? '✨ Generated with AI' : '✏️ Manually created'}
+            {recipe.source === 'ai_generated'
+              ? '✨ Generated with AI'
+              : recipe.source === 'community'
+                ? '🌍 From Community'
+                : '✏️ Manually created'}
+            {recipe.copiedFromRecipeId && (
+              <> · <Link to={`/discover/recipes/${recipe.copiedFromRecipeId}`} style={{ color: colors.primary, fontSize: '0.75rem' }}>View original</Link></>
+            )}
           </span>
           {recipe.createdBy && (
             <span style={styles.author}>Added by {recipe.createdBy.name}</span>

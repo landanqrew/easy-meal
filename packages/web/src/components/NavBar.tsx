@@ -15,6 +15,9 @@ export default function NavBar() {
     if (path === '/recipes') {
       return location.pathname === '/recipes' || location.pathname.startsWith('/recipes/') || location.pathname.startsWith('/recipe-lists')
     }
+    if (path === '/discover') {
+      return location.pathname === '/discover' || location.pathname.startsWith('/discover/')
+    }
     return location.pathname.startsWith(path)
   }
 
@@ -37,6 +40,7 @@ export default function NavBar() {
 
           <div className="home-center-links">
             <Link to="/recipes" className={`home-nav-link${isActive('/recipes') ? ' active' : ''}`}>Recipes</Link>
+            <Link to="/discover" className={`home-nav-link${isActive('/discover') ? ' active' : ''}`}>Discover</Link>
             <Link to="/meal-plan" className={`home-nav-link${isActive('/meal-plan') ? ' active' : ''}`}>Meal Plan</Link>
             <Link to="/grocery-lists" className={`home-nav-link${isActive('/grocery-lists') ? ' active' : ''}`}>Groceries</Link>
             <Link to="/household" className={`home-nav-link${isActive('/household') ? ' active' : ''}`}>Household</Link>
@@ -65,6 +69,7 @@ export default function NavBar() {
 
       <div className={`mobile-menu-overlay${menuOpen ? ' open' : ''}`}>
         <Link to="/recipes" className={isActive('/recipes') ? 'active' : ''} onClick={closeMenu}>Recipes</Link>
+        <Link to="/discover" className={isActive('/discover') ? 'active' : ''} onClick={closeMenu}>Discover</Link>
         <Link to="/meal-plan" className={isActive('/meal-plan') ? 'active' : ''} onClick={closeMenu}>Meal Plan</Link>
         <Link to="/grocery-lists" className={isActive('/grocery-lists') ? 'active' : ''} onClick={closeMenu}>Groceries</Link>
         <Link to="/household" className={isActive('/household') ? 'active' : ''} onClick={closeMenu}>Household</Link>

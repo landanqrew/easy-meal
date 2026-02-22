@@ -16,6 +16,8 @@ import MealPlan from './pages/MealPlan'
 import ChatRecipe from './pages/ChatRecipe'
 import RecipeLists from './pages/RecipeLists'
 import RecipeListDetail from './pages/RecipeListDetail'
+import Discover from './pages/Discover'
+import PublicRecipeDetail from './pages/PublicRecipeDetail'
 
 function Home() {
   const { data: session, isPending } = useSession()
@@ -36,6 +38,7 @@ function Home() {
           {session && (
             <div className="home-center-links">
               <Link to="/recipes" className="home-nav-link">Recipes</Link>
+              <Link to="/discover" className="home-nav-link">Discover</Link>
               <Link to="/meal-plan" className="home-nav-link">Meal Plan</Link>
               <Link to="/grocery-lists" className="home-nav-link">Groceries</Link>
               <Link to="/household" className="home-nav-link">Household</Link>
@@ -253,6 +256,22 @@ export default function App() {
           element={
             <ProtectedRoute>
               <RecipeListDetail />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/discover"
+          element={
+            <ProtectedRoute>
+              <Discover />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/discover/recipes/:id"
+          element={
+            <ProtectedRoute>
+              <PublicRecipeDetail />
             </ProtectedRoute>
           }
         />

@@ -12,6 +12,7 @@ import {
   primaryKey,
   unique,
   index,
+  type AnyPgColumn,
 } from 'drizzle-orm/pg-core'
 import { relations } from 'drizzle-orm'
 import { user } from './auth-schema'
@@ -36,6 +37,7 @@ export const recipeSourceEnum = pgEnum('recipe_source', [
   'ai_generated',
   'manual',
   'imported',
+  'community',
 ])
 
 export const groceryListStatusEnum = pgEnum('grocery_list_status', [
@@ -124,6 +126,9 @@ export const recipes = pgTable(
     prepTime: integer('prep_time'), // minutes
     cookTime: integer('cook_time'), // minutes
     source: recipeSourceEnum('source').default('manual').notNull(),
+    isPublic: boolean('is_public').default(false).notNull(),
+    copiedFromRecipeId: uuid('copied_from_recipe_id')
+      .references((): AnyPgColumn => recipes.id, { onDelete: 'set null' }),
 
     // Metadata
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
@@ -136,6 +141,7 @@ export const recipes = pgTable(
     index('idx_recipes_cuisine').on(table.cuisine),
     index('idx_recipes_source').on(table.source),
     index('idx_recipes_created_at').on(table.createdAt),
+    index('idx_recipes_is_public').on(table.isPublic),
   ]
 )
 
@@ -380,6 +386,37 @@ export const mealPlans = pgTable(
 )
 
 // ============================================================================
+// RECIPE CHECK-INS
+// ============================================================================
+
+export const recipeCheckins = pgTable(
+  'recipe_checkins',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    recipeId: uuid('recipe_id')
+      .references(() => recipes.id, { onDelete: 'cascade' })
+      .notNull(),
+    userId: text('user_id')
+      .references(() => user.id, { onDelete: 'cascade' })
+      .notNull(),
+    notes: text('notes'),
+    enjoymentRating: integer('enjoyment_rating').notNull(),
+    instructionRating: integer('instruction_rating').notNull(),
+
+    // Metadata
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+    createdByUserId: text('created_by_user_id').references(() => user.id, { onDelete: 'set null' }),
+    updatedByUserId: text('updated_by_user_id').references(() => user.id, { onDelete: 'set null' }),
+  },
+  (table) => [
+    index('idx_checkins_recipe_id').on(table.recipeId),
+    index('idx_checkins_user_id').on(table.userId),
+    index('idx_checkins_created_at').on(table.createdAt),
+  ]
+)
+
+// ============================================================================
 // RELATIONS
 // ============================================================================
 
@@ -405,10 +442,16 @@ export const recipesRelations = relations(recipes, ({ one, many }) => ({
     fields: [recipes.createdByUserId],
     references: [user.id],
   }),
+  copiedFrom: one(recipes, {
+    fields: [recipes.copiedFromRecipeId],
+    references: [recipes.id],
+    relationName: 'copiedFrom',
+  }),
   recipeIngredients: many(recipeIngredients),
   recipeTags: many(recipeTags),
   recipeListItems: many(recipeListItems),
   mealPlans: many(mealPlans),
+  checkins: many(recipeCheckins),
 }))
 
 export const recipeIngredientsRelations = relations(recipeIngredients, ({ one }) => ({
@@ -498,6 +541,17 @@ export const mealPlansRelations = relations(mealPlans, ({ one }) => ({
   }),
   createdBy: one(user, {
     fields: [mealPlans.createdByUserId],
+    references: [user.id],
+  }),
+}))
+
+export const recipeCheckinsRelations = relations(recipeCheckins, ({ one }) => ({
+  recipe: one(recipes, {
+    fields: [recipeCheckins.recipeId],
+    references: [recipes.id],
+  }),
+  user: one(user, {
+    fields: [recipeCheckins.userId],
     references: [user.id],
   }),
 }))

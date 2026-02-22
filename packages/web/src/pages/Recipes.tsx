@@ -188,7 +188,7 @@ export default function Recipes() {
               )}
               <div style={styles.recipeFooter}>
                 <span>
-                  {recipe.source === 'ai_generated' ? '✨ AI' : '✏️ Manual'}
+                  {recipe.source === 'ai_generated' ? '✨ AI' : recipe.source === 'community' ? '🌍 Community' : '✏️ Manual'}
                 </span>
                 {recipe.createdBy && (
                   <span>by {recipe.createdBy.name}</span>
