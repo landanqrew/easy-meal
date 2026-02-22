@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useSession } from '../lib/auth'
+import { colors, shadows, radius } from '../lib/theme'
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001'
 
@@ -230,8 +231,8 @@ export default function RecipeDetail() {
           <div style={styles.header}>
             <div className="skeleton" style={{ width: '60px', height: '0.875rem' }} />
             <div style={{ display: 'flex', gap: '0.5rem' }}>
-              <div className="skeleton" style={{ width: '50px', height: '32px', borderRadius: '6px' }} />
-              <div className="skeleton" style={{ width: '60px', height: '32px', borderRadius: '6px' }} />
+              <div className="skeleton" style={{ width: '50px', height: '32px', borderRadius: radius.sm }} />
+              <div className="skeleton" style={{ width: '60px', height: '32px', borderRadius: radius.sm }} />
             </div>
           </div>
           <div className="skeleton" style={{ width: '65%', height: '1.75rem', marginBottom: '0.75rem' }} />
@@ -244,14 +245,14 @@ export default function RecipeDetail() {
           <div className="skeleton" style={{ width: '90%', height: '1rem', marginBottom: '1.5rem' }} />
           <div className="skeleton" style={{ width: '100px', height: '1.125rem', marginBottom: '1rem' }} />
           {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} style={{ display: 'flex', gap: '1rem', padding: '0.5rem 0', borderBottom: '1px solid #F0E8E0' }}>
+            <div key={i} style={{ display: 'flex', gap: '1rem', padding: '0.5rem 0', borderBottom: `1px solid ${colors.borderLight}` }}>
               <div className="skeleton" style={{ width: '80px', height: '0.875rem' }} />
               <div className="skeleton" style={{ width: '60%', height: '0.875rem' }} />
             </div>
           ))}
           <div className="skeleton" style={{ width: '100px', height: '1.125rem', margin: '2rem 0 1rem' }} />
           {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} style={{ display: 'flex', gap: '1rem', padding: '1rem 0', borderBottom: '1px solid #F0E8E0' }}>
+            <div key={i} style={{ display: 'flex', gap: '1rem', padding: '1rem 0', borderBottom: `1px solid ${colors.borderLight}` }}>
               <div className="skeleton" style={{ width: '28px', height: '28px', borderRadius: '50%' }} />
               <div className="skeleton" style={{ width: '85%', height: '0.875rem' }} />
             </div>
@@ -279,25 +280,25 @@ export default function RecipeDetail() {
       <div style={styles.card}>
         {/* Header */}
         <div style={styles.header}>
-          <Link to="/recipes" style={styles.backLink}>
+          <Link to="/recipes" className="back-link">
             ← Back
           </Link>
           <div style={{ display: 'flex', gap: '0.5rem' }}>
             {editing ? (
               <>
-                <button onClick={cancelEditing} style={styles.cancelButton} disabled={saving}>
+                <button onClick={cancelEditing} className="btn-secondary" style={{ fontSize: '0.875rem', padding: '0.5rem 1rem' }} disabled={saving}>
                   Cancel
                 </button>
-                <button onClick={handleSave} style={styles.saveButton} disabled={saving}>
+                <button onClick={handleSave} className="btn-primary" style={{ fontSize: '0.875rem', padding: '0.5rem 1rem' }} disabled={saving}>
                   {saving ? 'Saving...' : 'Save'}
                 </button>
               </>
             ) : (
               <>
-                <button onClick={startEditing} style={styles.editButton}>
+                <button onClick={startEditing} className="btn-secondary" style={{ fontSize: '0.875rem', padding: '0.5rem 1rem' }}>
                   Edit
                 </button>
-                <button onClick={handleDelete} style={styles.deleteButton} disabled={deleting}>
+                <button onClick={handleDelete} className="btn-danger-outline" style={{ fontSize: '0.875rem', padding: '0.5rem 1rem' }} disabled={deleting}>
                   {deleting ? 'Deleting...' : 'Delete'}
                 </button>
               </>
@@ -305,7 +306,7 @@ export default function RecipeDetail() {
           </div>
         </div>
 
-        {error && <div style={styles.error}>{error}</div>}
+        {error && <div className="error-message">{error}</div>}
 
         {/* Title */}
         {editing && editData ? (
@@ -518,22 +519,18 @@ export default function RecipeDetail() {
 }
 
 const styles: Record<string, React.CSSProperties> = {
-  loading: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: '100vh',
-  },
   container: {
     minHeight: '100vh',
-    background: '#FDF8F4',
+    background: colors.bg,
     padding: '2rem 1rem',
+    paddingTop: '4.5rem',
   },
   card: {
     background: 'white',
     padding: '2rem',
-    borderRadius: '12px',
-    boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+    borderRadius: radius.lg,
+    boxShadow: shadows.md,
+    border: `1px solid ${colors.borderLight}`,
     maxWidth: '700px',
     margin: '0 auto',
   },
@@ -543,60 +540,11 @@ const styles: Record<string, React.CSSProperties> = {
     alignItems: 'center',
     marginBottom: '1.5rem',
   },
-  backLink: {
-    color: '#7A6B60',
-    textDecoration: 'none',
-    fontSize: '0.875rem',
-  },
-  editButton: {
-    padding: '0.5rem 1rem',
-    borderRadius: '6px',
-    border: '1px solid #E07A5F',
-    background: 'white',
-    color: '#E07A5F',
-    cursor: 'pointer',
-    fontSize: '0.875rem',
-  },
-  saveButton: {
-    padding: '0.5rem 1rem',
-    borderRadius: '6px',
-    border: 'none',
-    background: '#E07A5F',
-    color: 'white',
-    cursor: 'pointer',
-    fontSize: '0.875rem',
-    fontWeight: 500,
-  },
-  cancelButton: {
-    padding: '0.5rem 1rem',
-    borderRadius: '6px',
-    border: '1px solid #E8DDD4',
-    background: 'white',
-    color: '#7A6B60',
-    cursor: 'pointer',
-    fontSize: '0.875rem',
-  },
-  deleteButton: {
-    padding: '0.5rem 1rem',
-    borderRadius: '6px',
-    border: '1px solid #C44536',
-    background: 'white',
-    color: '#C44536',
-    cursor: 'pointer',
-    fontSize: '0.875rem',
-  },
-  error: {
-    background: '#FDECEA',
-    color: '#C44536',
-    padding: '0.75rem',
-    borderRadius: '6px',
-    marginBottom: '1rem',
-    fontSize: '0.875rem',
-  },
   title: {
     margin: 0,
     fontSize: '1.75rem',
-    fontWeight: 600,
+    fontWeight: 700,
+    letterSpacing: '-0.02em',
     marginBottom: '0.75rem',
   },
   meta: {
@@ -604,7 +552,7 @@ const styles: Record<string, React.CSSProperties> = {
     flexWrap: 'wrap',
     gap: '1rem',
     fontSize: '0.875rem',
-    color: '#7A6B60',
+    color: colors.textSecondary,
     marginBottom: '1rem',
   },
   metaEditGroup: {
@@ -620,14 +568,14 @@ const styles: Record<string, React.CSSProperties> = {
   },
   tag: {
     padding: '0.25rem 0.75rem',
-    borderRadius: '20px',
-    background: '#FDF0ED',
-    color: '#E07A5F',
+    borderRadius: radius.full,
+    background: colors.primaryLight,
+    color: colors.primary,
     fontSize: '0.75rem',
     textTransform: 'capitalize',
   },
   description: {
-    color: '#3D3028',
+    color: colors.text,
     lineHeight: 1.6,
     marginBottom: '1.5rem',
     fontSize: '1.0625rem',
@@ -637,10 +585,10 @@ const styles: Record<string, React.CSSProperties> = {
   },
   sectionTitle: {
     fontSize: '1.125rem',
-    fontWeight: 600,
+    fontWeight: 700,
     marginBottom: '1rem',
     paddingBottom: '0.5rem',
-    borderBottom: '1px solid #E8DDD4',
+    borderBottom: `1px solid ${colors.border}`,
   },
   ingredientList: {
     listStyle: 'none',
@@ -651,11 +599,11 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     gap: '1rem',
     padding: '0.5rem 0',
-    borderBottom: '1px solid #F0E8E0',
+    borderBottom: `1px solid ${colors.borderLight}`,
   },
   ingredientQty: {
     minWidth: '80px',
-    color: '#7A6B60',
+    color: colors.textSecondary,
     fontSize: '0.875rem',
   },
   ingredientName: {
@@ -663,7 +611,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   ingredientPrep: {
     fontWeight: 400,
-    color: '#7A6B60',
+    color: colors.textSecondary,
   },
   instructionList: {
     listStyle: 'none',
@@ -675,13 +623,13 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     gap: '1rem',
     padding: '1rem 0',
-    borderBottom: '1px solid #F0E8E0',
+    borderBottom: `1px solid ${colors.borderLight}`,
   },
   stepNumber: {
     width: '28px',
     height: '28px',
     borderRadius: '50%',
-    background: '#E07A5F',
+    background: colors.primary,
     color: 'white',
     display: 'flex',
     alignItems: 'center',
@@ -698,9 +646,9 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     justifyContent: 'space-between',
     fontSize: '0.75rem',
-    color: '#A89888',
+    color: colors.textMuted,
     paddingTop: '1rem',
-    borderTop: '1px solid #E8DDD4',
+    borderTop: `1px solid ${colors.border}`,
   },
   source: {},
   author: {},

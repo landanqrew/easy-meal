@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useSession } from '../lib/auth'
+import { colors, shadows, radius } from '../lib/theme'
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001'
 
@@ -124,13 +125,13 @@ export default function CreateGroceryList() {
           </div>
           <div style={{ marginBottom: '1.5rem' }}>
             <div className="skeleton" style={{ width: '70px', height: '0.875rem', marginBottom: '0.5rem' }} />
-            <div className="skeleton" style={{ width: '100%', height: '44px', borderRadius: '6px' }} />
+            <div className="skeleton" style={{ width: '100%', height: '44px', borderRadius: radius.sm }} />
           </div>
           <div>
             <div className="skeleton" style={{ width: '120px', height: '0.875rem', marginBottom: '0.5rem' }} />
             <div className="skeleton" style={{ width: '280px', height: '0.8125rem', marginBottom: '1rem' }} />
             {Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} style={{ border: '1px solid #E8DDD4', borderRadius: '8px', padding: '1rem', marginBottom: '0.75rem' }}>
+              <div key={i} style={{ border: `1px solid ${colors.border}`, borderRadius: '8px', padding: '1rem', marginBottom: '0.75rem' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                   <div className="skeleton" style={{ width: '24px', height: '24px', borderRadius: '4px' }} />
                   <div style={{ flex: 1 }}>
@@ -141,7 +142,7 @@ export default function CreateGroceryList() {
               </div>
             ))}
           </div>
-          <div className="skeleton" style={{ width: '100%', height: '44px', borderRadius: '6px', marginTop: '0.5rem' }} />
+          <div className="skeleton" style={{ width: '100%', height: '44px', borderRadius: radius.sm, marginTop: '0.5rem' }} />
         </div>
       </div>
     )
@@ -151,13 +152,13 @@ export default function CreateGroceryList() {
     <div style={styles.container}>
       <div style={styles.card}>
         <div style={styles.header}>
-          <Link to="/grocery-lists" style={styles.backLink}>
+          <Link to="/grocery-lists" className="back-link">
             ← Back
           </Link>
           <h1 style={styles.title}>Create Grocery List</h1>
         </div>
 
-        {error && <div style={styles.error}>{error}</div>}
+        {error && <div className="error-message">{error}</div>}
 
         <div style={styles.section}>
           <label style={styles.label}>List Name</label>
@@ -180,6 +181,7 @@ export default function CreateGroceryList() {
 
           {recipes.length === 0 ? (
             <div style={styles.emptyState}>
+              <p style={{ fontSize: '1.5rem', marginBottom: '0.25rem' }}>📝</p>
               <p>No recipes yet.</p>
               <Link to="/recipes/create" style={styles.emptyLink}>
                 Create your first recipe
@@ -247,10 +249,8 @@ export default function CreateGroceryList() {
         <button
           onClick={handleCreate}
           disabled={creating || selectedRecipes.size === 0}
-          style={{
-            ...styles.createButton,
-            ...(creating || selectedRecipes.size === 0 ? styles.createButtonDisabled : {}),
-          }}
+          className="btn-primary"
+          style={{ width: '100%', padding: '0.875rem', fontSize: '1rem' }}
         >
           {creating ? 'Creating...' : 'Create Grocery List'}
         </button>
@@ -260,45 +260,29 @@ export default function CreateGroceryList() {
 }
 
 const styles: Record<string, React.CSSProperties> = {
-  loading: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: '100vh',
-  },
   container: {
     minHeight: '100vh',
-    background: '#FDF8F4',
+    background: colors.bg,
     padding: '2rem 1rem',
+    paddingTop: '4.5rem',
   },
   card: {
     background: 'white',
     padding: '2rem',
-    borderRadius: '12px',
-    boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+    borderRadius: radius.lg,
+    boxShadow: shadows.md,
+    border: `1px solid ${colors.borderLight}`,
     maxWidth: '700px',
     margin: '0 auto',
   },
   header: {
     marginBottom: '1.5rem',
   },
-  backLink: {
-    color: '#7A6B60',
-    textDecoration: 'none',
-    fontSize: '0.875rem',
-  },
   title: {
     margin: '0.5rem 0 0',
-    fontSize: '1.5rem',
-    fontWeight: 600,
-  },
-  error: {
-    background: '#FDECEA',
-    color: '#C44536',
-    padding: '0.75rem',
-    borderRadius: '6px',
-    marginBottom: '1rem',
-    fontSize: '0.875rem',
+    fontSize: '1.75rem',
+    fontWeight: 700,
+    letterSpacing: '-0.02em',
   },
   section: {
     marginBottom: '1.5rem',
@@ -311,26 +295,26 @@ const styles: Record<string, React.CSSProperties> = {
   },
   hint: {
     fontSize: '0.8125rem',
-    color: '#7A6B60',
+    color: colors.textSecondary,
     margin: '0 0 1rem',
   },
   input: {
     width: '100%',
     padding: '0.75rem',
-    borderRadius: '6px',
-    border: '1px solid #E8DDD4',
+    borderRadius: radius.sm,
+    border: `1px solid ${colors.border}`,
     fontSize: '1rem',
     boxSizing: 'border-box',
   },
   emptyState: {
     textAlign: 'center',
     padding: '2rem',
-    color: '#7A6B60',
-    background: '#FAF6F2',
-    borderRadius: '8px',
+    color: colors.textSecondary,
+    background: colors.warmBg,
+    borderRadius: radius.md,
   },
   emptyLink: {
-    color: '#E07A5F',
+    color: colors.primary,
     textDecoration: 'none',
   },
   recipeList: {
@@ -339,15 +323,15 @@ const styles: Record<string, React.CSSProperties> = {
     gap: '0.75rem',
   },
   recipeCard: {
-    border: '1px solid #E8DDD4',
-    borderRadius: '8px',
+    border: `1px solid ${colors.border}`,
+    borderRadius: radius.md,
     padding: '1rem',
     cursor: 'pointer',
     transition: 'all 0.15s',
   },
   recipeCardSelected: {
-    borderColor: '#E07A5F',
-    background: '#FDF0ED',
+    borderColor: colors.primary,
+    background: colors.primaryLight,
   },
   recipeMain: {
     display: 'flex',
@@ -357,14 +341,14 @@ const styles: Record<string, React.CSSProperties> = {
   checkbox: {
     width: '24px',
     height: '24px',
-    borderRadius: '4px',
-    border: '2px solid #E8DDD4',
+    borderRadius: radius.sm,
+    border: `2px solid ${colors.border}`,
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
     fontSize: '0.875rem',
     fontWeight: 600,
-    color: '#E07A5F',
+    color: colors.primary,
     background: 'white',
     flexShrink: 0,
   },
@@ -377,7 +361,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   recipeMeta: {
     fontSize: '0.8125rem',
-    color: '#7A6B60',
+    color: colors.textSecondary,
   },
   servingsControl: {
     display: 'flex',
@@ -389,8 +373,8 @@ const styles: Record<string, React.CSSProperties> = {
   servingsButton: {
     width: '28px',
     height: '28px',
-    borderRadius: '4px',
-    border: '1px solid #E8DDD4',
+    borderRadius: radius.sm,
+    border: `1px solid ${colors.border}`,
     background: 'white',
     cursor: 'pointer',
     fontSize: '1rem',
@@ -405,21 +389,6 @@ const styles: Record<string, React.CSSProperties> = {
   },
   servingsLabel: {
     fontSize: '0.8125rem',
-    color: '#7A6B60',
-  },
-  createButton: {
-    width: '100%',
-    padding: '0.875rem',
-    borderRadius: '6px',
-    border: 'none',
-    background: '#E07A5F',
-    color: 'white',
-    fontSize: '1rem',
-    fontWeight: 500,
-    cursor: 'pointer',
-  },
-  createButtonDisabled: {
-    background: '#ccc',
-    cursor: 'not-allowed',
+    color: colors.textSecondary,
   },
 }

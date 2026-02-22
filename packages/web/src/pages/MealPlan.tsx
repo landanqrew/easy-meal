@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useSession } from '../lib/auth'
+import { colors, radius } from '../lib/theme'
 import type { MealType } from '@easy-meal/shared'
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001'
@@ -261,13 +262,6 @@ export default function MealPlan() {
             </div>
           )}
         </div>
-        <nav className="bottom-nav-bar">
-          <Link to="/">Home</Link>
-          <Link to="/recipes">Recipes</Link>
-          <Link to="/meal-plan" className="active">Meal Plan</Link>
-          <Link to="/grocery-lists">Groceries</Link>
-          <Link to="/profile">Profile</Link>
-        </nav>
       </div>
     )
   }
@@ -278,20 +272,20 @@ export default function MealPlan() {
         <div style={styles.header}>
           <h1 style={styles.title}>Meal Plan</h1>
           <div style={styles.weekNav}>
-            <button onClick={() => navigateWeek(-1)} style={styles.navButton}>
+            <button onClick={() => navigateWeek(-1)} className="btn-secondary" style={{ padding: '0.5rem 0.75rem', fontSize: '1.125rem', lineHeight: 1, minHeight: 'unset' }}>
               ‹
             </button>
             <span style={styles.weekLabel}>{formatWeekRange(weekStart)}</span>
-            <button onClick={() => navigateWeek(1)} style={styles.navButton}>
+            <button onClick={() => navigateWeek(1)} className="btn-secondary" style={{ padding: '0.5rem 0.75rem', fontSize: '1.125rem', lineHeight: 1, minHeight: 'unset' }}>
               ›
             </button>
-            <button onClick={goToToday} style={styles.todayButton}>
+            <button onClick={goToToday} className="btn-primary" style={{ padding: '0.5rem 1rem', fontSize: '0.8125rem', minHeight: 'unset' }}>
               Today
             </button>
           </div>
         </div>
 
-        {error && <div style={styles.error}>{error}</div>}
+        {error && <div className="error-message">{error}</div>}
 
         {isMobile ? (
           // Mobile: vertical day list
@@ -498,29 +492,15 @@ export default function MealPlan() {
           </div>
         </div>
       )}
-
-      <nav className="bottom-nav-bar">
-        <Link to="/">Home</Link>
-        <Link to="/recipes">Recipes</Link>
-        <Link to="/meal-plan" className="active">Meal Plan</Link>
-        <Link to="/grocery-lists">Groceries</Link>
-        <Link to="/profile">Profile</Link>
-      </nav>
     </div>
   )
 }
 
 const styles: Record<string, React.CSSProperties> = {
-  loading: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: '100vh',
-  },
   container: {
     minHeight: '100vh',
-    background: '#FDF8F4',
-    paddingBottom: '5rem',
+    background: colors.bg,
+    paddingTop: '4.5rem',
   },
   content: {
     padding: '2rem 1rem',
@@ -537,49 +517,22 @@ const styles: Record<string, React.CSSProperties> = {
   },
   title: {
     margin: 0,
-    fontSize: '1.5rem',
-    fontWeight: 600,
-    color: '#2D2420',
+    fontSize: '1.75rem',
+    fontWeight: 700,
+    letterSpacing: '-0.02em',
+    color: colors.text,
   },
   weekNav: {
     display: 'flex',
     alignItems: 'center',
     gap: '0.75rem',
   },
-  navButton: {
-    padding: '0.5rem 0.75rem',
-    borderRadius: '6px',
-    border: '1px solid #E8DDD4',
-    background: 'white',
-    cursor: 'pointer',
-    fontSize: '1.125rem',
-    lineHeight: 1,
-    color: '#2D2420',
-  },
   weekLabel: {
     fontSize: '0.9375rem',
     fontWeight: 500,
-    color: '#2D2420',
+    color: colors.text,
     minWidth: '140px',
     textAlign: 'center',
-  },
-  todayButton: {
-    padding: '0.5rem 1rem',
-    borderRadius: '6px',
-    border: 'none',
-    background: '#E07A5F',
-    color: 'white',
-    cursor: 'pointer',
-    fontSize: '0.8125rem',
-    fontWeight: 500,
-  },
-  error: {
-    background: '#FDECEA',
-    color: '#C44536',
-    padding: '0.75rem',
-    borderRadius: '6px',
-    marginBottom: '1rem',
-    fontSize: '0.875rem',
   },
   // Desktop grid
   calendarGrid: {
@@ -595,12 +548,12 @@ const styles: Record<string, React.CSSProperties> = {
   dayHeader: {
     textAlign: 'center',
     padding: '0.75rem 0.25rem',
-    borderRadius: '8px',
-    background: '#FBF0DA',
-    color: '#2D2420',
+    borderRadius: radius.md,
+    background: colors.accentWarm,
+    color: colors.text,
   },
   dayHeaderToday: {
-    background: '#E07A5F',
+    background: colors.primary,
     color: 'white',
   },
   dayName: {
@@ -615,16 +568,16 @@ const styles: Record<string, React.CSSProperties> = {
   },
   mealSlot: {
     background: 'white',
-    borderRadius: '8px',
+    borderRadius: radius.md,
     padding: '0.75rem',
     minHeight: '70px',
-    border: '1px solid #E8DDD4',
+    border: `1px solid ${colors.border}`,
   },
   mealSlotLabel: {
     fontSize: '0.625rem',
     fontWeight: 600,
     textTransform: 'uppercase',
-    color: '#A89888',
+    color: colors.textMuted,
     marginBottom: '0.375rem',
     letterSpacing: '0.03em',
   },
@@ -637,7 +590,7 @@ const styles: Record<string, React.CSSProperties> = {
   assignedRecipe: {
     fontSize: '0.8125rem',
     fontWeight: 500,
-    color: '#2D2420',
+    color: colors.text,
     cursor: 'pointer',
     textDecoration: 'none',
     display: 'block',
@@ -645,7 +598,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   removeButton: {
     fontSize: '1rem',
-    color: '#A89888',
+    color: colors.textMuted,
     background: 'none',
     border: 'none',
     cursor: 'pointer',
@@ -655,7 +608,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   addButton: {
     fontSize: '0.75rem',
-    color: '#E07A5F',
+    color: colors.primary,
     background: 'none',
     border: 'none',
     cursor: 'pointer',
@@ -670,20 +623,20 @@ const styles: Record<string, React.CSSProperties> = {
   },
   mobileDay: {
     background: 'white',
-    borderRadius: '10px',
+    borderRadius: radius.md,
     overflow: 'hidden',
-    border: '1px solid #E8DDD4',
+    border: `1px solid ${colors.border}`,
   },
   mobileDayHeader: {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: '0.75rem 1rem',
-    background: '#FBF0DA',
-    color: '#2D2420',
+    background: colors.accentWarm,
+    color: colors.text,
   },
   mobileDayHeaderToday: {
-    background: '#E07A5F',
+    background: colors.primary,
     color: 'white',
   },
   mobileMeals: {
@@ -693,29 +646,6 @@ const styles: Record<string, React.CSSProperties> = {
     gap: '0.5rem',
   },
   // Modal
-  overlay: {
-    position: 'fixed',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    background: 'rgba(0,0,0,0.3)',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 100,
-    padding: '1rem',
-  },
-  pickerCard: {
-    background: 'white',
-    borderRadius: '12px',
-    padding: '1.5rem',
-    width: '100%',
-    maxWidth: '400px',
-    maxHeight: '70vh',
-    display: 'flex',
-    flexDirection: 'column',
-  },
   pickerHeader: {
     display: 'flex',
     justifyContent: 'space-between',
@@ -725,27 +655,27 @@ const styles: Record<string, React.CSSProperties> = {
     margin: 0,
     fontSize: '1.125rem',
     fontWeight: 600,
-    color: '#2D2420',
+    color: colors.text,
   },
   pickerClose: {
     background: 'none',
     border: 'none',
     fontSize: '1.5rem',
     cursor: 'pointer',
-    color: '#A89888',
+    color: colors.textMuted,
     padding: '0.25rem',
     lineHeight: 1,
   },
   pickerSubtitle: {
     fontSize: '0.8125rem',
-    color: '#7A6B60',
+    color: colors.textSecondary,
     margin: '0.25rem 0 1rem',
   },
   pickerSearch: {
     width: '100%',
     padding: '0.75rem',
-    borderRadius: '6px',
-    border: '1px solid #E8DDD4',
+    borderRadius: radius.sm,
+    border: `1px solid ${colors.border}`,
     fontSize: '0.875rem',
     marginBottom: '0.75rem',
     boxSizing: 'border-box',
@@ -756,30 +686,18 @@ const styles: Record<string, React.CSSProperties> = {
   },
   pickerEmpty: {
     textAlign: 'center',
-    color: '#7A6B60',
+    color: colors.textSecondary,
     padding: '2rem 0',
     fontSize: '0.875rem',
-  },
-  pickerRecipe: {
-    display: 'flex',
-    flexDirection: 'column',
-    width: '100%',
-    padding: '0.75rem',
-    borderRadius: '6px',
-    cursor: 'pointer',
-    border: '1px solid #E8DDD4',
-    marginBottom: '0.5rem',
-    background: 'white',
-    textAlign: 'left',
   },
   pickerRecipeTitle: {
     fontWeight: 500,
     fontSize: '0.875rem',
-    color: '#2D2420',
+    color: colors.text,
   },
   pickerRecipeMeta: {
     fontSize: '0.75rem',
-    color: '#7A6B60',
+    color: colors.textSecondary,
     marginTop: '0.25rem',
   },
   pickerCreateRow: {
@@ -790,29 +708,12 @@ const styles: Record<string, React.CSSProperties> = {
   pickerCreateButton: {
     flex: 1,
     padding: '0.75rem',
-    borderRadius: '6px',
-    border: '1px dashed #E07A5F',
-    background: '#FDF8F4',
-    color: '#E07A5F',
+    borderRadius: radius.sm,
+    border: `1px dashed ${colors.primary}`,
+    background: colors.bg,
+    color: colors.primary,
     cursor: 'pointer',
     fontSize: '0.8125rem',
     fontWeight: 500,
-  },
-  // Bottom nav
-  bottomNav: {
-    position: 'fixed',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    background: 'white',
-    display: 'flex',
-    justifyContent: 'space-around',
-    padding: '0.75rem 0',
-    borderTop: '1px solid #E8DDD4',
-  },
-  bottomNavLink: {
-    color: '#7A6B60',
-    textDecoration: 'none',
-    fontSize: '0.875rem',
   },
 }

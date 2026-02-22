@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { signIn } from '../lib/auth'
+import { colors, radius } from '../lib/theme'
 
 export default function Login() {
   const navigate = useNavigate()
@@ -40,10 +41,13 @@ export default function Login() {
   return (
     <div style={styles.container}>
       <div style={styles.card}>
-        <h1 style={styles.title}>Sign In</h1>
-        <p style={styles.subtitle}>Welcome back to Easy Meal</p>
+        <div style={styles.logoRow}>
+          <span style={{ fontSize: '2rem' }}>🥘</span>
+        </div>
+        <h1 style={styles.title}>Welcome Back</h1>
+        <p style={styles.subtitle}>Sign in to Easy Meal</p>
 
-        {error && <div style={styles.error}>{error}</div>}
+        {error && <div className="error-message">{error}</div>}
 
         <form onSubmit={handleSubmit} style={styles.form}>
           <div style={styles.field}>
@@ -68,21 +72,23 @@ export default function Login() {
             />
           </div>
 
-          <button type="submit" style={styles.button} disabled={loading}>
+          <button type="submit" className="btn-primary" style={styles.submitBtn} disabled={loading}>
             {loading ? 'Signing in...' : 'Sign In'}
           </button>
         </form>
 
         <div style={styles.divider}>
+          <div style={styles.dividerLine} />
           <span style={styles.dividerText}>or</span>
+          <div style={styles.dividerLine} />
         </div>
 
-        <button onClick={handleGoogleSignIn} style={styles.googleButton}>
+        <button onClick={handleGoogleSignIn} className="btn-secondary" style={styles.googleBtn}>
           Continue with Google
         </button>
 
         <p style={styles.footer}>
-          Don't have an account? <Link to="/register">Sign up</Link>
+          Don't have an account? <Link to="/register" style={{ color: colors.primary, fontWeight: 600 }}>Sign up</Link>
         </p>
       </div>
     </div>
@@ -95,35 +101,35 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    background: '#FDF8F4',
+    background: colors.bg,
     padding: '1rem',
   },
   card: {
     background: 'white',
-    padding: '2rem',
-    borderRadius: '12px',
-    boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+    padding: '2.5rem 2rem',
+    borderRadius: radius.lg,
+    boxShadow: '0 4px 16px rgba(184, 165, 150, 0.15), 0 1px 3px rgba(184, 165, 150, 0.1)',
+    border: `1px solid ${colors.borderLight}`,
     width: '100%',
-    maxWidth: '400px',
+    maxWidth: '420px',
+  },
+  logoRow: {
+    textAlign: 'center',
+    marginBottom: '0.75rem',
   },
   title: {
     margin: 0,
-    fontSize: '1.5rem',
-    fontWeight: 600,
-    color: '#2D2420',
+    fontSize: '1.75rem',
+    fontWeight: 700,
+    color: colors.text,
+    letterSpacing: '-0.02em',
+    textAlign: 'center',
   },
   subtitle: {
-    color: '#7A6B60',
-    marginTop: '0.5rem',
-    marginBottom: '1.5rem',
-  },
-  error: {
-    background: '#FDECEA',
-    color: '#C44536',
-    padding: '0.75rem',
-    borderRadius: '6px',
-    marginBottom: '1rem',
-    fontSize: '0.875rem',
+    color: colors.textSecondary,
+    marginTop: '0.375rem',
+    marginBottom: '1.75rem',
+    textAlign: 'center',
   },
   form: {
     display: 'flex',
@@ -133,56 +139,51 @@ const styles: Record<string, React.CSSProperties> = {
   field: {
     display: 'flex',
     flexDirection: 'column',
-    gap: '0.25rem',
+    gap: '0.375rem',
   },
   label: {
     fontSize: '0.875rem',
-    fontWeight: 500,
-    color: '#2D2420',
+    fontWeight: 600,
+    color: colors.text,
   },
   input: {
     padding: '0.75rem',
-    borderRadius: '6px',
-    border: '1px solid #E8DDD4',
+    borderRadius: radius.sm,
+    border: `1px solid ${colors.border}`,
     fontSize: '1rem',
+    background: 'white',
   },
-  button: {
-    padding: '0.75rem',
-    borderRadius: '6px',
-    border: 'none',
-    background: '#E07A5F',
-    color: 'white',
+  submitBtn: {
+    width: '100%',
+    padding: '0.875rem',
     fontSize: '1rem',
-    fontWeight: 500,
-    cursor: 'pointer',
     marginTop: '0.5rem',
   },
   divider: {
     display: 'flex',
     alignItems: 'center',
     margin: '1.5rem 0',
-    gap: '1rem',
+    gap: '0.75rem',
+  },
+  dividerLine: {
+    flex: 1,
+    height: '1px',
+    background: colors.borderLight,
   },
   dividerText: {
-    color: '#A89888',
-    fontSize: '0.875rem',
-    flex: 1,
-    textAlign: 'center',
-    position: 'relative',
+    color: colors.textMuted,
+    fontSize: '0.8125rem',
+    fontWeight: 500,
   },
-  googleButton: {
-    padding: '0.75rem',
-    borderRadius: '6px',
-    border: '1px solid #E8DDD4',
-    background: 'white',
-    fontSize: '1rem',
-    cursor: 'pointer',
+  googleBtn: {
     width: '100%',
+    padding: '0.75rem',
+    fontSize: '1rem',
   },
   footer: {
     textAlign: 'center',
     marginTop: '1.5rem',
-    color: '#7A6B60',
+    color: colors.textSecondary,
     fontSize: '0.875rem',
   },
 }

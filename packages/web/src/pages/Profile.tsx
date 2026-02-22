@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useSession, signOut } from '../lib/auth'
+import { colors, shadows, radius } from '../lib/theme'
 import type { DietaryRestriction } from '@easy-meal/shared'
 
 const DIETARY_OPTIONS: DietaryRestriction[] = [
@@ -91,17 +92,17 @@ export default function Profile() {
         <div style={styles.card}>
           <div style={styles.header}>
             <div className="skeleton" style={{ width: '80px', height: '1.5rem' }} />
-            <div className="skeleton" style={{ width: '75px', height: '36px', borderRadius: '6px' }} />
+            <div className="skeleton" style={{ width: '75px', height: '36px', borderRadius: radius.sm }} />
           </div>
           <div style={{ marginBottom: '2rem' }}>
             <div className="skeleton" style={{ width: '60px', height: '1rem', marginBottom: '1rem' }} />
             <div style={{ marginBottom: '1rem' }}>
               <div className="skeleton" style={{ width: '40px', height: '0.875rem', marginBottom: '0.25rem' }} />
-              <div className="skeleton" style={{ width: '100%', height: '44px', borderRadius: '6px' }} />
+              <div className="skeleton" style={{ width: '100%', height: '44px', borderRadius: radius.sm }} />
             </div>
             <div>
               <div className="skeleton" style={{ width: '40px', height: '0.875rem', marginBottom: '0.25rem' }} />
-              <div className="skeleton" style={{ width: '100%', height: '44px', borderRadius: '6px' }} />
+              <div className="skeleton" style={{ width: '100%', height: '44px', borderRadius: radius.sm }} />
             </div>
           </div>
           <div style={{ marginBottom: '2rem' }}>
@@ -112,7 +113,7 @@ export default function Profile() {
               ))}
             </div>
           </div>
-          <div className="skeleton" style={{ width: '100%', height: '44px', borderRadius: '6px' }} />
+          <div className="skeleton" style={{ width: '100%', height: '44px', borderRadius: radius.sm }} />
         </div>
       </div>
     )
@@ -123,19 +124,13 @@ export default function Profile() {
       <div style={styles.card}>
         <div style={styles.header}>
           <h1 style={styles.title}>Profile</h1>
-          <button onClick={handleSignOut} style={styles.signOutButton}>
+          <button onClick={handleSignOut} className="btn-secondary" style={{ fontSize: '0.875rem', padding: '0.5rem 1rem' }}>
             Sign Out
           </button>
         </div>
 
         {message && (
-          <div
-            style={{
-              ...styles.message,
-              background: message.includes('success') ? '#EDF5EC' : '#FDECEA',
-              color: message.includes('success') ? '#5B8C5A' : '#C44536',
-            }}
-          >
+          <div className={message.includes('success') ? 'success-message' : 'error-message'}>
             {message}
           </div>
         )}
@@ -149,7 +144,7 @@ export default function Profile() {
               type="email"
               value={session?.user?.email || ''}
               disabled
-              style={{ ...styles.input, background: '#FAF6F2' }}
+              style={{ ...styles.input, background: colors.warmBg }}
             />
           </div>
 
@@ -189,7 +184,7 @@ export default function Profile() {
           </div>
         </div>
 
-        <button onClick={handleSave} style={styles.saveButton} disabled={saving}>
+        <button onClick={handleSave} className="btn-primary" style={{ width: '100%', padding: '0.75rem 1.5rem', fontSize: '1rem' }} disabled={saving}>
           {saving ? 'Saving...' : 'Save Changes'}
         </button>
       </div>
@@ -200,21 +195,17 @@ export default function Profile() {
 const styles: Record<string, React.CSSProperties> = {
   container: {
     minHeight: '100vh',
-    background: '#FDF8F4',
+    background: colors.bg,
     padding: '2rem 1rem',
-  },
-  loading: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: '100vh',
+    paddingTop: '4.5rem',
   },
   card: {
     background: 'white',
     padding: '2rem',
-    borderRadius: '12px',
-    boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-    maxWidth: '600px',
+    borderRadius: radius.lg,
+    boxShadow: shadows.md,
+    border: `1px solid ${colors.borderLight}`,
+    maxWidth: '500px',
     margin: '0 auto',
   },
   header: {
@@ -225,32 +216,19 @@ const styles: Record<string, React.CSSProperties> = {
   },
   title: {
     margin: 0,
-    fontSize: '1.5rem',
-    fontWeight: 600,
-    color: '#2D2420',
-  },
-  signOutButton: {
-    padding: '0.5rem 1rem',
-    borderRadius: '6px',
-    border: '1px solid #E8DDD4',
-    background: 'white',
-    cursor: 'pointer',
-    fontSize: '0.875rem',
-  },
-  message: {
-    padding: '0.75rem',
-    borderRadius: '6px',
-    marginBottom: '1rem',
-    fontSize: '0.875rem',
+    fontSize: '1.75rem',
+    fontWeight: 700,
+    letterSpacing: '-0.02em',
+    color: colors.text,
   },
   section: {
     marginBottom: '2rem',
   },
   sectionTitle: {
-    fontSize: '1rem',
-    fontWeight: 600,
+    fontSize: '1.125rem',
+    fontWeight: 700,
     marginBottom: '1rem',
-    color: '#2D2420',
+    color: colors.text,
   },
   field: {
     display: 'flex',
@@ -261,17 +239,17 @@ const styles: Record<string, React.CSSProperties> = {
   label: {
     fontSize: '0.875rem',
     fontWeight: 500,
-    color: '#2D2420',
+    color: colors.text,
   },
   input: {
     padding: '0.75rem',
-    borderRadius: '6px',
-    border: '1px solid #E8DDD4',
+    borderRadius: radius.sm,
+    border: `1px solid ${colors.border}`,
     fontSize: '1rem',
   },
   hint: {
     fontSize: '0.875rem',
-    color: '#7A6B60',
+    color: colors.textSecondary,
     marginBottom: '1rem',
   },
   chips: {
@@ -281,27 +259,16 @@ const styles: Record<string, React.CSSProperties> = {
   },
   chip: {
     padding: '0.5rem 1rem',
-    borderRadius: '20px',
-    border: '1px solid #E8DDD4',
+    borderRadius: radius.full,
+    border: `1px solid ${colors.border}`,
     background: 'white',
     cursor: 'pointer',
     fontSize: '0.875rem',
     textTransform: 'capitalize',
   },
   chipSelected: {
-    background: '#E07A5F',
+    background: colors.primary,
     color: 'white',
-    borderColor: '#E07A5F',
-  },
-  saveButton: {
-    padding: '0.75rem 1.5rem',
-    borderRadius: '6px',
-    border: 'none',
-    background: '#E07A5F',
-    color: 'white',
-    fontSize: '1rem',
-    fontWeight: 500,
-    cursor: 'pointer',
-    width: '100%',
+    borderColor: colors.primary,
   },
 }

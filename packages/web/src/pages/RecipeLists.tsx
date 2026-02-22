@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useSession } from '../lib/auth'
+import { colors, shadows, radius } from '../lib/theme'
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001'
 
@@ -94,7 +95,7 @@ export default function RecipeLists() {
             <div className="skeleton" style={{ width: '100px', height: '1.5rem', marginBottom: '0.5rem' }} />
             <div className="skeleton" style={{ width: '60px', height: '0.875rem' }} />
           </div>
-          <div className="skeleton" style={{ width: '90px', height: '36px', borderRadius: '6px' }} />
+          <div className="skeleton" style={{ width: '90px', height: '36px', borderRadius: radius.sm }} />
         </div>
         <div style={styles.listGrid}>
           {Array.from({ length: 3 }).map((_, i) => (
@@ -108,13 +109,6 @@ export default function RecipeLists() {
             </div>
           ))}
         </div>
-        <nav className="bottom-nav-bar">
-          <Link to="/">Home</Link>
-          <Link to="/recipes">Recipes</Link>
-          <Link to="/meal-plan">Meal Plan</Link>
-          <Link to="/grocery-lists">Groceries</Link>
-          <Link to="/profile">Profile</Link>
-        </nav>
       </div>
     )
   }
@@ -130,13 +124,14 @@ export default function RecipeLists() {
         </div>
         <button
           onClick={() => setShowCreate(!showCreate)}
-          style={styles.createButton}
+          className="btn-primary"
+          style={{ fontSize: '0.875rem', padding: '0.75rem 1.25rem' }}
         >
           + New List
         </button>
       </div>
 
-      {error && <div style={styles.error}>{error}</div>}
+      {error && <div className="error-message" style={{ maxWidth: '900px', margin: '0 auto 1rem' }}>{error}</div>}
 
       {showCreate && (
         <div style={styles.createForm}>
@@ -161,7 +156,8 @@ export default function RecipeLists() {
             <button
               onClick={handleCreate}
               disabled={creating || !newName.trim()}
-              style={styles.submitButton}
+              className="btn-primary"
+              style={{ fontSize: '0.875rem', padding: '0.625rem 1.25rem' }}
             >
               {creating ? 'Creating...' : 'Create'}
             </button>
@@ -171,7 +167,8 @@ export default function RecipeLists() {
                 setNewName('')
                 setNewDescription('')
               }}
-              style={styles.cancelButton}
+              className="btn-secondary"
+              style={{ fontSize: '0.875rem', padding: '0.625rem 1.25rem' }}
             >
               Cancel
             </button>
@@ -181,8 +178,9 @@ export default function RecipeLists() {
 
       {lists.length === 0 && !showCreate ? (
         <div style={styles.emptyState}>
+          <p style={{ fontSize: '1.125rem', marginBottom: '0.25rem' }}>📋</p>
           <p>No lists yet</p>
-          <button onClick={() => setShowCreate(true)} style={styles.emptyButton}>
+          <button onClick={() => setShowCreate(true)} className="btn-primary" style={{ marginTop: '1rem', padding: '0.75rem 1.5rem', fontSize: '0.875rem' }}>
             Create your first list
           </button>
         </div>
@@ -216,74 +214,43 @@ export default function RecipeLists() {
           ))}
         </div>
       )}
-
-      <nav className="bottom-nav-bar">
-        <Link to="/">Home</Link>
-        <Link to="/recipes">Recipes</Link>
-        <Link to="/meal-plan">Meal Plan</Link>
-        <Link to="/grocery-lists">Groceries</Link>
-        <Link to="/profile">Profile</Link>
-      </nav>
     </div>
   )
 }
 
 const styles: Record<string, React.CSSProperties> = {
-  loading: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: '100vh',
-  },
   container: {
     minHeight: '100vh',
-    background: '#FDF8F4',
+    background: colors.bg,
     padding: '2rem 1rem',
-    paddingBottom: '5rem',
+    paddingTop: '4.5rem',
   },
   header: {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
     marginBottom: '1.5rem',
-    maxWidth: '600px',
+    maxWidth: '900px',
     margin: '0 auto 1.5rem',
   },
   title: {
     margin: 0,
-    fontSize: '1.5rem',
-    fontWeight: 600,
+    fontSize: '1.75rem',
+    fontWeight: 700,
+    letterSpacing: '-0.02em',
   },
   subtitle: {
     margin: '0.25rem 0 0',
-    color: '#7A6B60',
+    color: colors.textSecondary,
     fontSize: '0.875rem',
-  },
-  createButton: {
-    padding: '0.75rem 1.25rem',
-    borderRadius: '6px',
-    background: '#E07A5F',
-    color: 'white',
-    border: 'none',
-    fontWeight: 500,
-    fontSize: '0.875rem',
-    cursor: 'pointer',
-  },
-  error: {
-    background: '#FDECEA',
-    color: '#C44536',
-    padding: '0.75rem',
-    borderRadius: '6px',
-    marginBottom: '1rem',
-    maxWidth: '600px',
-    margin: '0 auto 1rem',
   },
   createForm: {
     background: 'white',
-    borderRadius: '10px',
+    borderRadius: radius.md,
     padding: '1.25rem',
-    boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
-    maxWidth: '600px',
+    boxShadow: shadows.sm,
+    border: `1px solid ${colors.borderLight}`,
+    maxWidth: '900px',
     margin: '0 auto 1rem',
     display: 'flex',
     flexDirection: 'column',
@@ -291,8 +258,8 @@ const styles: Record<string, React.CSSProperties> = {
   },
   input: {
     padding: '0.625rem 0.75rem',
-    borderRadius: '6px',
-    border: '1px solid #E8DDD4',
+    borderRadius: radius.sm,
+    border: `1px solid ${colors.border}`,
     fontSize: '0.875rem',
     outline: 'none',
   },
@@ -300,47 +267,18 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     gap: '0.5rem',
   },
-  submitButton: {
-    padding: '0.625rem 1.25rem',
-    borderRadius: '6px',
-    border: 'none',
-    background: '#E07A5F',
-    color: 'white',
-    fontSize: '0.875rem',
-    fontWeight: 500,
-    cursor: 'pointer',
-  },
-  cancelButton: {
-    padding: '0.625rem 1.25rem',
-    borderRadius: '6px',
-    border: '1px solid #E8DDD4',
-    background: 'white',
-    fontSize: '0.875rem',
-    cursor: 'pointer',
-  },
   emptyState: {
     textAlign: 'center',
     padding: '4rem 2rem',
-    color: '#7A6B60',
-    maxWidth: '600px',
+    color: colors.textSecondary,
+    maxWidth: '900px',
     margin: '0 auto',
-  },
-  emptyButton: {
-    display: 'inline-block',
-    marginTop: '1rem',
-    padding: '0.75rem 1.5rem',
-    borderRadius: '6px',
-    background: '#E07A5F',
-    color: 'white',
-    border: 'none',
-    cursor: 'pointer',
-    fontSize: '0.875rem',
   },
   listGrid: {
     display: 'flex',
     flexDirection: 'column',
     gap: '0.75rem',
-    maxWidth: '600px',
+    maxWidth: '900px',
     margin: '0 auto',
   },
   listHeader: {
@@ -352,26 +290,26 @@ const styles: Record<string, React.CSSProperties> = {
   listName: {
     margin: 0,
     fontSize: '1rem',
-    fontWeight: 500,
+    fontWeight: 600,
   },
   countBadge: {
     padding: '0.25rem 0.5rem',
-    borderRadius: '4px',
+    borderRadius: radius.full,
     fontSize: '0.6875rem',
     fontWeight: 500,
-    background: '#FAF6F2',
-    color: '#7A6B60',
+    background: colors.warmBg,
+    color: colors.textSecondary,
   },
   listDescription: {
     margin: '0.25rem 0 0',
     fontSize: '0.8125rem',
-    color: '#7A6B60',
+    color: colors.textSecondary,
     lineHeight: 1.4,
   },
   listPreview: {
     margin: '0.5rem 0 0',
     fontSize: '0.75rem',
-    color: '#A89888',
+    color: colors.textMuted,
     fontStyle: 'italic',
   },
 }

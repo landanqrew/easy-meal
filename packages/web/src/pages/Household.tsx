@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useSession } from '../lib/auth'
+import { colors, shadows, radius } from '../lib/theme'
 
 type HouseholdMember = {
   id: string
@@ -189,7 +190,7 @@ export default function HouseholdPage() {
           <div>
             <div className="skeleton" style={{ width: '70px', height: '0.875rem', marginBottom: '0.5rem' }} />
             {Array.from({ length: 2 }).map((_, i) => (
-              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.75rem 0', borderBottom: '1px solid #E8DDD4' }}>
+              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.75rem 0', borderBottom: `1px solid ${colors.border}` }}>
                 <div className="skeleton" style={{ width: '40px', height: '40px', borderRadius: '50%' }} />
                 <div>
                   <div className="skeleton" style={{ width: '100px', height: '0.9375rem', marginBottom: '0.25rem' }} />
@@ -208,13 +209,13 @@ export default function HouseholdPage() {
       <div style={styles.card}>
         <div style={styles.header}>
           <h1 style={styles.title}>Household</h1>
-          <button onClick={() => navigate('/')} style={styles.backButton}>
+          <button onClick={() => navigate('/')} className="btn-secondary" style={{ fontSize: '0.875rem', padding: '0.5rem 1rem' }}>
             Back
           </button>
         </div>
 
-        {error && <div style={styles.error}>{error}</div>}
-        {message && <div style={styles.success}>{message}</div>}
+        {error && <div className="error-message">{error}</div>}
+        {message && <div className="success-message">{message}</div>}
 
         {household ? (
           // Show household details
@@ -232,10 +233,10 @@ export default function HouseholdPage() {
               <div style={styles.inviteCodeBox}>
                 <code style={styles.inviteCode}>{household.inviteCode}</code>
                 <div style={styles.inviteActions}>
-                  <button onClick={copyInviteCode} style={styles.smallButton}>
+                  <button onClick={copyInviteCode} className="btn-secondary" style={{ fontSize: '0.75rem', padding: '0.375rem 0.75rem' }}>
                     Copy
                   </button>
-                  <button onClick={handleRegenerateCode} style={styles.smallButton}>
+                  <button onClick={handleRegenerateCode} className="btn-secondary" style={{ fontSize: '0.75rem', padding: '0.375rem 0.75rem' }}>
                     Regenerate
                   </button>
                 </div>
@@ -262,7 +263,7 @@ export default function HouseholdPage() {
               </ul>
             </div>
 
-            <button onClick={handleLeave} style={styles.leaveButton}>
+            <button onClick={handleLeave} className="btn-danger-outline" style={{ width: '100%', padding: '0.75rem', marginTop: '1rem' }}>
               Leave Household
             </button>
           </div>
@@ -270,7 +271,7 @@ export default function HouseholdPage() {
           // Show create/join options
           <div>
             <p style={styles.description}>
-              Create a household to share recipes with family members, or join an
+              {'\uD83C\uDFE0'} Create a household to share recipes with family members, or join an
               existing one with an invite code.
             </p>
 
@@ -278,13 +279,15 @@ export default function HouseholdPage() {
               <div style={styles.options}>
                 <button
                   onClick={() => setShowCreateForm(true)}
-                  style={styles.optionButton}
+                  className="btn-primary"
+                  style={{ padding: '1rem', fontSize: '1rem', width: '100%' }}
                 >
                   Create Household
                 </button>
                 <button
                   onClick={() => setShowJoinForm(true)}
-                  style={styles.optionButtonSecondary}
+                  className="btn-secondary"
+                  style={{ padding: '1rem', fontSize: '1rem', width: '100%' }}
                 >
                   Join with Code
                 </button>
@@ -309,11 +312,12 @@ export default function HouseholdPage() {
                   <button
                     type="button"
                     onClick={() => setShowCreateForm(false)}
-                    style={styles.cancelButton}
+                    className="btn-secondary"
+                    style={{ padding: '0.5rem 1rem' }}
                   >
                     Cancel
                   </button>
-                  <button type="submit" style={styles.submitButton} disabled={submitting}>
+                  <button type="submit" className="btn-primary" style={{ padding: '0.5rem 1rem' }} disabled={submitting}>
                     {submitting ? 'Creating...' : 'Create'}
                   </button>
                 </div>
@@ -338,11 +342,12 @@ export default function HouseholdPage() {
                   <button
                     type="button"
                     onClick={() => setShowJoinForm(false)}
-                    style={styles.cancelButton}
+                    className="btn-secondary"
+                    style={{ padding: '0.5rem 1rem' }}
                   >
                     Cancel
                   </button>
-                  <button type="submit" style={styles.submitButton} disabled={submitting}>
+                  <button type="submit" className="btn-primary" style={{ padding: '0.5rem 1rem' }} disabled={submitting}>
                     {submitting ? 'Joining...' : 'Join'}
                   </button>
                 </div>
@@ -356,22 +361,18 @@ export default function HouseholdPage() {
 }
 
 const styles: Record<string, React.CSSProperties> = {
-  loading: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: '100vh',
-  },
   container: {
     minHeight: '100vh',
-    background: '#FDF8F4',
+    background: colors.bg,
     padding: '2rem 1rem',
+    paddingTop: '4.5rem',
   },
   card: {
     background: 'white',
     padding: '2rem',
-    borderRadius: '12px',
-    boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+    borderRadius: radius.lg,
+    boxShadow: shadows.md,
+    border: `1px solid ${colors.borderLight}`,
     maxWidth: '500px',
     margin: '0 auto',
   },
@@ -383,56 +384,35 @@ const styles: Record<string, React.CSSProperties> = {
   },
   title: {
     margin: 0,
-    fontSize: '1.5rem',
-    fontWeight: 600,
-    color: '#2D2420',
-  },
-  backButton: {
-    padding: '0.5rem 1rem',
-    borderRadius: '6px',
-    border: '1px solid #E8DDD4',
-    background: 'white',
-    cursor: 'pointer',
-  },
-  error: {
-    background: '#FDECEA',
-    color: '#C44536',
-    padding: '0.75rem',
-    borderRadius: '6px',
-    marginBottom: '1rem',
-    fontSize: '0.875rem',
-  },
-  success: {
-    background: '#EDF5EC',
-    color: '#5B8C5A',
-    padding: '0.75rem',
-    borderRadius: '6px',
-    marginBottom: '1rem',
-    fontSize: '0.875rem',
+    fontSize: '1.75rem',
+    fontWeight: 700,
+    letterSpacing: '-0.02em',
+    color: colors.text,
   },
   section: {
     marginBottom: '1.5rem',
   },
   householdName: {
     margin: 0,
-    fontSize: '1.25rem',
-    fontWeight: 600,
-    color: '#2D2420',
+    fontSize: '1.375rem',
+    fontWeight: 700,
+    letterSpacing: '-0.02em',
+    color: colors.text,
   },
   memberCount: {
-    color: '#7A6B60',
+    color: colors.textSecondary,
     marginTop: '0.25rem',
   },
   sectionTitle: {
-    fontSize: '0.875rem',
-    fontWeight: 600,
-    color: '#2D2420',
+    fontSize: '1.125rem',
+    fontWeight: 700,
+    color: colors.text,
     marginBottom: '0.5rem',
   },
   inviteCodeBox: {
-    background: '#FAF6F2',
+    background: colors.warmBg,
     padding: '1rem',
-    borderRadius: '8px',
+    borderRadius: radius.md,
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -443,23 +423,15 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: '1.25rem',
     fontWeight: 600,
     letterSpacing: '3px',
-    color: '#2D2420',
+    color: colors.text,
   },
   inviteActions: {
     display: 'flex',
     gap: '0.5rem',
   },
-  smallButton: {
-    padding: '0.375rem 0.75rem',
-    borderRadius: '4px',
-    border: '1px solid #E8DDD4',
-    background: 'white',
-    cursor: 'pointer',
-    fontSize: '0.75rem',
-  },
   hint: {
     fontSize: '0.75rem',
-    color: '#7A6B60',
+    color: colors.textSecondary,
     marginTop: '0.5rem',
   },
   memberList: {
@@ -472,14 +444,14 @@ const styles: Record<string, React.CSSProperties> = {
     alignItems: 'center',
     gap: '0.75rem',
     padding: '0.75rem 0',
-    borderBottom: '1px solid #E8DDD4',
+    borderBottom: `1px solid ${colors.border}`,
   },
   memberAvatar: {
     width: '40px',
     height: '40px',
     borderRadius: '50%',
-    background: '#E07A5F',
-    color: 'white',
+    background: colors.primaryLight,
+    color: colors.primary,
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
@@ -487,24 +459,14 @@ const styles: Record<string, React.CSSProperties> = {
   },
   memberName: {
     fontWeight: 500,
-    color: '#2D2420',
+    color: colors.text,
   },
   memberEmail: {
     fontSize: '0.75rem',
-    color: '#7A6B60',
-  },
-  leaveButton: {
-    width: '100%',
-    padding: '0.75rem',
-    borderRadius: '6px',
-    border: '1px solid #C44536',
-    background: 'white',
-    color: '#C44536',
-    cursor: 'pointer',
-    marginTop: '1rem',
+    color: colors.textSecondary,
   },
   description: {
-    color: '#7A6B60',
+    color: colors.textSecondary,
     marginBottom: '1.5rem',
     lineHeight: 1.6,
   },
@@ -513,33 +475,16 @@ const styles: Record<string, React.CSSProperties> = {
     flexDirection: 'column',
     gap: '0.75rem',
   },
-  optionButton: {
-    padding: '1rem',
-    borderRadius: '8px',
-    border: 'none',
-    background: '#E07A5F',
-    color: 'white',
-    fontSize: '1rem',
-    cursor: 'pointer',
-  },
-  optionButtonSecondary: {
-    padding: '1rem',
-    borderRadius: '8px',
-    border: '1px solid #E8DDD4',
-    background: 'white',
-    fontSize: '1rem',
-    cursor: 'pointer',
-  },
   form: {
-    background: '#FAF6F2',
+    background: colors.warmBg,
     padding: '1.5rem',
-    borderRadius: '8px',
+    borderRadius: radius.md,
   },
   formTitle: {
     margin: '0 0 1rem 0',
     fontSize: '1rem',
     fontWeight: 600,
-    color: '#2D2420',
+    color: colors.text,
   },
   field: {
     marginBottom: '1rem',
@@ -549,13 +494,13 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: '0.875rem',
     fontWeight: 500,
     marginBottom: '0.25rem',
-    color: '#2D2420',
+    color: colors.text,
   },
   input: {
     width: '100%',
     padding: '0.75rem',
-    borderRadius: '6px',
-    border: '1px solid #E8DDD4',
+    borderRadius: radius.sm,
+    border: `1px solid ${colors.border}`,
     fontSize: '1rem',
     boxSizing: 'border-box',
   },
@@ -563,20 +508,5 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     gap: '0.75rem',
     justifyContent: 'flex-end',
-  },
-  cancelButton: {
-    padding: '0.5rem 1rem',
-    borderRadius: '6px',
-    border: '1px solid #E8DDD4',
-    background: 'white',
-    cursor: 'pointer',
-  },
-  submitButton: {
-    padding: '0.5rem 1rem',
-    borderRadius: '6px',
-    border: 'none',
-    background: '#E07A5F',
-    color: 'white',
-    cursor: 'pointer',
   },
 }

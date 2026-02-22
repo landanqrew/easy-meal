@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useSession } from '../lib/auth'
+import { colors, radius } from '../lib/theme'
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001'
 
@@ -38,6 +39,18 @@ const CATEGORY_LABELS: Record<string, string> = {
   pantry: 'Pantry',
   beverages: 'Beverages',
   other: 'Other',
+}
+
+const CATEGORY_EMOJI: Record<string, string> = {
+  produce: '🥬',
+  meat: '🥩',
+  seafood: '🐟',
+  dairy: '🧀',
+  bakery: '🍞',
+  frozen: '❄️',
+  pantry: '🫙',
+  beverages: '🥤',
+  other: '📦',
 }
 
 const CATEGORY_ORDER = [
@@ -243,25 +256,27 @@ export default function GroceryListDetail() {
     return (
       <div style={styles.container}>
         <div style={styles.card}>
-          <div style={styles.header}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
             <div className="skeleton" style={{ width: '60px', height: '0.875rem' }} />
             <div style={{ display: 'flex', gap: '0.5rem' }}>
-              <div className="skeleton" style={{ width: '45px', height: '30px', borderRadius: '4px' }} />
-              <div className="skeleton" style={{ width: '55px', height: '30px', borderRadius: '4px' }} />
+              <div className="skeleton" style={{ width: '45px', height: '32px', borderRadius: radius.sm }} />
+              <div className="skeleton" style={{ width: '55px', height: '32px', borderRadius: radius.sm }} />
             </div>
           </div>
-          <div className="skeleton" style={{ width: '60%', height: '1.5rem', marginBottom: '1rem' }} />
-          <div style={{ marginBottom: '1rem' }}>
-            <div className="skeleton" style={{ width: '100%', height: '8px', borderRadius: '4px', marginBottom: '0.375rem' }} />
-            <div className="skeleton" style={{ width: '80px', height: '0.8125rem' }} />
+          <div className="skeleton" style={{ width: '65%', height: '1.75rem', marginBottom: '1.25rem' }} />
+          <div style={{ marginBottom: '1.5rem' }}>
+            <div className="skeleton" style={{ width: '100%', height: '8px', borderRadius: radius.full, marginBottom: '0.5rem' }} />
+            <div className="skeleton" style={{ width: '90px', height: '0.8125rem' }} />
           </div>
           {Array.from({ length: 2 }).map((_, ci) => (
-            <div key={ci} style={{ marginBottom: '1.25rem' }}>
-              <div className="skeleton" style={{ width: '80px', height: '0.8125rem', marginBottom: '0.5rem' }} />
+            <div key={ci} style={{ marginBottom: '1.5rem' }}>
+              <div className="skeleton" style={{ width: '100px', height: '0.875rem', marginBottom: '0.75rem' }} />
               {Array.from({ length: 3 }).map((_, ii) => (
-                <div key={ii} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.625rem 0', borderBottom: '1px solid #F0E8E0' }}>
-                  <div className="skeleton" style={{ width: '24px', height: '24px', borderRadius: '50%' }} />
-                  <div className="skeleton" style={{ width: '60%', height: '0.9375rem' }} />
+                <div key={ii} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.625rem 0.5rem' }}>
+                  <div className="skeleton" style={{ width: '22px', height: '22px', borderRadius: '50%' }} />
+                  <div style={{ flex: 1 }}>
+                    <div className="skeleton" style={{ width: '55%', height: '0.9375rem' }} />
+                  </div>
                 </div>
               ))}
             </div>
@@ -275,8 +290,10 @@ export default function GroceryListDetail() {
     return (
       <div style={styles.container}>
         <div style={styles.card}>
-          <p>Grocery list not found</p>
-          <Link to="/grocery-lists">Back to grocery lists</Link>
+          <p style={{ color: colors.textSecondary, marginBottom: '1rem' }}>Grocery list not found.</p>
+          <Link to="/grocery-lists" className="btn-secondary" style={{ textDecoration: 'none', display: 'inline-block' }}>
+            Back to grocery lists
+          </Link>
         </div>
       </div>
     )
@@ -289,17 +306,19 @@ export default function GroceryListDetail() {
   return (
     <div style={styles.container}>
       <div style={styles.card}>
+        {/* Header */}
         <div style={styles.header}>
-          <Link to="/grocery-lists" style={styles.backLink}>
+          <Link to="/grocery-lists" className="back-link">
             ← Back
           </Link>
           <div style={styles.headerActions}>
-            <button onClick={copyToClipboard} style={styles.copyButton}>
+            <button onClick={copyToClipboard} className="btn-secondary" style={styles.headerBtn}>
               Copy
             </button>
             <button
               onClick={handleDelete}
-              style={styles.deleteButton}
+              className="btn-danger-outline"
+              style={styles.headerBtn}
               disabled={deleting}
             >
               {deleting ? '...' : 'Delete'}
@@ -307,60 +326,65 @@ export default function GroceryListDetail() {
           </div>
         </div>
 
-        {error && <div style={styles.error}>{error}</div>}
+        {error && <div className="error-message">{error}</div>}
 
         <h1 style={styles.title}>{groceryList.name}</h1>
 
+        {/* Progress */}
         <div style={styles.progressSection}>
+          <div style={styles.progressRow}>
+            <span style={styles.progressLabel}>
+              {checkedCount} of {totalCount} items
+            </span>
+            <span style={styles.progressPercent}>{Math.round(progress)}%</span>
+          </div>
           <div style={styles.progressBar}>
             <div style={{ ...styles.progressFill, width: `${progress}%` }} />
           </div>
-          <span style={styles.progressText}>
-            {checkedCount} of {totalCount} items
-          </span>
         </div>
 
+        {/* Mark Complete */}
         {groceryList.status === 'active' && checkedCount === totalCount && totalCount > 0 && (
-          <button onClick={handleMarkComplete} style={styles.completeButton}>
+          <button onClick={handleMarkComplete} className="btn-primary" style={styles.completeButton}>
             Mark as Complete
           </button>
         )}
 
+        {/* Completed Badge */}
         {groceryList.status === 'completed' && (
-          <div style={styles.completedBadge}>Completed</div>
+          <div style={styles.completedBadge}>
+            <span style={{ marginRight: '0.5rem' }}>✓</span>
+            Shopping Complete
+          </div>
         )}
 
+        {/* Items by Category */}
         {CATEGORY_ORDER.map((category) => {
           const items = groceryList.itemsByCategory[category]
           if (!items || items.length === 0) return null
 
           return (
             <section key={category} style={styles.categorySection}>
-              <h2 style={styles.categoryTitle}>{CATEGORY_LABELS[category]}</h2>
+              <h2 style={styles.categoryTitle}>
+                <span style={styles.categoryEmoji}>{CATEGORY_EMOJI[category]}</span>
+                {CATEGORY_LABELS[category]}
+              </h2>
               <ul style={styles.itemList}>
                 {items.map((item) => (
                   <li
                     key={item.id}
-                    style={{
-                      ...styles.item,
-                      ...(item.isChecked ? styles.itemChecked : {}),
-                    }}
+                    className={`grocery-item${item.isChecked ? ' checked' : ''}`}
                   >
                     <button
                       onClick={() => toggleItem(item.id, item.isChecked)}
-                      style={{
-                        ...styles.checkButton,
-                        ...(item.isChecked ? styles.checkButtonChecked : {}),
-                      }}
+                      className={`grocery-check${item.isChecked ? ' checked' : ''}`}
                     >
                       {item.isChecked ? '✓' : ''}
                     </button>
-                    <span
-                      style={{
-                        ...styles.itemText,
-                        ...(item.isChecked ? styles.itemTextChecked : {}),
-                      }}
-                    >
+                    <span style={{
+                      ...styles.itemText,
+                      ...(item.isChecked ? styles.itemTextChecked : {}),
+                    }}>
                       <span style={styles.itemQty}>
                         {item.quantity} {item.unit}
                       </span>
@@ -368,7 +392,7 @@ export default function GroceryListDetail() {
                     </span>
                     <button
                       onClick={() => handleRemoveItem(item.id)}
-                      style={styles.removeButton}
+                      className="grocery-remove"
                     >
                       ×
                     </button>
@@ -379,45 +403,52 @@ export default function GroceryListDetail() {
           )
         })}
 
+        {/* Add Item */}
         {showAddItem ? (
           <div style={styles.addItemForm}>
-            <input
-              type="text"
-              value={newItem.name}
-              onChange={(e) => setNewItem({ ...newItem, name: e.target.value })}
-              placeholder="Ingredient name"
-              style={styles.addInput}
-            />
-            <input
-              type="text"
-              value={newItem.quantity}
-              onChange={(e) => setNewItem({ ...newItem, quantity: e.target.value })}
-              placeholder="Qty"
-              style={{ ...styles.addInput, width: '60px' }}
-            />
-            <input
-              type="text"
-              value={newItem.unit}
-              onChange={(e) => setNewItem({ ...newItem, unit: e.target.value })}
-              placeholder="Unit"
-              style={{ ...styles.addInput, width: '80px' }}
-            />
-            <button
-              onClick={handleAddItem}
-              disabled={adding}
-              style={styles.addButton}
-            >
-              {adding ? '...' : 'Add'}
-            </button>
-            <button
-              onClick={() => setShowAddItem(false)}
-              style={styles.cancelButton}
-            >
-              Cancel
-            </button>
+            <div style={styles.addInputRow}>
+              <input
+                type="text"
+                value={newItem.name}
+                onChange={(e) => setNewItem({ ...newItem, name: e.target.value })}
+                placeholder="Ingredient name"
+                style={styles.addInput}
+              />
+              <input
+                type="text"
+                value={newItem.quantity}
+                onChange={(e) => setNewItem({ ...newItem, quantity: e.target.value })}
+                placeholder="Qty"
+                style={{ ...styles.addInput, flex: '0 0 60px' }}
+              />
+              <input
+                type="text"
+                value={newItem.unit}
+                onChange={(e) => setNewItem({ ...newItem, unit: e.target.value })}
+                placeholder="Unit"
+                style={{ ...styles.addInput, flex: '0 0 80px' }}
+              />
+            </div>
+            <div style={styles.addActions}>
+              <button
+                onClick={handleAddItem}
+                disabled={adding}
+                className="btn-primary"
+                style={{ padding: '0.5rem 1.25rem', fontSize: '0.875rem' }}
+              >
+                {adding ? 'Adding...' : 'Add Item'}
+              </button>
+              <button
+                onClick={() => setShowAddItem(false)}
+                className="btn-secondary"
+                style={{ padding: '0.5rem 1rem', fontSize: '0.875rem' }}
+              >
+                Cancel
+              </button>
+            </div>
           </div>
         ) : (
-          <button onClick={() => setShowAddItem(true)} style={styles.showAddButton}>
+          <button onClick={() => setShowAddItem(true)} className="grocery-add-btn">
             + Add Item
           </button>
         )}
@@ -427,228 +458,156 @@ export default function GroceryListDetail() {
 }
 
 const styles: Record<string, React.CSSProperties> = {
-  loading: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: '100vh',
-  },
   container: {
     minHeight: '100vh',
-    background: '#FDF8F4',
+    background: colors.bg,
     padding: '2rem 1rem',
+    paddingTop: '4.5rem',
   },
   card: {
     background: 'white',
-    padding: '1.5rem',
-    borderRadius: '12px',
-    boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-    maxWidth: '500px',
+    padding: '1.75rem',
+    borderRadius: radius.lg,
+    boxShadow: `0 4px 16px rgba(184, 165, 150, 0.15), 0 1px 3px rgba(184, 165, 150, 0.1)`,
+    maxWidth: '540px',
     margin: '0 auto',
+    border: `1px solid ${colors.borderLight}`,
   },
   header: {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: '1rem',
-  },
-  backLink: {
-    color: '#7A6B60',
-    textDecoration: 'none',
-    fontSize: '0.875rem',
+    marginBottom: '1.25rem',
   },
   headerActions: {
     display: 'flex',
     gap: '0.5rem',
   },
-  copyButton: {
+  headerBtn: {
     padding: '0.375rem 0.75rem',
-    borderRadius: '4px',
-    border: '1px solid #E8DDD4',
-    background: 'white',
-    cursor: 'pointer',
     fontSize: '0.8125rem',
-  },
-  deleteButton: {
-    padding: '0.375rem 0.75rem',
-    borderRadius: '4px',
-    border: '1px solid #C44536',
-    background: 'white',
-    color: '#C44536',
-    cursor: 'pointer',
-    fontSize: '0.8125rem',
-  },
-  error: {
-    background: '#FDECEA',
-    color: '#C44536',
-    padding: '0.75rem',
-    borderRadius: '6px',
-    marginBottom: '1rem',
-    fontSize: '0.875rem',
+    minHeight: '32px',
   },
   title: {
-    margin: '0 0 1rem',
-    fontSize: '1.5rem',
-    fontWeight: 600,
+    margin: '0 0 1.25rem',
+    fontSize: '1.75rem',
+    fontWeight: 700,
+    color: colors.text,
+    letterSpacing: '-0.02em',
   },
   progressSection: {
-    marginBottom: '1rem',
+    marginBottom: '1.25rem',
+    padding: '1rem',
+    background: colors.warmBg,
+    borderRadius: radius.md,
+  },
+  progressRow: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: '0.5rem',
+  },
+  progressLabel: {
+    fontSize: '0.8125rem',
+    color: colors.textSecondary,
+    fontWeight: 500,
+  },
+  progressPercent: {
+    fontSize: '0.8125rem',
+    color: colors.success,
+    fontWeight: 700,
   },
   progressBar: {
-    height: '8px',
-    background: '#E8DDD4',
-    borderRadius: '4px',
+    height: '6px',
+    background: colors.borderLight,
+    borderRadius: radius.full,
     overflow: 'hidden',
-    marginBottom: '0.375rem',
   },
   progressFill: {
     height: '100%',
-    background: '#22c55e',
-    borderRadius: '4px',
-    transition: 'width 0.2s',
-  },
-  progressText: {
-    fontSize: '0.8125rem',
-    color: '#7A6B60',
+    background: colors.success,
+    borderRadius: radius.full,
+    transition: 'width 0.3s ease',
   },
   completeButton: {
     width: '100%',
     padding: '0.75rem',
-    borderRadius: '6px',
-    border: 'none',
-    background: '#22c55e',
-    color: 'white',
-    fontSize: '0.875rem',
-    fontWeight: 500,
-    cursor: 'pointer',
-    marginBottom: '1rem',
-  },
-  completedBadge: {
-    background: '#EDF5EC',
-    color: '#2D5A2C',
-    padding: '0.5rem 1rem',
-    borderRadius: '6px',
-    fontSize: '0.875rem',
-    fontWeight: 500,
-    textAlign: 'center',
-    marginBottom: '1rem',
-  },
-  categorySection: {
+    fontSize: '0.9375rem',
     marginBottom: '1.25rem',
   },
-  categoryTitle: {
-    fontSize: '0.8125rem',
+  completedBadge: {
+    background: colors.successBg,
+    color: colors.successText,
+    padding: '0.75rem 1rem',
+    borderRadius: radius.sm,
+    fontSize: '0.875rem',
     fontWeight: 600,
-    color: '#7A6B60',
+    textAlign: 'center',
+    marginBottom: '1.25rem',
+  },
+  categorySection: {
+    marginBottom: '1.5rem',
+  },
+  categoryTitle: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.5rem',
+    fontSize: '0.875rem',
+    fontWeight: 700,
+    color: colors.text,
     textTransform: 'uppercase',
-    letterSpacing: '0.05em',
-    marginBottom: '0.5rem',
-    paddingBottom: '0.375rem',
-    borderBottom: '1px solid #E8DDD4',
+    letterSpacing: '0.04em',
+    marginBottom: '0.25rem',
+    paddingBottom: '0.5rem',
+    borderBottom: `1px solid ${colors.borderLight}`,
+  },
+  categoryEmoji: {
+    fontSize: '1rem',
   },
   itemList: {
     listStyle: 'none',
     padding: 0,
     margin: 0,
   },
-  item: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '0.75rem',
-    padding: '0.625rem 0',
-    borderBottom: '1px solid #F0E8E0',
-  },
-  itemChecked: {
-    opacity: 0.6,
-  },
-  checkButton: {
-    width: '24px',
-    height: '24px',
-    borderRadius: '50%',
-    border: '2px solid #E8DDD4',
-    background: 'white',
-    cursor: 'pointer',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    fontSize: '0.75rem',
-    fontWeight: 600,
-    color: 'white',
-    flexShrink: 0,
-  },
-  checkButtonChecked: {
-    background: '#22c55e',
-    borderColor: '#22c55e',
-  },
   itemText: {
     flex: 1,
     fontSize: '0.9375rem',
+    color: colors.text,
+    lineHeight: 1.4,
   },
   itemTextChecked: {
     textDecoration: 'line-through',
-    color: '#A89888',
+    color: colors.textMuted,
   },
   itemQty: {
-    color: '#7A6B60',
+    color: colors.textSecondary,
     marginRight: '0.375rem',
-  },
-  removeButton: {
-    width: '24px',
-    height: '24px',
-    borderRadius: '4px',
-    border: 'none',
-    background: 'transparent',
-    cursor: 'pointer',
-    fontSize: '1.125rem',
-    color: '#A89888',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
+    fontWeight: 500,
   },
   addItemForm: {
+    marginTop: '1rem',
+    padding: '1.25rem',
+    background: colors.warmBg,
+    borderRadius: radius.md,
+    border: `1px solid ${colors.borderLight}`,
+  },
+  addInputRow: {
     display: 'flex',
     gap: '0.5rem',
+    marginBottom: '0.75rem',
     flexWrap: 'wrap',
-    alignItems: 'center',
-    marginTop: '1rem',
-    padding: '1rem',
-    background: '#FAF6F2',
-    borderRadius: '8px',
   },
   addInput: {
-    padding: '0.5rem',
-    borderRadius: '4px',
-    border: '1px solid #E8DDD4',
+    padding: '0.625rem 0.75rem',
+    borderRadius: radius.sm,
+    border: `1px solid ${colors.border}`,
     fontSize: '0.875rem',
     flex: 1,
-    minWidth: '100px',
-  },
-  addButton: {
-    padding: '0.5rem 1rem',
-    borderRadius: '4px',
-    border: 'none',
-    background: '#E07A5F',
-    color: 'white',
-    cursor: 'pointer',
-    fontSize: '0.875rem',
-  },
-  cancelButton: {
-    padding: '0.5rem 1rem',
-    borderRadius: '4px',
-    border: '1px solid #E8DDD4',
+    minWidth: '80px',
     background: 'white',
-    cursor: 'pointer',
-    fontSize: '0.875rem',
   },
-  showAddButton: {
-    width: '100%',
-    padding: '0.75rem',
-    borderRadius: '6px',
-    border: '1px dashed #E8DDD4',
-    background: 'transparent',
-    color: '#7A6B60',
-    cursor: 'pointer',
-    fontSize: '0.875rem',
-    marginTop: '1rem',
+  addActions: {
+    display: 'flex',
+    gap: '0.5rem',
   },
 }

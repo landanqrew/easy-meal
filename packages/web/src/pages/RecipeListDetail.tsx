@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useSession } from '../lib/auth'
+import { colors, shadows, radius } from '../lib/theme'
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001'
 
@@ -199,8 +200,8 @@ export default function RecipeListDetail() {
         <div style={styles.topBar}>
           <div className="skeleton" style={{ width: '60px', height: '0.875rem' }} />
           <div style={{ display: 'flex', gap: '0.5rem' }}>
-            <div className="skeleton" style={{ width: '50px', height: '30px', borderRadius: '4px' }} />
-            <div className="skeleton" style={{ width: '55px', height: '30px', borderRadius: '4px' }} />
+            <div className="skeleton" style={{ width: '50px', height: '30px', borderRadius: radius.sm }} />
+            <div className="skeleton" style={{ width: '55px', height: '30px', borderRadius: radius.sm }} />
           </div>
         </div>
         <div style={styles.titleSection}>
@@ -220,13 +221,6 @@ export default function RecipeListDetail() {
             </div>
           ))}
         </div>
-        <nav className="bottom-nav-bar">
-          <Link to="/">Home</Link>
-          <Link to="/recipes">Recipes</Link>
-          <Link to="/meal-plan">Meal Plan</Link>
-          <Link to="/grocery-lists">Groceries</Link>
-          <Link to="/profile">Profile</Link>
-        </nav>
       </div>
     )
   }
@@ -245,7 +239,7 @@ export default function RecipeListDetail() {
   return (
     <div style={styles.container}>
       <div style={styles.topBar}>
-        <Link to="/recipe-lists" style={styles.backLink}>
+        <Link to="/recipe-lists" className="back-link">
           ← Back
         </Link>
         <div style={styles.topActions}>
@@ -255,13 +249,15 @@ export default function RecipeListDetail() {
               setEditDescription(list.description || '')
               setEditing(!editing)
             }}
-            style={styles.editButton}
+            className="btn-secondary"
+            style={{ fontSize: '0.8125rem', padding: '0.375rem 0.75rem' }}
           >
             {editing ? 'Cancel' : 'Edit'}
           </button>
           <button
             onClick={handleDelete}
-            style={styles.deleteButton}
+            className="btn-danger-outline"
+            style={{ fontSize: '0.8125rem', padding: '0.375rem 0.75rem' }}
             disabled={deleting}
           >
             {deleting ? '...' : 'Delete'}
@@ -269,7 +265,7 @@ export default function RecipeListDetail() {
         </div>
       </div>
 
-      {error && <div style={styles.error}>{error}</div>}
+      {error && <div className="error-message" style={{ maxWidth: '900px', margin: '0 auto 1rem' }}>{error}</div>}
 
       {editing ? (
         <div style={styles.editForm}>
@@ -289,7 +285,7 @@ export default function RecipeListDetail() {
             style={styles.editInput}
             onKeyDown={(e) => e.key === 'Enter' && handleUpdate()}
           />
-          <button onClick={handleUpdate} style={styles.saveButton}>
+          <button onClick={handleUpdate} className="btn-primary" style={{ fontSize: '0.875rem', padding: '0.625rem 1.25rem' }}>
             Save
           </button>
         </div>
@@ -307,8 +303,8 @@ export default function RecipeListDetail() {
 
       {list.recipes.length === 0 && !showAddRecipe ? (
         <div style={styles.emptyState}>
-          <p>No recipes in this list yet</p>
-          <button onClick={openAddRecipe} style={styles.emptyButton}>
+          <p>📋 No recipes in this list yet</p>
+          <button onClick={openAddRecipe} className="btn-primary" style={{ marginTop: '1rem', padding: '0.75rem 1.5rem', fontSize: '0.875rem' }}>
             Add recipes
           </button>
         </div>
@@ -371,7 +367,8 @@ export default function RecipeListDetail() {
                 setShowAddRecipe(false)
                 setRecipeSearch('')
               }}
-              style={styles.closeButton}
+              className="btn-secondary"
+              style={{ fontSize: '0.8125rem', padding: '0.375rem 0.75rem' }}
             >
               Done
             </button>
@@ -401,7 +398,8 @@ export default function RecipeListDetail() {
                   <button
                     onClick={() => handleAddRecipe(recipe.id)}
                     disabled={addingRecipeId === recipe.id}
-                    style={styles.addItemButton}
+                    className="btn-primary"
+                    style={{ fontSize: '0.8125rem', padding: '0.375rem 0.75rem', minHeight: 'unset' }}
                   >
                     {addingRecipeId === recipe.id ? '...' : '+ Add'}
                   </button>
@@ -411,30 +409,16 @@ export default function RecipeListDetail() {
           </div>
         </div>
       )}
-
-      <nav className="bottom-nav-bar">
-        <Link to="/">Home</Link>
-        <Link to="/recipes">Recipes</Link>
-        <Link to="/meal-plan">Meal Plan</Link>
-        <Link to="/grocery-lists">Groceries</Link>
-        <Link to="/profile">Profile</Link>
-      </nav>
     </div>
   )
 }
 
 const styles: Record<string, React.CSSProperties> = {
-  loading: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: '100vh',
-  },
   container: {
     minHeight: '100vh',
-    background: '#FDF8F4',
+    background: colors.bg,
     padding: '2rem 1rem',
-    paddingBottom: '5rem',
+    paddingTop: '4.5rem',
   },
   topBar: {
     display: 'flex',
@@ -443,41 +427,9 @@ const styles: Record<string, React.CSSProperties> = {
     maxWidth: '900px',
     margin: '0 auto 1rem',
   },
-  backLink: {
-    color: '#7A6B60',
-    textDecoration: 'none',
-    fontSize: '0.875rem',
-  },
   topActions: {
     display: 'flex',
     gap: '0.5rem',
-  },
-  editButton: {
-    padding: '0.375rem 0.75rem',
-    borderRadius: '4px',
-    border: '1px solid #E8DDD4',
-    background: 'white',
-    cursor: 'pointer',
-    fontSize: '0.8125rem',
-  },
-  deleteButton: {
-    padding: '0.375rem 0.75rem',
-    borderRadius: '4px',
-    border: '1px solid #C44536',
-    background: 'white',
-    color: '#C44536',
-    cursor: 'pointer',
-    fontSize: '0.8125rem',
-  },
-  error: {
-    background: '#FDECEA',
-    color: '#C44536',
-    padding: '0.75rem',
-    borderRadius: '6px',
-    marginBottom: '1rem',
-    maxWidth: '900px',
-    margin: '0 auto 1rem',
-    fontSize: '0.875rem',
   },
   editForm: {
     maxWidth: '900px',
@@ -489,22 +441,12 @@ const styles: Record<string, React.CSSProperties> = {
   },
   editInput: {
     padding: '0.625rem 0.75rem',
-    borderRadius: '6px',
-    border: '1px solid #E8DDD4',
+    borderRadius: radius.sm,
+    border: `1px solid ${colors.border}`,
     fontSize: '0.875rem',
     outline: 'none',
     flex: 1,
     minWidth: '150px',
-  },
-  saveButton: {
-    padding: '0.625rem 1.25rem',
-    borderRadius: '6px',
-    border: 'none',
-    background: '#E07A5F',
-    color: 'white',
-    fontSize: '0.875rem',
-    fontWeight: 500,
-    cursor: 'pointer',
   },
   titleSection: {
     maxWidth: '900px',
@@ -512,37 +454,27 @@ const styles: Record<string, React.CSSProperties> = {
   },
   title: {
     margin: 0,
-    fontSize: '1.5rem',
-    fontWeight: 600,
+    fontSize: '1.75rem',
+    fontWeight: 700,
+    letterSpacing: '-0.02em',
   },
   description: {
     margin: '0.25rem 0 0',
-    color: '#7A6B60',
+    color: colors.textSecondary,
     fontSize: '0.875rem',
     lineHeight: 1.4,
   },
   recipeCount: {
     margin: '0.25rem 0 0',
-    color: '#A89888',
+    color: colors.textMuted,
     fontSize: '0.8125rem',
   },
   emptyState: {
     textAlign: 'center',
     padding: '4rem 2rem',
-    color: '#7A6B60',
+    color: colors.textSecondary,
     maxWidth: '900px',
     margin: '0 auto',
-  },
-  emptyButton: {
-    display: 'inline-block',
-    marginTop: '1rem',
-    padding: '0.75rem 1.5rem',
-    borderRadius: '6px',
-    background: '#E07A5F',
-    color: 'white',
-    border: 'none',
-    cursor: 'pointer',
-    fontSize: '0.875rem',
   },
   recipeGrid: {
     display: 'grid',
@@ -553,9 +485,10 @@ const styles: Record<string, React.CSSProperties> = {
   },
   recipeCard: {
     background: 'white',
-    borderRadius: '10px',
+    borderRadius: radius.md,
     padding: '1.25rem',
-    boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+    boxShadow: shadows.sm,
+    border: `1px solid ${colors.borderLight}`,
     display: 'flex',
     flexDirection: 'column',
     position: 'relative',
@@ -575,7 +508,7 @@ const styles: Record<string, React.CSSProperties> = {
   recipeDescription: {
     margin: 0,
     fontSize: '0.875rem',
-    color: '#7A6B60',
+    color: colors.textSecondary,
     lineHeight: 1.5,
     marginBottom: '0.75rem',
     flex: 1,
@@ -584,7 +517,7 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     gap: '0.75rem',
     fontSize: '0.75rem',
-    color: '#7A6B60',
+    color: colors.textSecondary,
     marginBottom: '0.75rem',
   },
   recipeTags: {
@@ -594,8 +527,8 @@ const styles: Record<string, React.CSSProperties> = {
   },
   recipeTag: {
     padding: '0.25rem 0.5rem',
-    borderRadius: '4px',
-    background: '#FAF6F2',
+    borderRadius: radius.full,
+    background: colors.warmBg,
     fontSize: '0.6875rem',
     textTransform: 'capitalize',
   },
@@ -605,12 +538,12 @@ const styles: Record<string, React.CSSProperties> = {
     right: '0.75rem',
     width: '28px',
     height: '28px',
-    borderRadius: '4px',
+    borderRadius: radius.sm,
     border: 'none',
     background: 'transparent',
     cursor: 'pointer',
     fontSize: '1.25rem',
-    color: '#A89888',
+    color: colors.textMuted,
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
@@ -621,18 +554,19 @@ const styles: Record<string, React.CSSProperties> = {
     maxWidth: '900px',
     margin: '1rem auto 0',
     padding: '0.75rem',
-    borderRadius: '6px',
-    border: '1px dashed #E8DDD4',
+    borderRadius: radius.sm,
+    border: `1px dashed ${colors.border}`,
     background: 'transparent',
-    color: '#7A6B60',
+    color: colors.textSecondary,
     cursor: 'pointer',
     fontSize: '0.875rem',
   },
   addSection: {
     background: 'white',
-    borderRadius: '10px',
+    borderRadius: radius.md,
     padding: '1.25rem',
-    boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+    boxShadow: shadows.sm,
+    border: `1px solid ${colors.borderLight}`,
     maxWidth: '900px',
     margin: '1rem auto 0',
   },
@@ -647,19 +581,11 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: '1rem',
     fontWeight: 500,
   },
-  closeButton: {
-    padding: '0.375rem 0.75rem',
-    borderRadius: '4px',
-    border: '1px solid #E8DDD4',
-    background: 'white',
-    cursor: 'pointer',
-    fontSize: '0.8125rem',
-  },
   searchInput: {
     width: '100%',
     padding: '0.625rem 0.75rem',
-    borderRadius: '6px',
-    border: '1px solid #E8DDD4',
+    borderRadius: radius.sm,
+    border: `1px solid ${colors.border}`,
     fontSize: '0.875rem',
     outline: 'none',
     marginBottom: '0.75rem',
@@ -671,7 +597,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   noResults: {
     textAlign: 'center',
-    color: '#A89888',
+    color: colors.textMuted,
     fontSize: '0.875rem',
     padding: '1rem 0',
   },
@@ -680,7 +606,7 @@ const styles: Record<string, React.CSSProperties> = {
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: '0.625rem 0',
-    borderBottom: '1px solid #F0E8E0',
+    borderBottom: `1px solid ${colors.borderLight}`,
   },
   addItemTitle: {
     fontSize: '0.9375rem',
@@ -689,23 +615,14 @@ const styles: Record<string, React.CSSProperties> = {
   addItemCuisine: {
     marginLeft: '0.5rem',
     fontSize: '0.75rem',
-    color: '#A89888',
-  },
-  addItemButton: {
-    padding: '0.375rem 0.75rem',
-    borderRadius: '4px',
-    border: 'none',
-    background: '#E07A5F',
-    color: 'white',
-    cursor: 'pointer',
-    fontSize: '0.8125rem',
-    flexShrink: 0,
+    color: colors.textMuted,
   },
   card: {
     background: 'white',
     padding: '1.5rem',
-    borderRadius: '12px',
-    boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+    borderRadius: radius.lg,
+    boxShadow: shadows.md,
+    border: `1px solid ${colors.borderLight}`,
     maxWidth: '500px',
     margin: '0 auto',
   },

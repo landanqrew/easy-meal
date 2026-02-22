@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useSession } from '../lib/auth'
+import { colors, shadows, radius } from '../lib/theme'
 import type { GeneratedRecipe } from '@easy-meal/shared'
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001'
@@ -177,7 +178,7 @@ export default function CreateRecipe() {
           ))}
         </div>
 
-        {error && <div style={styles.error}>{error}</div>}
+        {error && <div className="error-message">{error}</div>}
 
         {/* Step 1: Protein */}
         {step === 1 && (
@@ -393,7 +394,7 @@ export default function CreateRecipe() {
               <button onClick={handleBack} className="btn-secondary">
                 ← Back
               </button>
-              <button onClick={handleNext} className="btn-primary" style={{ background: '#16a34a' }}>
+              <button onClick={handleNext} className="btn-primary" style={{ background: colors.success }}>
                 Generate Recipe →
               </button>
             </div>
@@ -453,7 +454,7 @@ export default function CreateRecipe() {
                   <button onClick={handleTryAgain} className="btn-secondary" style={{ flex: 1 }}>
                     🔄 Try Again
                   </button>
-                  <button onClick={handleSave} className="btn-primary" style={{ flex: 1, background: '#16a34a' }} disabled={saving}>
+                  <button onClick={handleSave} className="btn-primary" style={{ flex: 1, background: colors.success }} disabled={saving}>
                     {saving ? 'Saving...' : '✓ Save Recipe'}
                   </button>
                 </div>
@@ -469,14 +470,16 @@ export default function CreateRecipe() {
 const styles: Record<string, React.CSSProperties> = {
   container: {
     minHeight: '100vh',
-    background: '#FDF8F4',
+    background: colors.bg,
     padding: '2rem 1rem',
+    paddingTop: '4.5rem',
   },
   card: {
     background: 'white',
     padding: '2rem',
-    borderRadius: '12px',
-    boxShadow: '0 4px 12px rgba(0,0,0,0.08), 0 2px 4px rgba(0,0,0,0.04)',
+    borderRadius: radius.lg,
+    boxShadow: shadows.md,
+    border: `1px solid ${colors.borderLight}`,
     maxWidth: '600px',
     margin: '0 auto',
   },
@@ -490,28 +493,21 @@ const styles: Record<string, React.CSSProperties> = {
     width: '10px',
     height: '10px',
     borderRadius: '50%',
-    background: '#E8DDD4',
+    background: colors.border,
     transition: 'all 0.2s ease',
   },
   stepDotActive: {
-    background: '#E07A5F',
+    background: colors.primary,
   },
   stepDotCurrent: {
     width: '12px',
     height: '12px',
   },
-  error: {
-    background: '#FDECEA',
-    color: '#C44536',
-    padding: '0.75rem',
-    borderRadius: '6px',
-    marginBottom: '1rem',
-    fontSize: '0.875rem',
-  },
   stepContent: {},
   stepTitle: {
-    fontSize: '1.25rem',
-    fontWeight: 600,
+    fontSize: '1.375rem',
+    fontWeight: 700,
+    letterSpacing: '-0.02em',
     marginBottom: '1rem',
   },
   selectionGrid: {
@@ -522,7 +518,7 @@ const styles: Record<string, React.CSSProperties> = {
   selectionSummary: {
     marginTop: '1rem',
     fontSize: '0.875rem',
-    color: '#7A6B60',
+    color: colors.textSecondary,
   },
   stepActions: {
     display: 'flex',
@@ -540,7 +536,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   timeDesc: {
     fontSize: '0.75rem',
-    color: '#7A6B60',
+    color: colors.textSecondary,
   },
   servingsControl: {
     display: 'flex',
@@ -564,17 +560,18 @@ const styles: Record<string, React.CSSProperties> = {
     animation: 'pulse 1.5s infinite',
   },
   loadingTitle: {
-    fontSize: '1.25rem',
-    fontWeight: 600,
+    fontSize: '1.375rem',
+    fontWeight: 700,
     marginBottom: '0.5rem',
   },
   loadingText: {
-    color: '#7A6B60',
+    color: colors.textSecondary,
   },
   previewContainer: {},
   recipeTitle: {
-    fontSize: '1.5rem',
-    fontWeight: 600,
+    fontSize: '1.75rem',
+    fontWeight: 700,
+    letterSpacing: '-0.02em',
     marginBottom: '0.5rem',
   },
   recipeMeta: {
@@ -582,22 +579,20 @@ const styles: Record<string, React.CSSProperties> = {
     flexWrap: 'wrap',
     gap: '1rem',
     fontSize: '0.875rem',
-    color: '#7A6B60',
+    color: colors.textSecondary,
     marginBottom: '1rem',
   },
   recipeDescription: {
-    color: '#3D3028',
+    color: colors.text,
     lineHeight: 1.6,
     marginBottom: '1.5rem',
   },
   sectionTitle: {
-    fontSize: '0.875rem',
-    fontWeight: 600,
-    textTransform: 'uppercase',
-    letterSpacing: '0.5px',
-    color: '#7A6B60',
+    fontSize: '1.125rem',
+    fontWeight: 700,
+    color: colors.textSecondary,
     marginBottom: '0.5rem',
-    borderTop: '1px solid #E8DDD4',
+    borderTop: `1px solid ${colors.border}`,
     paddingTop: '1rem',
   },
   ingredientList: {
@@ -617,7 +612,7 @@ const styles: Record<string, React.CSSProperties> = {
     lineHeight: 1.5,
   },
   moreItems: {
-    color: '#7A6B60',
+    color: colors.textSecondary,
     fontStyle: 'italic',
   },
   previewActions: {

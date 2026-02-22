@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { useNavigate, useLocation, Link } from 'react-router-dom'
 import { useSession } from '../lib/auth'
+import { colors, shadows, radius } from '../lib/theme'
 import type { GeneratedRecipe } from '@easy-meal/shared'
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001'
@@ -186,7 +187,7 @@ export default function ChatRecipe() {
       <div className="chat-container">
         {/* Header */}
         <div style={styles.header}>
-          <Link to={returnTo || '/recipes'} style={styles.backLink}>← Back</Link>
+          <Link to={returnTo || '/recipes'} className="back-link">← Back</Link>
           <h1 style={styles.title}>Chat Recipe</h1>
           <div style={{ width: '48px' }} />
         </div>
@@ -248,7 +249,7 @@ export default function ChatRecipe() {
                 <button onClick={handleTryAgain} className="btn-secondary" style={{ flex: 1 }}>
                   Try Different
                 </button>
-                <button onClick={handleSave} className="btn-primary" style={{ flex: 1, background: '#16a34a' }} disabled={saving}>
+                <button onClick={handleSave} className="btn-primary" style={{ flex: 1, background: colors.success }} disabled={saving}>
                   {saving ? 'Saving...' : 'Save Recipe'}
                 </button>
               </div>
@@ -258,7 +259,7 @@ export default function ChatRecipe() {
           <div ref={messagesEndRef} />
         </div>
 
-        {error && <div style={styles.error}>{error}</div>}
+        {error && <div className="error-message" style={{ marginBottom: '0.5rem' }}>{error}</div>}
 
         {/* Input area */}
         {!recipe && (
@@ -316,58 +317,47 @@ export default function ChatRecipe() {
 const styles: Record<string, React.CSSProperties> = {
   page: {
     minHeight: '100vh',
-    background: '#FDF8F4',
+    background: colors.bg,
+    paddingTop: '3.5rem',
   },
   header: {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingBottom: '0.75rem',
-    borderBottom: '1px solid #E8DDD4',
-  },
-  backLink: {
-    color: '#7A6B60',
-    textDecoration: 'none',
-    fontSize: '0.875rem',
+    borderBottom: `1px solid ${colors.border}`,
   },
   title: {
     margin: 0,
     fontSize: '1.125rem',
     fontWeight: 600,
-    color: '#2D2420',
-  },
-  error: {
-    background: '#FDECEA',
-    color: '#C44536',
-    padding: '0.5rem 0.75rem',
-    borderRadius: '6px',
-    fontSize: '0.8125rem',
-    marginBottom: '0.5rem',
+    color: colors.text,
   },
   recipeCard: {
     background: 'white',
-    borderRadius: '12px',
+    borderRadius: radius.lg,
     padding: '1.25rem',
-    boxShadow: '0 4px 12px rgba(0,0,0,0.08), 0 2px 4px rgba(0,0,0,0.04)',
-    border: '1px solid #E8DDD4',
+    boxShadow: shadows.md,
+    border: `1px solid ${colors.border}`,
     alignSelf: 'stretch',
   },
   recipeName: {
     margin: '0 0 0.5rem',
-    fontSize: '1.25rem',
-    fontWeight: 600,
-    color: '#2D2420',
+    fontSize: '1.375rem',
+    fontWeight: 700,
+    letterSpacing: '-0.02em',
+    color: colors.text,
   },
   recipeMeta: {
     display: 'flex',
     flexWrap: 'wrap',
     gap: '0.75rem',
     fontSize: '0.8125rem',
-    color: '#7A6B60',
+    color: colors.textSecondary,
     marginBottom: '0.75rem',
   },
   recipeDesc: {
-    color: '#3D3028',
+    color: colors.text,
     lineHeight: 1.5,
     fontSize: '0.9375rem',
     marginBottom: '1rem',
@@ -379,11 +369,11 @@ const styles: Record<string, React.CSSProperties> = {
     cursor: 'pointer',
     fontSize: '0.8125rem',
     fontWeight: 600,
-    color: '#7A6B60',
+    color: colors.textSecondary,
     textTransform: 'uppercase',
     letterSpacing: '0.3px',
     padding: '0.5rem 0',
-    borderTop: '1px solid #F0E8E0',
+    borderTop: `1px solid ${colors.borderLight}`,
   },
   ingredientList: {
     listStyle: 'disc',
@@ -406,6 +396,6 @@ const styles: Record<string, React.CSSProperties> = {
     gap: '0.75rem',
     marginTop: '1rem',
     paddingTop: '1rem',
-    borderTop: '1px solid #F0E8E0',
+    borderTop: `1px solid ${colors.borderLight}`,
   },
 }

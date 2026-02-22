@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useSession } from '../lib/auth'
+import { colors, radius } from '../lib/theme'
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001'
 
@@ -80,8 +81,8 @@ export default function Recipes() {
             <div className="skeleton" style={{ width: '180px', height: '0.875rem' }} />
           </div>
           <div style={{ display: 'flex', gap: '0.5rem' }}>
-            <div className="skeleton" style={{ width: '70px', height: '36px', borderRadius: '6px' }} />
-            <div className="skeleton" style={{ width: '70px', height: '36px', borderRadius: '6px' }} />
+            <div className="skeleton" style={{ width: '70px', height: '36px', borderRadius: radius.sm }} />
+            <div className="skeleton" style={{ width: '70px', height: '36px', borderRadius: radius.sm }} />
           </div>
         </div>
         <div style={styles.recipeGrid}>
@@ -99,13 +100,6 @@ export default function Recipes() {
             </div>
           ))}
         </div>
-        <nav className="bottom-nav-bar">
-          <Link to="/">Home</Link>
-          <Link to="/recipes" className="active">Recipes</Link>
-          <Link to="/meal-plan">Meal Plan</Link>
-          <Link to="/grocery-lists">Groceries</Link>
-          <Link to="/profile">Profile</Link>
-        </nav>
       </div>
     )
   }
@@ -132,7 +126,7 @@ export default function Recipes() {
         </div>
       </div>
 
-      {error && <div style={styles.error}>{error}</div>}
+      {error && <div className="error-message" style={{ maxWidth: '900px', margin: '0 auto 1rem' }}>{error}</div>}
 
       {tags.length > 0 && (
         <div style={styles.filterSection}>
@@ -157,8 +151,9 @@ export default function Recipes() {
 
       {filteredRecipes.length === 0 ? (
         <div style={styles.emptyState}>
+          <p style={{ fontSize: '1.125rem', marginBottom: '0.25rem' }}>📝</p>
           <p>No recipes yet</p>
-          <Link to="/recipes/create" style={styles.emptyButton}>
+          <Link to="/recipes/create" className="btn-primary" style={{ display: 'inline-block', marginTop: '1rem', padding: '0.75rem 1.5rem', textDecoration: 'none' }}>
             Create your first recipe
           </Link>
         </div>
@@ -192,41 +187,27 @@ export default function Recipes() {
                 </div>
               )}
               <div style={styles.recipeFooter}>
-                <span style={styles.recipeSource}>
+                <span>
                   {recipe.source === 'ai_generated' ? '✨ AI' : '✏️ Manual'}
                 </span>
                 {recipe.createdBy && (
-                  <span style={styles.recipeAuthor}>by {recipe.createdBy.name}</span>
+                  <span>by {recipe.createdBy.name}</span>
                 )}
               </div>
             </Link>
           ))}
         </div>
       )}
-
-      <nav className="bottom-nav-bar">
-        <Link to="/">Home</Link>
-        <Link to="/recipes" className="active">Recipes</Link>
-        <Link to="/meal-plan">Meal Plan</Link>
-        <Link to="/grocery-lists">Groceries</Link>
-        <Link to="/profile">Profile</Link>
-      </nav>
     </div>
   )
 }
 
 const styles: Record<string, React.CSSProperties> = {
-  loading: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: '100vh',
-  },
   container: {
     minHeight: '100vh',
-    background: '#FDF8F4',
+    background: colors.bg,
     padding: '2rem 1rem',
-    paddingBottom: '5rem',
+    paddingTop: '4.5rem',
   },
   header: {
     display: 'flex',
@@ -238,31 +219,15 @@ const styles: Record<string, React.CSSProperties> = {
   },
   title: {
     margin: 0,
-    fontSize: '1.5rem',
-    fontWeight: 600,
+    fontSize: '1.75rem',
+    fontWeight: 700,
+    letterSpacing: '-0.02em',
+    color: colors.text,
   },
   subtitle: {
     margin: '0.25rem 0 0',
-    color: '#7A6B60',
+    color: colors.textSecondary,
     fontSize: '0.875rem',
-  },
-  createButton: {
-    padding: '0.75rem 1.25rem',
-    borderRadius: '6px',
-    background: '#E07A5F',
-    color: 'white',
-    textDecoration: 'none',
-    fontWeight: 500,
-    fontSize: '0.875rem',
-  },
-  error: {
-    background: '#FDECEA',
-    color: '#C44536',
-    padding: '0.75rem',
-    borderRadius: '6px',
-    marginBottom: '1rem',
-    maxWidth: '900px',
-    margin: '0 auto 1rem',
   },
   filterSection: {
     display: 'flex',
@@ -275,35 +240,12 @@ const styles: Record<string, React.CSSProperties> = {
   },
   filterLabel: {
     fontSize: '0.875rem',
-    color: '#7A6B60',
-  },
-  filterChip: {
-    padding: '0.375rem 0.75rem',
-    borderRadius: '20px',
-    border: '1px solid #E8DDD4',
-    background: 'white',
-    cursor: 'pointer',
-    fontSize: '0.75rem',
-    textTransform: 'capitalize',
-  },
-  filterChipActive: {
-    background: '#E07A5F',
-    color: 'white',
-    borderColor: '#E07A5F',
+    color: colors.textSecondary,
   },
   emptyState: {
     textAlign: 'center',
     padding: '4rem 2rem',
-    color: '#7A6B60',
-  },
-  emptyButton: {
-    display: 'inline-block',
-    marginTop: '1rem',
-    padding: '0.75rem 1.5rem',
-    borderRadius: '6px',
-    background: '#E07A5F',
-    color: 'white',
-    textDecoration: 'none',
+    color: colors.textSecondary,
   },
   recipeGrid: {
     display: 'grid',
@@ -311,17 +253,6 @@ const styles: Record<string, React.CSSProperties> = {
     gap: '1rem',
     maxWidth: '900px',
     margin: '0 auto',
-  },
-  recipeCard: {
-    background: 'white',
-    borderRadius: '10px',
-    padding: '1.25rem',
-    textDecoration: 'none',
-    color: 'inherit',
-    boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
-    transition: 'box-shadow 0.15s',
-    display: 'flex',
-    flexDirection: 'column',
   },
   recipeTitle: {
     margin: 0,
@@ -332,7 +263,7 @@ const styles: Record<string, React.CSSProperties> = {
   recipeDescription: {
     margin: 0,
     fontSize: '0.875rem',
-    color: '#7A6B60',
+    color: colors.textSecondary,
     lineHeight: 1.5,
     marginBottom: '0.75rem',
     flex: 1,
@@ -341,7 +272,7 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     gap: '0.75rem',
     fontSize: '0.75rem',
-    color: '#7A6B60',
+    color: colors.textSecondary,
     marginBottom: '0.75rem',
   },
   recipeTags: {
@@ -352,8 +283,8 @@ const styles: Record<string, React.CSSProperties> = {
   },
   recipeTag: {
     padding: '0.25rem 0.5rem',
-    borderRadius: '4px',
-    background: '#FAF6F2',
+    borderRadius: radius.full,
+    background: colors.warmBg,
     fontSize: '0.6875rem',
     textTransform: 'capitalize',
   },
@@ -361,26 +292,8 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     justifyContent: 'space-between',
     fontSize: '0.75rem',
-    color: '#A89888',
-    borderTop: '1px solid #E8DDD4',
+    color: colors.textMuted,
+    borderTop: `1px solid ${colors.border}`,
     paddingTop: '0.75rem',
-  },
-  recipeSource: {},
-  recipeAuthor: {},
-  bottomNav: {
-    position: 'fixed',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    background: 'white',
-    display: 'flex',
-    justifyContent: 'space-around',
-    padding: '0.75rem 0',
-    borderTop: '1px solid #E8DDD4',
-  },
-  navLink: {
-    color: '#7A6B60',
-    textDecoration: 'none',
-    fontSize: '0.875rem',
   },
 }
