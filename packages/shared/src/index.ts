@@ -60,6 +60,7 @@ export type Cuisine =
 export type RecipePreferences = {
   protein?: string
   vegetables?: string[]
+  fruits?: string[]
   cuisine?: string
   mealType?: MealType
   cookingMethod?: CookingMethod | string

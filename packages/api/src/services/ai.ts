@@ -78,6 +78,7 @@ function buildPreferencesPrompt(prefs: RecipePreferences): string {
 
   if (prefs.protein) lines.push(`- Protein: ${prefs.protein}`)
   if (prefs.vegetables?.length) lines.push(`- Vegetables: ${prefs.vegetables.join(', ')}`)
+  if (prefs.fruits?.length) lines.push(`- Fruits: ${prefs.fruits.join(', ')}`)
   if (prefs.cuisine) lines.push(`- Cuisine style: ${prefs.cuisine}`)
   if (prefs.mealType) lines.push(`- Meal type: ${prefs.mealType}`)
   if (prefs.cookingMethod) lines.push(`- Cooking method: ${prefs.cookingMethod}`)

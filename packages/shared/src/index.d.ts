@@ -13,6 +13,7 @@ export type Cuisine = 'american' | 'italian' | 'mexican' | 'asian' | 'mediterran
 export type RecipePreferences = {
     protein?: string;
     vegetables?: string[];
+    fruits?: string[];
     cuisine?: string;
     mealType?: MealType;
     cookingMethod?: CookingMethod | string;

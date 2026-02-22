@@ -8,6 +8,7 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001'
 
 const DEFAULT_PROTEINS = ['Chicken', 'Beef', 'Pork', 'Fish', 'Shrimp', 'Tofu', 'Tempeh', 'Eggs', 'None']
 const DEFAULT_VEGETABLES = ['Broccoli', 'Bell Peppers', 'Onions', 'Tomatoes', 'Carrots', 'Mushrooms', 'Spinach', 'Zucchini', 'Corn', 'Garlic']
+const DEFAULT_FRUITS = ['Lemon', 'Lime', 'Avocado', 'Mango', 'Banana', 'Apple', 'Berries', 'Pineapple', 'Orange', 'Peach']
 const DEFAULT_CUISINES = ['American', 'Italian', 'Mexican', 'Asian', 'Mediterranean', 'Indian', 'Thai', 'Japanese', 'French', 'Surprise me']
 const DEFAULT_COOKING_METHODS = ['Stovetop', 'Oven', 'Grill', 'Slow Cooker', 'Instant Pot', 'Air Fryer', 'No-Cook']
 const TIME_OPTIONS = [
@@ -31,20 +32,23 @@ export default function CreateRecipe() {
   // Custom items added by user
   const [customProteins, setCustomProteins] = useState<string[]>([])
   const [customVegetables, setCustomVegetables] = useState<string[]>([])
+  const [customFruits, setCustomFruits] = useState<string[]>([])
   const [customCuisines, setCustomCuisines] = useState<string[]>([])
   const [customMethods, setCustomMethods] = useState<string[]>([])
 
   // Custom input fields
   const [customProteinInput, setCustomProteinInput] = useState('')
   const [customVegetableInput, setCustomVegetableInput] = useState('')
+  const [customFruitInput, setCustomFruitInput] = useState('')
   const [customCuisineInput, setCustomCuisineInput] = useState('')
   const [customMethodInput, setCustomMethodInput] = useState('')
 
   // Selections
   const [protein, setProtein] = useState<string | null>(null)
   const [vegetables, setVegetables] = useState<string[]>([])
+  const [fruits, setFruits] = useState<string[]>([])
   const [cuisine, setCuisine] = useState<string | null>(null)
-  const [cookingMethod, setCookingMethod] = useState<string | null>(null)
+  const [cookingMethods, setCookingMethods] = useState<string[]>([])
   const [timeConstraint, setTimeConstraint] = useState<string | null>(null)
   const [servings, setServings] = useState(4)
 
@@ -53,6 +57,7 @@ export default function CreateRecipe() {
 
   const allProteins = [...DEFAULT_PROTEINS, ...customProteins]
   const allVegetables = [...DEFAULT_VEGETABLES, ...customVegetables]
+  const allFruits = [...DEFAULT_FRUITS, ...customFruits]
   const allCuisines = [...DEFAULT_CUISINES, ...customCuisines]
   const allMethods = [...DEFAULT_COOKING_METHODS, ...customMethods]
 
@@ -93,8 +98,9 @@ export default function CreateRecipe() {
         body: JSON.stringify({
           protein: protein === 'None' ? undefined : protein?.toLowerCase(),
           vegetables: vegetables.map((v) => v.toLowerCase()),
+          fruits: fruits.map((f) => f.toLowerCase()),
           cuisine: cuisine === 'Surprise me' ? undefined : cuisine?.toLowerCase(),
-          cookingMethod: cookingMethod?.toLowerCase().replace(' ', '-'),
+          cookingMethod: cookingMethods.length > 0 ? cookingMethods.map((m) => m.toLowerCase().replace(' ', '-')).join(', ') : undefined,
           timeConstraint,
           servings,
         }),
@@ -266,12 +272,53 @@ export default function CreateRecipe() {
             {vegetables.length > 0 && (
               <p style={styles.selectionSummary}>Selected: {vegetables.join(', ')}</p>
             )}
+
+            <h2 style={{ ...styles.stepTitle, marginTop: '1.5rem' }}>Any fruits? (select any)</h2>
+            <div style={styles.selectionGrid}>
+              {allFruits.map((f) => (
+                <button
+                  key={f}
+                  onClick={() =>
+                    setFruits(
+                      fruits.includes(f)
+                        ? fruits.filter((x) => x !== f)
+                        : [...fruits, f]
+                    )
+                  }
+                  className={`selection-card${fruits.includes(f) ? ' selected' : ''}`}
+                >
+                  {f}
+                </button>
+              ))}
+            </div>
+            <div className="custom-input-row">
+              <input
+                type="text"
+                placeholder="Add other fruit..."
+                value={customFruitInput}
+                onChange={(e) => setCustomFruitInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    addCustomItem(customFruitInput, allFruits, setCustomFruits, setCustomFruitInput)
+                  }
+                }}
+              />
+              <button
+                onClick={() => addCustomItem(customFruitInput, allFruits, setCustomFruits, setCustomFruitInput)}
+              >
+                Add
+              </button>
+            </div>
+            {fruits.length > 0 && (
+              <p style={styles.selectionSummary}>Selected: {fruits.join(', ')}</p>
+            )}
+
             <div style={styles.stepActions}>
               <button onClick={handleBack} className="btn-secondary">
                 ← Back
               </button>
               <button onClick={handleNext} className="btn-primary">
-                {vegetables.length > 0 ? 'Next' : 'Skip'} →
+                {vegetables.length > 0 || fruits.length > 0 ? 'Next' : 'Skip'} →
               </button>
             </div>
           </div>
@@ -311,13 +358,19 @@ export default function CreateRecipe() {
               </button>
             </div>
 
-            <h2 style={{ ...styles.stepTitle, marginTop: '1.5rem' }}>Cooking Method</h2>
+            <h2 style={{ ...styles.stepTitle, marginTop: '1.5rem' }}>Cooking Method (select any)</h2>
             <div style={styles.selectionGrid}>
               {allMethods.map((m) => (
                 <button
                   key={m}
-                  onClick={() => setCookingMethod(cookingMethod === m ? null : m)}
-                  className={`selection-card${cookingMethod === m ? ' selected' : ''}`}
+                  onClick={() =>
+                    setCookingMethods(
+                      cookingMethods.includes(m)
+                        ? cookingMethods.filter((x) => x !== m)
+                        : [...cookingMethods, m]
+                    )
+                  }
+                  className={`selection-card${cookingMethods.includes(m) ? ' selected' : ''}`}
                 >
                   {m}
                 </button>
@@ -341,6 +394,9 @@ export default function CreateRecipe() {
                 Add
               </button>
             </div>
+            {cookingMethods.length > 0 && (
+              <p style={styles.selectionSummary}>Selected: {cookingMethods.join(', ')}</p>
+            )}
 
             <div style={styles.stepActions}>
               <button onClick={handleBack} className="btn-secondary">
