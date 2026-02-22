@@ -709,9 +709,11 @@ export default function RecipeDetail() {
           <span style={styles.source}>
             {recipe.source === 'ai_generated'
               ? '✨ Generated with AI'
-              : recipe.source === 'community'
-                ? '🌍 From Community'
-                : '✏️ Manually created'}
+              : recipe.source === 'imported'
+                ? '📄 Imported from PDF'
+                : recipe.source === 'community'
+                  ? '🌍 From Community'
+                  : '✏️ Manually created'}
             {recipe.copiedFromRecipeId && (
               <> · <Link to={`/discover/recipes/${recipe.copiedFromRecipeId}`} style={{ color: colors.primary, fontSize: '0.75rem' }}>View original</Link></>
             )}

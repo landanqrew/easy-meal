@@ -64,8 +64,11 @@ app.use('*', async (c, next) => {
 // Global error handler
 app.use('*', errorHandler)
 
-// Request size limit (1MB)
-app.use('/api/*', requestSizeLimit(1024 * 1024))
+// Request size limit (1MB, 10MB for PDF import)
+app.use('/api/*', async (c, next) => {
+  if (c.req.path === '/api/recipes/import-pdf') return next()
+  return requestSizeLimit(1024 * 1024)(c, next)
+})
 
 // Rate limiting for API routes (100 requests per minute)
 app.use('/api/*', rateLimit({ windowMs: 60 * 1000, max: 100 }))

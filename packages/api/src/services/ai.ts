@@ -203,6 +203,94 @@ export async function chatRecipeGeneration(
 }
 
 // ============================================================================
+// PDF RECIPE EXTRACTION
+// ============================================================================
+
+const PDF_EXTRACTION_PROMPT = `You are a recipe extraction assistant. Extract the recipe from this document/image and output it as structured JSON.
+
+IMPORTANT RULES:
+1. Extract ONLY the recipe content — ignore ads, blog text, navigation, comments, sidebars, and life-story preambles.
+2. All ingredient quantities must be numeric (use decimals like 0.5, 0.25, 0.33).
+3. Use standard US cooking units (cup, tbsp, tsp, oz, lb, piece, clove, etc.).
+4. Category must be one of: produce, dairy, meat, seafood, pantry, frozen, bakery, beverages, other.
+5. Ingredient names must be lowercase, canonical form (e.g., "olive oil" not "extra virgin olive oil").
+6. Keep instructions clear and numbered.
+7. Prep time and cook time in minutes.
+
+INGREDIENT MATCHING:
+When the PDF mentions an ingredient, check the provided list of existing database ingredient names below. If a PDF ingredient is semantically the same as a database ingredient, use the EXACT database name (e.g., if the PDF says "Roma tomatoes" and the database has "tomato", use "tomato"). Only introduce a new ingredient name when no reasonable match exists.
+
+If the PDF contains no recognizable recipe, respond with: {"error": "no_recipe_found"}
+
+Otherwise respond ONLY with valid JSON matching this exact structure:
+{
+  "title": "Recipe Title",
+  "description": "Brief appetizing description",
+  "servings": 4,
+  "prepTime": 15,
+  "cookTime": 30,
+  "cuisine": "Italian",
+  "ingredients": [
+    {
+      "name": "ingredient name (lowercase, canonical form)",
+      "quantity": 1.5,
+      "unit": "cup",
+      "category": "produce",
+      "preparation": "diced"
+    }
+  ],
+  "instructions": [
+    {"stepNumber": 1, "text": "First step..."},
+    {"stepNumber": 2, "text": "Second step..."}
+  ]
+}`
+
+export async function extractRecipeFromPDF(
+  pdfBase64: string,
+  mimeType: string,
+  existingIngredientNames: string[]
+): Promise<GeneratedRecipe> {
+  const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' })
+
+  const ingredientList = existingIngredientNames.length > 0
+    ? existingIngredientNames.map((n) => `- ${n}`).join('\n')
+    : '(database is empty)'
+
+  const promptText = `${PDF_EXTRACTION_PROMPT}
+
+Existing ingredient names in the database:
+${ingredientList}`
+
+  const result = await model.generateContent([
+    { inlineData: { data: pdfBase64, mimeType } },
+    promptText,
+  ])
+
+  const response = result.response.text()
+
+  // Check for no-recipe error response
+  const jsonMatch = response.match(/```json\n?([\s\S]*?)\n?```/) || response.match(/\{[\s\S]*\}/)
+  if (!jsonMatch) {
+    throw new Error('Failed to parse recipe from PDF')
+  }
+
+  const jsonStr = jsonMatch[1] || jsonMatch[0]
+  const parsed = JSON.parse(jsonStr)
+
+  if (parsed.error === 'no_recipe_found') {
+    throw new Error('No recipe found in the uploaded PDF')
+  }
+
+  const recipe = parsed as GeneratedRecipe
+
+  if (!recipe.title || !recipe.ingredients || !recipe.instructions) {
+    throw new Error('Failed to parse recipe from PDF')
+  }
+
+  return recipe
+}
+
+// ============================================================================
 // INGREDIENT NORMALIZATION
 // ============================================================================
 

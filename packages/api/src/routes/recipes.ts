@@ -4,7 +4,7 @@ import { db } from '../db'
 import { recipes, recipeIngredients, ingredients, recipeTags, tags } from '../db/schema'
 import { user } from '../db/auth-schema'
 import { auth } from '../lib/auth'
-import { generateRecipe } from '../services/ai'
+import { generateRecipe, extractRecipeFromPDF } from '../services/ai'
 import type { RecipePreferences } from '@easy-meal/shared'
 
 const recipesRouter = new Hono()
@@ -48,6 +48,56 @@ recipesRouter.post('/generate', async (c) => {
     return c.json({ data: recipe })
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Failed to generate recipe'
+    return c.json({ error: message }, 500)
+  }
+})
+
+// POST /recipes/import-pdf - Extract a recipe from an uploaded PDF
+recipesRouter.post('/import-pdf', async (c) => {
+  const session = await getSession(c)
+  if (!session) {
+    return c.json({ error: 'Unauthorized' }, 401)
+  }
+
+  const currentUser = await getUserWithHousehold(session.user.id)
+  if (!currentUser?.householdId) {
+    return c.json({ error: 'You must be in a household to import recipes' }, 400)
+  }
+
+  try {
+    const body = await c.req.parseBody()
+    const file = body['file']
+
+    if (!file || !(file instanceof File)) {
+      return c.json({ error: 'No file uploaded' }, 400)
+    }
+
+    const allowedTypes = ['application/pdf', 'image/jpeg', 'image/png']
+    if (!allowedTypes.includes(file.type)) {
+      return c.json({ error: 'Only PDF, JPG, and PNG files are supported' }, 400)
+    }
+
+    const maxSize = 10 * 1024 * 1024 // 10MB
+    if (file.size > maxSize) {
+      return c.json({ error: 'File too large. Maximum size is 10MB.' }, 413)
+    }
+
+    const arrayBuffer = await file.arrayBuffer()
+    const pdfBase64 = Buffer.from(arrayBuffer).toString('base64')
+
+    // Fetch existing ingredient names for matching
+    const existingIngredients = await db.query.ingredients.findMany({
+      columns: { name: true },
+    })
+    const ingredientNames = existingIngredients.map((i) => i.name)
+
+    const recipe = await extractRecipeFromPDF(pdfBase64, file.type, ingredientNames)
+    return c.json({ data: recipe })
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Failed to extract recipe from PDF'
+    if (message === 'No recipe found in the uploaded PDF') {
+      return c.json({ error: message }, 422)
+    }
     return c.json({ error: message }, 500)
   }
 })

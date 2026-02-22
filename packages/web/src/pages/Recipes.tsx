@@ -123,6 +123,9 @@ export default function Recipes() {
           <Link to="/recipes/chat" className="btn-secondary" style={{ textDecoration: 'none', fontSize: '0.8125rem', padding: '0.625rem 1rem' }}>
             Chat
           </Link>
+          <Link to="/recipes/import" className="btn-secondary" style={{ textDecoration: 'none', fontSize: '0.8125rem', padding: '0.625rem 1rem' }}>
+            Import
+          </Link>
         </div>
       </div>
 
@@ -188,7 +191,7 @@ export default function Recipes() {
               )}
               <div style={styles.recipeFooter}>
                 <span>
-                  {recipe.source === 'ai_generated' ? '✨ AI' : recipe.source === 'community' ? '🌍 Community' : '✏️ Manual'}
+                  {recipe.source === 'ai_generated' ? '✨ AI' : recipe.source === 'imported' ? '📄 Imported' : recipe.source === 'community' ? '🌍 Community' : '✏️ Manual'}
                 </span>
                 {recipe.createdBy && (
                   <span>by {recipe.createdBy.name}</span>
