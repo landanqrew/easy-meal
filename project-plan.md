@@ -61,6 +61,7 @@ Easy Meal is a web application that streamlines the meal preparation process—f
 │  │  - Grocery list management                      │  │
 │  │  - Household management                         │  │
 │  │  - AI orchestration                             │  │
+│  │  - Community discover + check-ins               │  │
 │  │  - Google Tasks export                          │  │
 │  └─────────────────────────────────────────────────┘  │
 └───────────┬───────────────────────────┬───────────────┘
@@ -72,6 +73,7 @@ Easy Meal is a web application that streamlines the meal preparation process—f
 │  - Households         │   │  - Ingredient parsing     │
 │  - Recipes + Tags     │   │  - Store section mapping  │
 │  - Recipe Lists       │   └───────────────────────────┘
+│  - Recipe Check-ins   │
 │  - Grocery Lists      │
 └───────────────────────┘
 ```
@@ -105,7 +107,9 @@ Easy Meal is a web application that streamlines the meal preparation process—f
 - title, description, servings
 - instructions (JSON array - step_number, text)
 - cuisine, prep_time, cook_time
-- source (enum: ai_generated, manual, imported)
+- source (enum: ai_generated, manual, imported, community)
+- is_public (boolean, default false)
+- copied_from_recipe_id (self-referencing FK, nullable)
 
 ### RecipeIngredient (recipe to ingredient mapping)
 - recipe_id, ingredient_id
@@ -127,6 +131,12 @@ Easy Meal is a web application that streamlines the meal preparation process—f
 ### RecipeListItem (many-to-many)
 - recipe_list_id, recipe_id
 - position (for ordering within list)
+
+### RecipeCheckin
+- id, recipe_id, user_id
+- notes (optional)
+- enjoyment_rating (1-5)
+- instruction_rating (1-5)
 
 ### GroceryList
 - id, household_id
@@ -208,11 +218,11 @@ Easy Meal is a web application that streamlines the meal preparation process—f
 | Build web recipe creation wizard UI | High | ✅ Done |
 | Build web recipe "marketplace" view (browse all household recipes) | Medium | ✅ Done |
 | Build tag management UI (create, assign, filter) | Medium | ✅ Done (in Recipes page) |
-| Build recipe list management UI (create lists, add/remove recipes) | Medium | ⏸️ Deferred |
+| Build recipe list management UI (create lists, add/remove recipes) | Medium | ✅ Done |
 | Build web recipe detail view | Medium | ✅ Done |
-| Implement recipe edit functionality | Medium | ⏸️ Deferred |
+| Implement recipe edit functionality | Medium | ✅ Done |
 
-**Note**: Recipe list UI and recipe edit functionality deferred to keep MVP lean. APIs are implemented; UI can be added later.
+**Note**: All Phase 3 tasks complete. Recipe list UI and recipe edit were initially deferred but have since been implemented.
 
 **Deliverable**: Users can create AI-generated recipes, tag them, organize into personal lists, and browse the household recipe collection
 
@@ -259,9 +269,29 @@ Easy Meal is a web application that streamlines the meal preparation process—f
 
 ---
 
+### Phase 6: Community Recipe Sharing & Check-Ins ✅ COMPLETE
+**Objective**: Untappd-style recipe discovery — publish recipes globally, browse community recipes, copy to household, and check in with ratings
+
+| Task | Complexity | Status |
+|------|------------|--------|
+| Add `community` source, `is_public`, `copied_from_recipe_id` to recipes schema | Low | ✅ Done |
+| Create `recipe_checkins` table with enjoyment/instruction ratings | Low | ✅ Done |
+| Implement publish toggle endpoint (`POST /recipes/:id/publish`) | Low | ✅ Done |
+| Build discover API (`GET/POST /discover/recipes`) with search, pagination, aggregated ratings | High | ✅ Done |
+| Build check-in CRUD API (`/checkins`) | Medium | ✅ Done |
+| Build Discover page (search, recipe grid, star ratings, pagination) | Medium | ✅ Done |
+| Build PublicRecipeDetail page (read-only view, copy to household, inline check-in form) | Medium | ✅ Done |
+| Add publish toggle and check-in section to RecipeDetail page | Medium | ✅ Done |
+| Add Discover link to NavBar (desktop + mobile) and Home page | Low | ✅ Done |
+| Update source labels for `community` recipes across UI | Low | ✅ Done |
+
+**Deliverable**: Users can publish recipes publicly, browse/search community recipes, copy them to their household, and submit check-ins with ratings and notes
+
+---
+
 ## Active Phases
 
-### Phase 6: UI Modernization & Responsiveness 🔄 IN PROGRESS
+### Phase 7: UI Modernization & Responsiveness 🔄 IN PROGRESS
 **Objective**: Elevate the UI to a modern, polished standard with improved responsiveness
 
 | Task | Complexity | Status |
@@ -273,7 +303,7 @@ Easy Meal is a web application that streamlines the meal preparation process—f
 | Refine typography hierarchy and spacing consistency | Low | Pending |
 | Add loading skeleton states to replace plain "Loading..." text | Medium | Pending |
 
-### Phase 7: Recipe Creation Enhancements 🔄 IN PROGRESS
+### Phase 8: Recipe Creation Enhancements 🔄 IN PROGRESS
 **Objective**: Allow custom inputs in the wizard flow and add conversational recipe creation
 
 | Task | Complexity | Status |
@@ -285,7 +315,7 @@ Easy Meal is a web application that streamlines the meal preparation process—f
 | Add chat route to App.tsx and navigation | Low | Pending |
 | Update recipe creation entry point to offer wizard vs. chat choice | Low | Pending |
 
-### Phase 7 (Original): Meal Planner ✅ COMPLETE
+### Phase 8 (Original): Meal Planner ✅ COMPLETE
 - Calendar view for meal scheduling (implemented)
 - Recipe assignment to meal slots
 - Week navigation
@@ -295,28 +325,27 @@ Easy Meal is a web application that streamlines the meal preparation process—f
 
 ## Future Phases (Post-MVP)
 
-### Phase 8: React Native Mobile App
+### Phase 9: React Native Mobile App
 - Port web experience to React Native
 - Shared component library with web
 - Offline support for recipes and grocery lists
 - Push notifications for household activity
 
-### Phase 9: Agent Chat Interface (Extended)
+### Phase 10: Agent Chat Interface (Extended)
 - Recipe modification via chat
 - Meal plan suggestions via chat
 - Grocery list refinement via chat
 
-### Phase 10: Voice Assistant
+### Phase 11: Voice Assistant
 - Speech-to-text integration
 - Step-by-step voice walkthrough
 - Hands-free cooking mode
 - Contextual Q&A during cooking
 
-### Phase 11: Enhancements
+### Phase 12: Enhancements
 - Recipe import (URL parsing)
 - AI meal suggestions based on history
 - Nutritional information
-- Recipe sharing outside household
 
 ---
 
@@ -352,6 +381,8 @@ Easy Meal is a web application that streamlines the meal preparation process—f
 | Offline support | Not MVP |
 | Nutrition tracking | Out of scope |
 | AI suggestions | Out of scope (AI only generates on-demand) |
+| Community sharing model | One-click publish toggle; full copy model (independent copy to household); no photos |
+| Check-in ratings | Dual rating system: enjoyment (1-5) + instruction clarity (1-5) |
 
 ## Open Questions
 
@@ -369,9 +400,9 @@ To deploy:
 3. Configure secrets and deploy via Cloud Build
 
 Post-MVP priorities:
-1. **Phase 6: React Native Mobile App** - Native mobile experience
-2. **Phase 7: Meal Planner** - Calendar-based meal planning
-3. **Phase 8: Agent Chat Interface** - Conversational recipe creation
+1. **Phase 7: UI Modernization** - Polish transitions, skeletons, responsive layouts
+2. **Phase 8: Recipe Creation Enhancements** - Chat-based recipe creation, custom wizard inputs
+3. **Phase 9: React Native Mobile App** - Native mobile experience
 
 ---
 
