@@ -139,7 +139,7 @@ export default function MealPlan() {
   const getEntryForSlot = (date: Date, mealType: MealType): MealPlanEntry | undefined => {
     const dateStr = formatDateParam(date)
     return entries.find((e) => {
-      const entryDate = formatDateParam(new Date(e.date))
+      const entryDate = e.date.slice(0, 10)
       return entryDate === dateStr && e.mealType === mealType
     })
   }
