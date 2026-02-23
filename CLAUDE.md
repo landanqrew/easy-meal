@@ -58,4 +58,7 @@ See `design.md` for the full design system. Key points:
 
 ## Current Priorities
 
-1. [Review and define priorities]
+* Complete Phase 7 (UI modernization — transitions, card designs, responsive layouts)
+* Complete Phase 8 (chat-based recipe creation, custom wizard inputs)
+* Fix typecheck JSX errors in the web package
+* Add a test suite for critical functions
