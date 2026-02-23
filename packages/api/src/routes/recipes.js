@@ -1,10 +1,10 @@
 import { Hono } from 'hono';
-import { eq, and, desc } from 'drizzle-orm';
+import { eq, and, not, desc } from 'drizzle-orm';
 import { db } from '../db';
 import { recipes, recipeIngredients, ingredients, recipeTags, tags } from '../db/schema';
 import { user } from '../db/auth-schema';
 import { auth } from '../lib/auth';
-import { generateRecipe } from '../services/ai';
+import { generateRecipe, extractRecipeFromPDF } from '../services/ai';
 const recipesRouter = new Hono();
 async function getSession(c) {
     return auth.api.getSession({ headers: c.req.raw.headers });
@@ -44,6 +44,48 @@ recipesRouter.post('/generate', async (c) => {
         return c.json({ error: message }, 500);
     }
 });
+// POST /recipes/import-pdf - Extract a recipe from an uploaded PDF
+recipesRouter.post('/import-pdf', async (c) => {
+    const session = await getSession(c);
+    if (!session) {
+        return c.json({ error: 'Unauthorized' }, 401);
+    }
+    const currentUser = await getUserWithHousehold(session.user.id);
+    if (!currentUser?.householdId) {
+        return c.json({ error: 'You must be in a household to import recipes' }, 400);
+    }
+    try {
+        const body = await c.req.parseBody();
+        const file = body['file'];
+        if (!file || !(file instanceof File)) {
+            return c.json({ error: 'No file uploaded' }, 400);
+        }
+        const allowedTypes = ['application/pdf', 'image/jpeg', 'image/png'];
+        if (!allowedTypes.includes(file.type)) {
+            return c.json({ error: 'Only PDF, JPG, and PNG files are supported' }, 400);
+        }
+        const maxSize = 10 * 1024 * 1024; // 10MB
+        if (file.size > maxSize) {
+            return c.json({ error: 'File too large. Maximum size is 10MB.' }, 413);
+        }
+        const arrayBuffer = await file.arrayBuffer();
+        const pdfBase64 = Buffer.from(arrayBuffer).toString('base64');
+        // Fetch existing ingredient names for matching
+        const existingIngredients = await db.query.ingredients.findMany({
+            columns: { name: true },
+        });
+        const ingredientNames = existingIngredients.map((i) => i.name);
+        const recipe = await extractRecipeFromPDF(pdfBase64, file.type, ingredientNames);
+        return c.json({ data: recipe });
+    }
+    catch (error) {
+        const message = error instanceof Error ? error.message : 'Failed to extract recipe from PDF';
+        if (message === 'No recipe found in the uploaded PDF') {
+            return c.json({ error: message }, 422);
+        }
+        return c.json({ error: message }, 500);
+    }
+});
 // POST /recipes - Save a generated recipe to the household
 recipesRouter.post('/', async (c) => {
     const session = await getSession(c);
@@ -55,7 +97,7 @@ recipesRouter.post('/', async (c) => {
         return c.json({ error: 'You must be in a household to save recipes' }, 400);
     }
     const body = await c.req.json();
-    const { title, description, servings, prepTime, cookTime, cuisine, instructions, ingredients: recipeIngs, source = 'ai_generated' } = body;
+    const { title, description, servings, prepTime, cookTime, cuisine, instructions, ingredients: recipeIngs, source = 'ai_generated', type = 'full_meal' } = body;
     if (!title) {
         return c.json({ error: 'Recipe title is required' }, 400);
     }
@@ -72,6 +114,7 @@ recipesRouter.post('/', async (c) => {
         cuisine,
         instructions: instructions || [],
         source,
+        type,
         createdByUserId: session.user.id,
         updatedByUserId: session.user.id,
     })
@@ -141,6 +184,9 @@ recipesRouter.get('/', async (c) => {
             cookTime: r.cookTime,
             cuisine: r.cuisine,
             source: r.source,
+            type: r.type,
+            isPublic: r.isPublic,
+            copiedFromRecipeId: r.copiedFromRecipeId,
             createdAt: r.createdAt,
             createdBy: r.createdBy ? { id: r.createdBy.id, name: r.createdBy.name } : null,
             tags: r.recipeTags.map((rt) => ({
@@ -192,6 +238,9 @@ recipesRouter.get('/:id', async (c) => {
             cuisine: recipe.cuisine,
             instructions: recipe.instructions,
             source: recipe.source,
+            type: recipe.type,
+            isPublic: recipe.isPublic,
+            copiedFromRecipeId: recipe.copiedFromRecipeId,
             createdAt: recipe.createdAt,
             updatedAt: recipe.updatedAt,
             createdBy: recipe.createdBy ? { id: recipe.createdBy.id, name: recipe.createdBy.name } : null,
@@ -230,7 +279,7 @@ recipesRouter.patch('/:id', async (c) => {
         return c.json({ error: 'Recipe not found' }, 404);
     }
     const body = await c.req.json();
-    const { title, description, servings, prepTime, cookTime, cuisine, instructions } = body;
+    const { title, description, servings, prepTime, cookTime, cuisine, instructions, ingredients: recipeIngs, type } = body;
     const updates = { updatedAt: new Date(), updatedByUserId: session.user.id };
     if (title !== undefined)
         updates.title = title;
@@ -246,11 +295,117 @@ recipesRouter.patch('/:id', async (c) => {
         updates.cuisine = cuisine;
     if (instructions !== undefined)
         updates.instructions = instructions;
+    if (type !== undefined)
+        updates.type = type;
     const [updated] = await db
         .update(recipes)
         .set(updates)
         .where(eq(recipes.id, recipeId))
         .returning();
+    // Replace ingredients if provided
+    if (recipeIngs && Array.isArray(recipeIngs)) {
+        await db.delete(recipeIngredients).where(eq(recipeIngredients.recipeId, recipeId));
+        for (const ing of recipeIngs) {
+            let ingredient = await db.query.ingredients.findFirst({
+                where: eq(ingredients.name, ing.name.toLowerCase()),
+            });
+            if (!ingredient) {
+                const [newIng] = await db
+                    .insert(ingredients)
+                    .values({
+                    name: ing.name.toLowerCase(),
+                    category: ing.category || 'other',
+                    createdByUserId: session.user.id,
+                    updatedByUserId: session.user.id,
+                })
+                    .returning();
+                ingredient = newIng;
+            }
+            await db.insert(recipeIngredients).values({
+                recipeId,
+                ingredientId: ingredient.id,
+                quantity: String(ing.quantity),
+                unit: ing.unit,
+                preparation: ing.preparation,
+                createdByUserId: session.user.id,
+                updatedByUserId: session.user.id,
+            });
+        }
+    }
+    // Return full recipe with ingredients
+    const fullRecipe = await db.query.recipes.findFirst({
+        where: eq(recipes.id, recipeId),
+        with: {
+            recipeIngredients: {
+                with: {
+                    ingredient: true,
+                },
+            },
+            recipeTags: {
+                with: {
+                    tag: true,
+                },
+            },
+            createdBy: true,
+        },
+    });
+    return c.json({
+        data: {
+            id: fullRecipe.id,
+            title: fullRecipe.title,
+            description: fullRecipe.description,
+            servings: fullRecipe.servings,
+            prepTime: fullRecipe.prepTime,
+            cookTime: fullRecipe.cookTime,
+            cuisine: fullRecipe.cuisine,
+            instructions: fullRecipe.instructions,
+            source: fullRecipe.source,
+            type: fullRecipe.type,
+            createdAt: fullRecipe.createdAt,
+            updatedAt: fullRecipe.updatedAt,
+            createdBy: fullRecipe.createdBy ? { id: fullRecipe.createdBy.id, name: fullRecipe.createdBy.name } : null,
+            ingredients: fullRecipe.recipeIngredients.map((ri) => ({
+                id: ri.ingredient.id,
+                name: ri.ingredient.name,
+                quantity: ri.quantity,
+                unit: ri.unit,
+                preparation: ri.preparation,
+                category: ri.ingredient.category,
+            })),
+            tags: fullRecipe.recipeTags.map((rt) => ({
+                id: rt.tag.id,
+                name: rt.tag.name,
+                color: rt.tag.color,
+            })),
+        },
+    });
+});
+// POST /recipes/:id/publish - Toggle public visibility
+recipesRouter.post('/:id/publish', async (c) => {
+    const session = await getSession(c);
+    if (!session) {
+        return c.json({ error: 'Unauthorized' }, 401);
+    }
+    const currentUser = await getUserWithHousehold(session.user.id);
+    if (!currentUser?.householdId) {
+        return c.json({ error: 'You must be in a household' }, 400);
+    }
+    const recipeId = c.req.param('id');
+    const existing = await db.query.recipes.findFirst({
+        where: and(eq(recipes.id, recipeId), eq(recipes.householdId, currentUser.householdId)),
+    });
+    if (!existing) {
+        return c.json({ error: 'Recipe not found' }, 404);
+    }
+    const [updated] = await db
+        .update(recipes)
+        .set({
+        isPublic: not(recipes.isPublic),
+        updatedAt: new Date(),
+        updatedByUserId: session.user.id,
+    })
+        .where(eq(recipes.id, recipeId))
+        .returning({ id: recipes.id, isPublic: recipes.isPublic });
     return c.json({ data: updated });
 });
 // DELETE /recipes/:id - Delete a recipe

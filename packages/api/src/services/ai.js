@@ -14,6 +14,7 @@ IMPORTANT RULES:
 4. Category must be one of: produce, dairy, meat, seafood, pantry, frozen, bakery, beverages, other
 5. Keep instructions clear and numbered
 6. Prep time and cook time in minutes
+7. Type must be one of: full_meal, entree, side, dessert, appetizer, snack, drink, other. Use "full_meal" for complete meals, "entree" for main dishes, "side" for side dishes, etc.
 
 Respond ONLY with valid JSON matching this exact structure:
 {
@@ -23,6 +24,7 @@ Respond ONLY with valid JSON matching this exact structure:
   "prepTime": 15,
   "cookTime": 30,
   "cuisine": "Italian",
+  "type": "entree",
   "ingredients": [
     {
       "name": "ingredient name (lowercase, canonical form)",
@@ -38,7 +40,7 @@ Respond ONLY with valid JSON matching this exact structure:
   ]
 }`;
 export async function generateRecipe(preferences) {
-    const model = genAI.getGenerativeModel({ model: 'gemini-3.0-flash' });
+    const model = genAI.getGenerativeModel({ model: 'gemini-3-flash-preview' });
     const userPreferences = buildPreferencesPrompt(preferences);
     const result = await model.generateContent([
         RECIPE_GENERATION_PROMPT,
@@ -64,10 +66,14 @@ function buildPreferencesPrompt(prefs) {
         lines.push(`- Protein: ${prefs.protein}`);
     if (prefs.vegetables?.length)
         lines.push(`- Vegetables: ${prefs.vegetables.join(', ')}`);
+    if (prefs.fruits?.length)
+        lines.push(`- Fruits: ${prefs.fruits.join(', ')}`);
     if (prefs.cuisine)
         lines.push(`- Cuisine style: ${prefs.cuisine}`);
     if (prefs.mealType)
         lines.push(`- Meal type: ${prefs.mealType}`);
+    if (prefs.recipeType)
+        lines.push(`- Recipe type: ${prefs.recipeType}`);
     if (prefs.cookingMethod)
         lines.push(`- Cooking method: ${prefs.cookingMethod}`);
     if (prefs.timeConstraint) {
@@ -82,6 +88,169 @@ function buildPreferencesPrompt(prefs) {
     if (prefs.additionalNotes)
         lines.push(`- Additional notes: ${prefs.additionalNotes}`);
     return lines.length > 0 ? lines.join('\n') : 'No specific preferences - create a delicious, balanced meal';
+}
+// ============================================================================
+// CHAT-BASED RECIPE GENERATION
+// ============================================================================
+const CHAT_SYSTEM_PROMPT = `You are a friendly, enthusiastic chef assistant helping someone decide what to cook. Your goal is to have a short conversation to understand what they want, then generate a complete recipe.
+
+CONVERSATION RULES:
+1. Be warm and conversational but concise (1-3 sentences per response).
+2. If the user's description is vague (e.g., "something easy" or "chicken"), ask 1-2 clarifying questions about things like cuisine style, cooking method, time available, or specific ingredients they have on hand.
+3. Don't ask more than 2 questions before generating a recipe. If the user has given you a protein and a general direction, that's enough.
+4. If the user gives you enough detail to create a recipe right away, go ahead and generate it immediately without asking more questions.
+
+RESPONSE FORMAT:
+- When you are still chatting (asking questions or responding conversationally), respond with ONLY a plain text message. Do NOT include any JSON.
+- When you are ready to present a recipe, respond with your conversational message FOLLOWED BY a JSON code block containing the recipe.
+
+Example conversational response:
+"That sounds great! Do you have a preference for cuisine style, or should I surprise you?"
+
+Example recipe response:
+"Here's a delicious recipe for you!
+
+\`\`\`json
+{
+  "title": "Recipe Title",
+  "description": "Brief appetizing description",
+  "servings": 4,
+  "prepTime": 15,
+  "cookTime": 30,
+  "cuisine": "Italian",
+  "type": "entree",
+  "ingredients": [
+    {"name": "ingredient name", "quantity": 1.5, "unit": "cup", "category": "produce", "preparation": "diced"}
+  ],
+  "instructions": [
+    {"stepNumber": 1, "text": "First step..."},
+    {"stepNumber": 2, "text": "Second step..."}
+  ]
+}
+\`\`\`"
+
+RECIPE JSON RULES (same as structured generation):
+1. All ingredient quantities must be numeric (use decimals like 0.5, 0.25, 0.33)
+2. Use standard US cooking units (cup, tbsp, tsp, oz, lb, piece, clove, etc.)
+3. Respect ALL dietary restrictions - never include restricted ingredients
+4. Category must be one of: produce, dairy, meat, seafood, pantry, frozen, bakery, beverages, other
+5. Keep instructions clear and numbered
+6. Prep time and cook time in minutes
+7. Ingredient names must be lowercase, canonical form
+8. Type must be one of: full_meal, entree, side, dessert, appetizer, snack, drink, other`;
+export async function chatRecipeGeneration(messages, dietaryRestrictions) {
+    const model = genAI.getGenerativeModel({ model: 'gemini-3-flash-preview' });
+    let systemPrompt = CHAT_SYSTEM_PROMPT;
+    if (dietaryRestrictions?.length) {
+        systemPrompt += `\n\nIMPORTANT: The user has the following dietary restrictions that MUST be respected: ${dietaryRestrictions.join(', ')}. Never suggest ingredients that violate these restrictions.`;
+    }
+    // Build Gemini chat history from our messages
+    const history = messages.slice(0, -1).map((msg) => ({
+        role: msg.role === 'assistant' ? 'model' : 'user',
+        parts: [{ text: msg.content }],
+    }));
+    const chat = model.startChat({
+        history: [
+            { role: 'user', parts: [{ text: systemPrompt }] },
+            { role: 'model', parts: [{ text: "I'm ready to help you find the perfect recipe! What are you in the mood for?" }] },
+            ...history,
+        ],
+    });
+    const lastMessage = messages[messages.length - 1];
+    const result = await chat.sendMessage(lastMessage.content);
+    const response = result.response.text();
+    // Check if the response contains a recipe JSON
+    const jsonMatch = response.match(/```json\n?([\s\S]*?)\n?```/);
+    if (jsonMatch) {
+        const messageText = response.replace(/```json\n?[\s\S]*?\n?```/, '').trim();
+        try {
+            const recipe = JSON.parse(jsonMatch[1]);
+            if (recipe.title && recipe.ingredients && recipe.instructions) {
+                return {
+                    message: messageText || `Here's your recipe for ${recipe.title}!`,
+                    recipe,
+                };
+            }
+        }
+        catch {
+            // JSON parse failed, treat as conversational
+        }
+    }
+    return { message: response };
+}
+// ============================================================================
+// PDF RECIPE EXTRACTION
+// ============================================================================
+const PDF_EXTRACTION_PROMPT = `You are a recipe extraction assistant. Extract the recipe from this document/image and output it as structured JSON.
+
+IMPORTANT RULES:
+1. Extract ONLY the recipe content — ignore ads, blog text, navigation, comments, sidebars, and life-story preambles.
+2. All ingredient quantities must be numeric (use decimals like 0.5, 0.25, 0.33).
+3. Use standard US cooking units (cup, tbsp, tsp, oz, lb, piece, clove, etc.).
+4. Category must be one of: produce, dairy, meat, seafood, pantry, frozen, bakery, beverages, other.
+5. Ingredient names must be lowercase, canonical form (e.g., "olive oil" not "extra virgin olive oil").
+6. Keep instructions clear and numbered.
+7. Prep time and cook time in minutes.
+
+INGREDIENT MATCHING:
+When the PDF mentions an ingredient, check the provided list of existing database ingredient names below. If a PDF ingredient is semantically the same as a database ingredient, use the EXACT database name (e.g., if the PDF says "Roma tomatoes" and the database has "tomato", use "tomato"). Only introduce a new ingredient name when no reasonable match exists.
+
+If the PDF contains no recognizable recipe, respond with: {"error": "no_recipe_found"}
+
+8. Type must be one of: full_meal, entree, side, dessert, appetizer, snack, drink, other. Classify based on the recipe content.
+
+Otherwise respond ONLY with valid JSON matching this exact structure:
+{
+  "title": "Recipe Title",
+  "description": "Brief appetizing description",
+  "servings": 4,
+  "prepTime": 15,
+  "cookTime": 30,
+  "cuisine": "Italian",
+  "type": "entree",
+  "ingredients": [
+    {
+      "name": "ingredient name (lowercase, canonical form)",
+      "quantity": 1.5,
+      "unit": "cup",
+      "category": "produce",
+      "preparation": "diced"
+    }
+  ],
+  "instructions": [
+    {"stepNumber": 1, "text": "First step..."},
+    {"stepNumber": 2, "text": "Second step..."}
+  ]
+}`;
+export async function extractRecipeFromPDF(pdfBase64, mimeType, existingIngredientNames) {
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+    const ingredientList = existingIngredientNames.length > 0
+        ? existingIngredientNames.map((n) => `- ${n}`).join('\n')
+        : '(database is empty)';
+    const promptText = `${PDF_EXTRACTION_PROMPT}
+
+Existing ingredient names in the database:
+${ingredientList}`;
+    const result = await model.generateContent([
+        { inlineData: { data: pdfBase64, mimeType } },
+        promptText,
+    ]);
+    const response = result.response.text();
+    // Check for no-recipe error response
+    const jsonMatch = response.match(/```json\n?([\s\S]*?)\n?```/) || response.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) {
+        throw new Error('Failed to parse recipe from PDF');
+    }
+    const jsonStr = jsonMatch[1] || jsonMatch[0];
+    const parsed = JSON.parse(jsonStr);
+    if (parsed.error === 'no_recipe_found') {
+        throw new Error('No recipe found in the uploaded PDF');
+    }
+    const recipe = parsed;
+    if (!recipe.title || !recipe.ingredients || !recipe.instructions) {
+        throw new Error('Failed to parse recipe from PDF');
+    }
+    return recipe;
 }
 // ============================================================================
 // INGREDIENT NORMALIZATION

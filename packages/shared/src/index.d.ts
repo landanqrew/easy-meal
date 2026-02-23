@@ -4,7 +4,7 @@ export type UserPreferences = {
 };
 export type DietaryRestriction = 'vegetarian' | 'vegan' | 'gluten-free' | 'dairy-free' | 'nut-free' | 'keto' | 'low-sodium' | 'halal' | 'kosher';
 export type IngredientCategory = 'produce' | 'dairy' | 'meat' | 'seafood' | 'pantry' | 'frozen' | 'bakery' | 'beverages' | 'other';
-export type RecipeSource = 'ai_generated' | 'manual' | 'imported';
+export type RecipeSource = 'ai_generated' | 'manual' | 'imported' | 'community';
 export type GroceryListStatus = 'active' | 'completed' | 'archived';
 export type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snack';
 export type RecipeType = 'full_meal' | 'entree' | 'side' | 'dessert' | 'appetizer' | 'snack' | 'drink' | 'other';
