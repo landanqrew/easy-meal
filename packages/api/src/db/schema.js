@@ -19,6 +19,7 @@ export const recipeSourceEnum = pgEnum('recipe_source', [
     'ai_generated',
     'manual',
     'imported',
+    'community',
 ]);
 export const groceryListStatusEnum = pgEnum('grocery_list_status', [
     'active',
@@ -30,6 +31,16 @@ export const mealTypeEnum = pgEnum('meal_type', [
     'lunch',
     'dinner',
     'snack',
+]);
+export const recipeTypeEnum = pgEnum('recipe_type', [
+    'full_meal',
+    'entree',
+    'side',
+    'dessert',
+    'appetizer',
+    'snack',
+    'drink',
+    'other',
 ]);
 // ============================================================================
 // HOUSEHOLDS
@@ -85,6 +96,10 @@ export const recipes = pgTable('recipes', {
     prepTime: integer('prep_time'), // minutes
     cookTime: integer('cook_time'), // minutes
     source: recipeSourceEnum('source').default('manual').notNull(),
+    type: recipeTypeEnum('type').default('full_meal').notNull(),
+    isPublic: boolean('is_public').default(false).notNull(),
+    copiedFromRecipeId: uuid('copied_from_recipe_id')
+        .references(() => recipes.id, { onDelete: 'set null' }),
     // Metadata
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
     createdByUserId: text('created_by_user_id').references(() => user.id, { onDelete: 'set null' }),
@@ -95,6 +110,8 @@ export const recipes = pgTable('recipes', {
     index('idx_recipes_cuisine').on(table.cuisine),
     index('idx_recipes_source').on(table.source),
     index('idx_recipes_created_at').on(table.createdAt),
+    index('idx_recipes_is_public').on(table.isPublic),
+    index('idx_recipes_type').on(table.type),
 ]);
 // ============================================================================
 // RECIPE INGREDIENTS
@@ -262,16 +279,40 @@ export const mealPlans = pgTable('meal_plans', {
         .notNull(),
     date: timestamp('date', { withTimezone: true, mode: 'date' }).notNull(),
     mealType: mealTypeEnum('meal_type').notNull(),
+    sortOrder: integer('sort_order').default(0).notNull(),
     // Metadata
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
     createdByUserId: text('created_by_user_id').references(() => user.id, { onDelete: 'set null' }),
     updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
     updatedByUserId: text('updated_by_user_id').references(() => user.id, { onDelete: 'set null' }),
 }, (table) => [
-    unique('unique_meal_plan_slot').on(table.householdId, table.date, table.mealType),
     index('idx_meal_plans_household_id').on(table.householdId),
     index('idx_meal_plans_date').on(table.date),
     index('idx_meal_plans_household_date').on(table.householdId, table.date),
+]);
+// ============================================================================
+// RECIPE CHECK-INS
+// ============================================================================
+export const recipeCheckins = pgTable('recipe_checkins', {
+    id: uuid('id').defaultRandom().primaryKey(),
+    recipeId: uuid('recipe_id')
+        .references(() => recipes.id, { onDelete: 'cascade' })
+        .notNull(),
+    userId: text('user_id')
+        .references(() => user.id, { onDelete: 'cascade' })
+        .notNull(),
+    notes: text('notes'),
+    enjoymentRating: integer('enjoyment_rating').notNull(),
+    instructionRating: integer('instruction_rating').notNull(),
+    // Metadata
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+    createdByUserId: text('created_by_user_id').references(() => user.id, { onDelete: 'set null' }),
+    updatedByUserId: text('updated_by_user_id').references(() => user.id, { onDelete: 'set null' }),
+}, (table) => [
+    index('idx_checkins_recipe_id').on(table.recipeId),
+    index('idx_checkins_user_id').on(table.userId),
+    index('idx_checkins_created_at').on(table.createdAt),
 ]);
 // ============================================================================
 // RELATIONS
@@ -296,10 +337,16 @@ export const recipesRelations = relations(recipes, ({ one, many }) => ({
         fields: [recipes.createdByUserId],
         references: [user.id],
     }),
+    copiedFrom: one(recipes, {
+        fields: [recipes.copiedFromRecipeId],
+        references: [recipes.id],
+        relationName: 'copiedFrom',
+    }),
     recipeIngredients: many(recipeIngredients),
     recipeTags: many(recipeTags),
     recipeListItems: many(recipeListItems),
     mealPlans: many(mealPlans),
+    checkins: many(recipeCheckins),
 }));
 export const recipeIngredientsRelations = relations(recipeIngredients, ({ one }) => ({
     recipe: one(recipes, {
@@ -381,6 +428,16 @@ export const mealPlansRelations = relations(mealPlans, ({ one }) => ({
     }),
     createdBy: one(user, {
         fields: [mealPlans.createdByUserId],
+        references: [user.id],
+    }),
+}));
+export const recipeCheckinsRelations = relations(recipeCheckins, ({ one }) => ({
+    recipe: one(recipes, {
+        fields: [recipeCheckins.recipeId],
+        references: [recipes.id],
+    }),
+    user: one(user, {
+        fields: [recipeCheckins.userId],
         references: [user.id],
     }),
 }));

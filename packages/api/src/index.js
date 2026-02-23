@@ -13,6 +13,9 @@ import tags from './routes/tags';
 import recipeLists from './routes/recipe-lists';
 import groceryLists from './routes/grocery-lists';
 import mealPlans from './routes/meal-plans';
+import chat from './routes/chat';
+import discover from './routes/discover';
+import checkins from './routes/checkins';
 // Initialize error tracking
 initSentry();
 const app = new Hono();
@@ -53,8 +56,12 @@ app.use('*', async (c, next) => {
 });
 // Global error handler
 app.use('*', errorHandler);
-// Request size limit (1MB)
-app.use('/api/*', requestSizeLimit(1024 * 1024));
+// Request size limit (1MB, 10MB for PDF import)
+app.use('/api/*', async (c, next) => {
+    if (c.req.path === '/api/recipes/import-pdf')
+        return next();
+    return requestSizeLimit(1024 * 1024)(c, next);
+});
 // Rate limiting for API routes (100 requests per minute)
 app.use('/api/*', rateLimit({ windowMs: 60 * 1000, max: 100 }));
 // Mount Better Auth handler
@@ -72,6 +79,9 @@ app.route('/api/tags', tags);
 app.route('/api/recipe-lists', recipeLists);
 app.route('/api/grocery-lists', groceryLists);
 app.route('/api/meal-plans', mealPlans);
+app.route('/api/chat', chat);
+app.route('/api/discover', discover);
+app.route('/api/checkins', checkins);
 // Request logging in production
 if (process.env.NODE_ENV === 'production') {
     app.use('*', async (c, next) => {

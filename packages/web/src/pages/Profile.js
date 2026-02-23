@@ -1,0 +1,235 @@
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useSession, signOut } from '../lib/auth';
+import { colors, shadows, radius } from '../lib/theme';
+const DIETARY_OPTIONS = [
+    'vegetarian',
+    'vegan',
+    'gluten-free',
+    'dairy-free',
+    'nut-free',
+    'keto',
+    'low-sodium',
+    'halal',
+    'kosher',
+];
+export default function Profile() {
+    const navigate = useNavigate();
+    const { data: session, isPending } = useSession();
+    const [name, setName] = useState('');
+    const [dietaryRestrictions, setDietaryRestrictions] = useState([]);
+    const [saving, setSaving] = useState(false);
+    const [message, setMessage] = useState('');
+    useEffect(() => {
+        if (!isPending && !session) {
+            navigate('/login');
+        }
+        if (session?.user) {
+            setName(session.user.name || '');
+            // Parse dietary restrictions from JSON string
+            try {
+                const restrictions = JSON.parse(session.user.dietaryRestrictions || '[]');
+                setDietaryRestrictions(Array.isArray(restrictions) ? restrictions : []);
+            }
+            catch {
+                setDietaryRestrictions([]);
+            }
+        }
+    }, [session, isPending, navigate]);
+    const handleToggleRestriction = (restriction) => {
+        setDietaryRestrictions((prev) => prev.includes(restriction)
+            ? prev.filter((r) => r !== restriction)
+            : [...prev, restriction]);
+    };
+    const handleSave = async () => {
+        setSaving(true);
+        setMessage('');
+        try {
+            const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/api/users/me`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({
+                    name,
+                    dietaryRestrictions,
+                }),
+            });
+            if (res.ok) {
+                setMessage('Profile updated successfully');
+            }
+            else {
+                const data = await res.json();
+                setMessage(data.error || 'Failed to update profile');
+            }
+        }
+        catch {
+            setMessage('Failed to update profile');
+        }
+        finally {
+            setSaving(false);
+        }
+    };
+    const handleSignOut = async () => {
+        await signOut();
+        navigate('/login');
+    };
+    if (isPending) {
+        return (<div style={styles.container}>
+        <div style={styles.card}>
+          <div style={styles.header}>
+            <div className="skeleton" style={{ width: '80px', height: '1.5rem' }}/>
+            <div className="skeleton" style={{ width: '75px', height: '36px', borderRadius: radius.sm }}/>
+          </div>
+          <div style={{ marginBottom: '2rem' }}>
+            <div className="skeleton" style={{ width: '60px', height: '1rem', marginBottom: '1rem' }}/>
+            <div style={{ marginBottom: '1rem' }}>
+              <div className="skeleton" style={{ width: '40px', height: '0.875rem', marginBottom: '0.25rem' }}/>
+              <div className="skeleton" style={{ width: '100%', height: '44px', borderRadius: radius.sm }}/>
+            </div>
+            <div>
+              <div className="skeleton" style={{ width: '40px', height: '0.875rem', marginBottom: '0.25rem' }}/>
+              <div className="skeleton" style={{ width: '100%', height: '44px', borderRadius: radius.sm }}/>
+            </div>
+          </div>
+          <div style={{ marginBottom: '2rem' }}>
+            <div className="skeleton" style={{ width: '150px', height: '1rem', marginBottom: '1rem' }}/>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+              {Array.from({ length: 5 }).map((_, i) => (<div key={i} className="skeleton" style={{ width: '80px', height: '36px', borderRadius: '20px' }}/>))}
+            </div>
+          </div>
+          <div className="skeleton" style={{ width: '100%', height: '44px', borderRadius: radius.sm }}/>
+        </div>
+      </div>);
+    }
+    return (<div style={styles.container}>
+      <div style={styles.card}>
+        <div style={styles.header}>
+          <h1 style={styles.title}>Profile</h1>
+          <button onClick={handleSignOut} className="btn-secondary" style={{ fontSize: '0.875rem', padding: '0.5rem 1rem' }}>
+            Sign Out
+          </button>
+        </div>
+
+        {message && (<div className={message.includes('success') ? 'success-message' : 'error-message'}>
+            {message}
+          </div>)}
+
+        <div style={styles.section}>
+          <h2 style={styles.sectionTitle}>Account</h2>
+
+          <div style={styles.field}>
+            <label style={styles.label}>Email</label>
+            <input type="email" value={session?.user?.email || ''} disabled style={{ ...styles.input, background: colors.warmBg }}/>
+          </div>
+
+          <div style={styles.field}>
+            <label style={styles.label}>Name</label>
+            <input type="text" value={name} onChange={(e) => setName(e.target.value)} style={styles.input}/>
+          </div>
+        </div>
+
+        <div style={styles.section}>
+          <h2 style={styles.sectionTitle}>Dietary Restrictions</h2>
+          <p style={styles.hint}>
+            Select any dietary restrictions. These will be applied to AI-generated
+            recipes.
+          </p>
+
+          <div style={styles.chips}>
+            {DIETARY_OPTIONS.map((restriction) => (<button key={restriction} onClick={() => handleToggleRestriction(restriction)} style={{
+                ...styles.chip,
+                ...(dietaryRestrictions.includes(restriction)
+                    ? styles.chipSelected
+                    : {}),
+            }}>
+                {restriction}
+              </button>))}
+          </div>
+        </div>
+
+        <button onClick={handleSave} className="btn-primary" style={{ width: '100%', padding: '0.75rem 1.5rem', fontSize: '1rem' }} disabled={saving}>
+          {saving ? 'Saving...' : 'Save Changes'}
+        </button>
+      </div>
+    </div>);
+}
+const styles = {
+    container: {
+        minHeight: '100vh',
+        background: colors.bg,
+        padding: '2rem 1rem',
+        paddingTop: '4.5rem',
+    },
+    card: {
+        background: 'white',
+        padding: '2rem',
+        borderRadius: radius.lg,
+        boxShadow: shadows.md,
+        border: `1px solid ${colors.borderLight}`,
+        maxWidth: '500px',
+        margin: '0 auto',
+    },
+    header: {
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: '1.5rem',
+    },
+    title: {
+        margin: 0,
+        fontSize: '1.75rem',
+        fontWeight: 700,
+        letterSpacing: '-0.02em',
+        color: colors.text,
+    },
+    section: {
+        marginBottom: '2rem',
+    },
+    sectionTitle: {
+        fontSize: '1.125rem',
+        fontWeight: 700,
+        marginBottom: '1rem',
+        color: colors.text,
+    },
+    field: {
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '0.25rem',
+        marginBottom: '1rem',
+    },
+    label: {
+        fontSize: '0.875rem',
+        fontWeight: 500,
+        color: colors.text,
+    },
+    input: {
+        padding: '0.75rem',
+        borderRadius: radius.sm,
+        border: `1px solid ${colors.border}`,
+        fontSize: '1rem',
+    },
+    hint: {
+        fontSize: '0.875rem',
+        color: colors.textSecondary,
+        marginBottom: '1rem',
+    },
+    chips: {
+        display: 'flex',
+        flexWrap: 'wrap',
+        gap: '0.5rem',
+    },
+    chip: {
+        padding: '0.5rem 1rem',
+        borderRadius: radius.full,
+        border: `1px solid ${colors.border}`,
+        background: 'white',
+        cursor: 'pointer',
+        fontSize: '0.875rem',
+        textTransform: 'capitalize',
+    },
+    chipSelected: {
+        background: colors.primary,
+        color: 'white',
+        borderColor: colors.primary,
+    },
+};
