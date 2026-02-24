@@ -88,12 +88,15 @@ function Home() {
                 <p style={styles.welcomeText}>Welcome back, <strong>{session.user.name || 'Chef'}</strong>!</p>
                 <div style={styles.btnGroup}>
                   <Link to="/recipes/create" className="btn-primary" style={styles.largeBtn}>
-                    Recipe Wizard
+                    ✨ Recipe Wizard
                   </Link>
-                  <Link to="/meal-plan" className="btn-secondary" style={styles.largeBtn}>
-                    View Meal Plan
+                  <Link to="/recipes/chat" className="btn-primary" style={styles.largeBtn}>
+                    💬 Chat Recipe
                   </Link>
                 </div>
+                <Link to="/meal-plan" className="btn-secondary" style={{ ...styles.largeBtn, marginTop: '0.75rem', width: '100%', textAlign: 'center' as const }}>
+                  View Meal Plan
+                </Link>
               </div>
             ) : (
               <div style={styles.ctaGroup}>

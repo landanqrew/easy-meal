@@ -1219,3 +1219,22 @@ body {
 .form-entrance {
   animation: fadeIn var(--transition-base) ease;
 }
+
+/* ============================================================ */
+/* CREATE METHOD CARDS                                           */
+/* ============================================================ */
+
+.create-method-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  transition: all var(--transition-fast);
+  cursor: pointer;
+}
+.create-method-card:hover {
+  border-color: var(--color-primary);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+  opacity: 1 !important;
+}

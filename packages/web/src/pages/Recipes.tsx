@@ -139,20 +139,27 @@ export default function Recipes() {
             {recipes.length} recipe{recipes.length !== 1 ? 's' : ''} in your household
           </p>
         </div>
-        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' as const }}>
-          <Link to="/recipe-lists" className="btn-secondary" style={{ textDecoration: 'none', fontSize: '0.8125rem', padding: '0.625rem 1rem' }}>
-            My Lists
-          </Link>
-          <Link to="/recipes/create" className="btn-primary" style={{ textDecoration: 'none', fontSize: '0.8125rem', padding: '0.625rem 1rem' }}>
-            Wizard
-          </Link>
-          <Link to="/recipes/chat" className="btn-secondary" style={{ textDecoration: 'none', fontSize: '0.8125rem', padding: '0.625rem 1rem' }}>
-            Chat
-          </Link>
-          <Link to="/recipes/import" className="btn-secondary" style={{ textDecoration: 'none', fontSize: '0.8125rem', padding: '0.625rem 1rem' }}>
-            Import
-          </Link>
-        </div>
+        <Link to="/recipe-lists" className="btn-secondary" style={{ textDecoration: 'none', fontSize: '0.8125rem', padding: '0.625rem 1rem' }}>
+          My Lists
+        </Link>
+      </div>
+
+      <div style={styles.createRow}>
+        <Link to="/recipes/create" className="create-method-card" style={styles.createCard}>
+          <span style={styles.createIcon}>✨</span>
+          <span style={styles.createLabel}>Wizard</span>
+          <span style={styles.createHint}>Step-by-step preferences</span>
+        </Link>
+        <Link to="/recipes/chat" className="create-method-card" style={styles.createCard}>
+          <span style={styles.createIcon}>💬</span>
+          <span style={styles.createLabel}>Chat</span>
+          <span style={styles.createHint}>Describe a craving</span>
+        </Link>
+        <Link to="/recipes/import" className="create-method-card" style={styles.createCardSecondary}>
+          <span style={styles.createIcon}>📄</span>
+          <span style={styles.createLabel}>Import</span>
+          <span style={styles.createHint}>From URL or text</span>
+        </Link>
       </div>
 
       {error && <div className="error-message" style={{ maxWidth: '900px', margin: '0 auto 1rem' }}>{error}</div>}
@@ -273,6 +280,45 @@ const styles: Record<string, React.CSSProperties> = {
     margin: '0.25rem 0 0',
     color: colors.textSecondary,
     fontSize: '0.875rem',
+  },
+  createRow: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
+    gap: '0.75rem',
+    maxWidth: '900px',
+    margin: '0 auto 1.5rem',
+  },
+  createCard: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: '0.25rem',
+    padding: '1rem 0.75rem',
+    textDecoration: 'none',
+    color: 'inherit',
+  },
+  createCardSecondary: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: '0.25rem',
+    padding: '1rem 0.75rem',
+    textDecoration: 'none',
+    color: 'inherit',
+    opacity: 0.75,
+  },
+  createIcon: {
+    fontSize: '1.5rem',
+    marginBottom: '0.125rem',
+  },
+  createLabel: {
+    fontWeight: 600,
+    fontSize: '0.9375rem',
+  },
+  createHint: {
+    fontSize: '0.75rem',
+    color: colors.textSecondary,
+    textAlign: 'center',
   },
   filterSection: {
     display: 'flex',
