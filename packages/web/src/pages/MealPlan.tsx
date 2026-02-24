@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useSession } from '../lib/auth'
 import { colors, radius } from '../lib/theme'
@@ -236,6 +236,21 @@ export default function MealPlan() {
 
   const today = new Date()
   const days = getDaysOfWeek(weekStart)
+
+  const weekRecipeIds = useMemo(() => {
+    return [...new Set(entries.map((e) => e.recipeId))]
+  }, [entries])
+
+  const handleCreateGroceryList = () => {
+    navigate('/grocery-lists/create', {
+      state: {
+        fromMealPlan: true,
+        recipeIds: weekRecipeIds,
+        weekLabel: `Week of ${formatWeekRange(weekStart)}`,
+      },
+    })
+  }
+
   const filteredRecipes = recipes
     .filter((r) => r.title.toLowerCase().includes(searchQuery.toLowerCase()))
     .filter((r) => !pickerTypeFilter || r.type === pickerTypeFilter)
@@ -299,7 +314,18 @@ export default function MealPlan() {
     <div style={styles.container}>
       <div style={styles.content}>
         <div style={styles.header}>
-          <h1 style={styles.title}>Meal Plan</h1>
+          <div style={styles.headerLeft}>
+            <h1 style={styles.title}>Meal Plan</h1>
+            {weekRecipeIds.length > 0 && (
+              <button
+                onClick={handleCreateGroceryList}
+                className="btn-secondary"
+                style={styles.groceryButton}
+              >
+                Grocery List
+              </button>
+            )}
+          </div>
           <div style={styles.weekNav}>
             <button onClick={() => navigateWeek(-1)} className="btn-secondary" style={{ padding: '0.5rem 0.75rem', fontSize: '1.125rem', lineHeight: 1, minHeight: 'unset' }}>
               ‹
@@ -563,12 +589,22 @@ const styles: Record<string, React.CSSProperties> = {
     flexWrap: 'wrap',
     gap: '1rem',
   },
+  headerLeft: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '1rem',
+  },
   title: {
     margin: 0,
     fontSize: '1.75rem',
     fontWeight: 700,
     letterSpacing: '-0.02em',
     color: colors.text,
+  },
+  groceryButton: {
+    padding: '0.5rem 1rem',
+    fontSize: '0.8125rem',
+    minHeight: 'unset',
   },
   weekNav: {
     display: 'flex',

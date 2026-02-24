@@ -2,20 +2,10 @@ import { Hono } from 'hono'
 import { eq, and } from 'drizzle-orm'
 import { db } from '../db'
 import { recipeLists, recipeListItems, recipes } from '../db/schema'
-import { user } from '../db/auth-schema'
-import { auth } from '../lib/auth'
+import { getSession, getUserWithHousehold } from '../lib/auth-helpers'
+import { validate, createRecipeListSchema, addRecipeToListSchema } from '../lib/validators'
 
 const recipeListsRouter = new Hono()
-
-async function getSession(c: any) {
-  return auth.api.getSession({ headers: c.req.raw.headers })
-}
-
-async function getUserWithHousehold(userId: string) {
-  return db.query.user.findFirst({
-    where: eq(user.id, userId),
-  })
-}
 
 // GET /recipe-lists - List all recipe lists for current user
 recipeListsRouter.get('/', async (c) => {
@@ -69,11 +59,11 @@ recipeListsRouter.post('/', async (c) => {
     return c.json({ error: 'You must be in a household' }, 400)
   }
 
-  const { name, description } = await c.req.json()
-
-  if (!name || typeof name !== 'string' || name.trim().length === 0) {
-    return c.json({ error: 'List name is required' }, 400)
+  const parsed = validate(createRecipeListSchema, await c.req.json())
+  if (!parsed.success) {
+    return c.json({ error: parsed.error }, 400)
   }
+  const { name, description } = parsed.data
 
   // Get max position
   const existingLists = await db.query.recipeLists.findMany({
@@ -246,7 +236,11 @@ recipeListsRouter.post('/:id/recipes', async (c) => {
   }
 
   const listId = c.req.param('id')
-  const { recipeId } = await c.req.json()
+  const parsed = validate(addRecipeToListSchema, await c.req.json())
+  if (!parsed.success) {
+    return c.json({ error: parsed.error }, 400)
+  }
+  const { recipeId } = parsed.data
 
   // Verify list belongs to user
   const list = await db.query.recipeLists.findFirst({

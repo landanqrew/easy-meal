@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
+import { useNavigate, useLocation, Link } from 'react-router-dom'
 import { useSession } from '../lib/auth'
 import { colors, shadows, radius } from '../lib/theme'
 
@@ -20,12 +20,22 @@ type SelectedRecipe = {
 
 export default function CreateGroceryList() {
   const navigate = useNavigate()
+  const location = useLocation()
   const { data: session, isPending } = useSession()
   const [recipes, setRecipes] = useState<Recipe[]>([])
   const [loading, setLoading] = useState(true)
   const [creating, setCreating] = useState(false)
   const [error, setError] = useState('')
-  const [listName, setListName] = useState('')
+  const [initialized, setInitialized] = useState(false)
+
+  // Read pre-selection state from MealPlan navigation
+  const mealPlanState = location.state as {
+    fromMealPlan?: boolean
+    recipeIds?: string[]
+    weekLabel?: string
+  } | null
+
+  const [listName, setListName] = useState(mealPlanState?.weekLabel || '')
   const [selectedRecipes, setSelectedRecipes] = useState<Map<string, number>>(new Map())
 
   useEffect(() => {
@@ -55,6 +65,23 @@ export default function CreateGroceryList() {
       setLoading(false)
     }
   }
+
+  // Pre-select recipes from meal plan navigation
+  useEffect(() => {
+    if (!initialized && !loading && recipes.length > 0 && mealPlanState?.recipeIds?.length) {
+      const preSelected = new Map<string, number>()
+      for (const id of mealPlanState.recipeIds) {
+        const recipe = recipes.find((r) => r.id === id)
+        if (recipe) {
+          preSelected.set(id, recipe.servings)
+        }
+      }
+      if (preSelected.size > 0) {
+        setSelectedRecipes(preSelected)
+      }
+      setInitialized(true)
+    }
+  }, [initialized, loading, recipes, mealPlanState])
 
   const toggleRecipe = (recipe: Recipe) => {
     const newSelected = new Map(selectedRecipes)

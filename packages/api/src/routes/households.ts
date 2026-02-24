@@ -3,17 +3,11 @@ import { eq } from 'drizzle-orm'
 import { db } from '../db'
 import { households } from '../db/schema'
 import { user } from '../db/auth-schema'
-import { auth } from '../lib/auth'
+import { getSession, getUserWithHousehold } from '../lib/auth-helpers'
+import { generateInviteCode } from '../lib/invite-code'
+import { validate, createHouseholdSchema, joinHouseholdSchema, renameHouseholdSchema } from '../lib/validators'
 
 const householdsRouter = new Hono()
-
-// Helper to get session
-async function getSession(c: any) {
-  const session = await auth.api.getSession({ headers: c.req.raw.headers })
-  return session
-}
-
-import { generateInviteCode } from '../lib/invite-code'
 
 // GET /households/me - Get current user's household
 householdsRouter.get('/me', async (c) => {
@@ -22,9 +16,7 @@ householdsRouter.get('/me', async (c) => {
     return c.json({ error: 'Unauthorized' }, 401)
   }
 
-  const currentUser = await db.query.user.findFirst({
-    where: eq(user.id, session.user.id),
-  })
+  const currentUser = await getUserWithHousehold(session.user.id)
 
   if (!currentUser?.householdId) {
     return c.json({ data: null })
@@ -67,20 +59,18 @@ householdsRouter.post('/', async (c) => {
   }
 
   // Check if user already has a household
-  const currentUser = await db.query.user.findFirst({
-    where: eq(user.id, session.user.id),
-  })
+  const currentUser = await getUserWithHousehold(session.user.id)
 
   if (currentUser?.householdId) {
     return c.json({ error: 'You already belong to a household' }, 400)
   }
 
   const body = await c.req.json()
-  const { name } = body
-
-  if (!name || typeof name !== 'string' || name.trim().length === 0) {
-    return c.json({ error: 'Household name is required' }, 400)
+  const parsed = validate(createHouseholdSchema, body)
+  if (!parsed.success) {
+    return c.json({ error: parsed.error }, 400)
   }
+  const { name } = parsed.data
 
   // Generate unique invite code
   let inviteCode = generateInviteCode()
@@ -130,20 +120,18 @@ householdsRouter.post('/join', async (c) => {
   }
 
   // Check if user already has a household
-  const currentUser = await db.query.user.findFirst({
-    where: eq(user.id, session.user.id),
-  })
+  const currentUser = await getUserWithHousehold(session.user.id)
 
   if (currentUser?.householdId) {
     return c.json({ error: 'You already belong to a household. Leave first to join another.' }, 400)
   }
 
   const body = await c.req.json()
-  const { inviteCode } = body
-
-  if (!inviteCode || typeof inviteCode !== 'string') {
-    return c.json({ error: 'Invite code is required' }, 400)
+  const parsed = validate(joinHouseholdSchema, body)
+  if (!parsed.success) {
+    return c.json({ error: parsed.error }, 400)
   }
+  const { inviteCode } = parsed.data
 
   // Find household by invite code (case-insensitive)
   const household = await db.query.households.findFirst({
@@ -188,9 +176,7 @@ householdsRouter.post('/leave', async (c) => {
     return c.json({ error: 'Unauthorized' }, 401)
   }
 
-  const currentUser = await db.query.user.findFirst({
-    where: eq(user.id, session.user.id),
-  })
+  const currentUser = await getUserWithHousehold(session.user.id)
 
   if (!currentUser?.householdId) {
     return c.json({ error: 'You are not in a household' }, 400)
@@ -212,20 +198,18 @@ householdsRouter.patch('/me', async (c) => {
     return c.json({ error: 'Unauthorized' }, 401)
   }
 
-  const currentUser = await db.query.user.findFirst({
-    where: eq(user.id, session.user.id),
-  })
+  const currentUser = await getUserWithHousehold(session.user.id)
 
   if (!currentUser?.householdId) {
     return c.json({ error: 'You are not in a household' }, 400)
   }
 
   const body = await c.req.json()
-  const { name } = body
-
-  if (!name || typeof name !== 'string' || name.trim().length === 0) {
-    return c.json({ error: 'Household name is required' }, 400)
+  const parsed = validate(renameHouseholdSchema, body)
+  if (!parsed.success) {
+    return c.json({ error: parsed.error }, 400)
   }
+  const { name } = parsed.data
 
   const [updated] = await db
     .update(households)
@@ -250,9 +234,7 @@ householdsRouter.post('/regenerate-code', async (c) => {
     return c.json({ error: 'Unauthorized' }, 401)
   }
 
-  const currentUser = await db.query.user.findFirst({
-    where: eq(user.id, session.user.id),
-  })
+  const currentUser = await getUserWithHousehold(session.user.id)
 
   if (!currentUser?.householdId) {
     return c.json({ error: 'You are not in a household' }, 400)

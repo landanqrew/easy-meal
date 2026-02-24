@@ -2,18 +2,10 @@ import { Hono } from 'hono'
 import { eq } from 'drizzle-orm'
 import { db } from '../db'
 import { user } from '../db/auth-schema'
-import { auth } from '../lib/auth'
+import { getSession, getUserWithHousehold } from '../lib/auth-helpers'
+import { validate, patchUserSchema } from '../lib/validators'
 
 const users = new Hono()
-
-// Middleware to require authentication
-async function getSession(c: any) {
-  const session = await auth.api.getSession({ headers: c.req.raw.headers })
-  if (!session) {
-    return null
-  }
-  return session
-}
 
 // GET /users/me - Get current user profile
 users.get('/me', async (c) => {
@@ -22,9 +14,7 @@ users.get('/me', async (c) => {
     return c.json({ error: 'Unauthorized' }, 401)
   }
 
-  const currentUser = await db.query.user.findFirst({
-    where: eq(user.id, session.user.id),
-  })
+  const currentUser = await getUserWithHousehold(session.user.id)
 
   if (!currentUser) {
     return c.json({ error: 'User not found' }, 404)
@@ -52,7 +42,11 @@ users.patch('/me', async (c) => {
   }
 
   const body = await c.req.json()
-  const { name, dietaryRestrictions, preferences } = body
+  const parsed = validate(patchUserSchema, body)
+  if (!parsed.success) {
+    return c.json({ error: parsed.error }, 400)
+  }
+  const { name, dietaryRestrictions, preferences } = parsed.data
 
   const updates: Record<string, any> = {}
 
@@ -60,20 +54,10 @@ users.patch('/me', async (c) => {
     updates.name = name
   }
   if (dietaryRestrictions !== undefined) {
-    // Store as JSON string
-    updates.dietaryRestrictions =
-      typeof dietaryRestrictions === 'string'
-        ? dietaryRestrictions
-        : JSON.stringify(dietaryRestrictions)
+    updates.dietaryRestrictions = JSON.stringify(dietaryRestrictions)
   }
   if (preferences !== undefined) {
-    // Store as JSON string
-    updates.preferences =
-      typeof preferences === 'string' ? preferences : JSON.stringify(preferences)
-  }
-
-  if (Object.keys(updates).length === 0) {
-    return c.json({ error: 'No valid fields to update' }, 400)
+    updates.preferences = JSON.stringify(preferences)
   }
 
   updates.updatedAt = new Date()

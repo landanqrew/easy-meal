@@ -9,22 +9,17 @@ import {
   ingredients,
 } from '../db/schema'
 import { user } from '../db/auth-schema'
-import { auth } from '../lib/auth'
+import { getSession, getUserWithHousehold } from '../lib/auth-helpers'
 import { normalizeUnit, convertToBaseUnit, convertFromBaseUnit, roundQuantity } from '../lib/units'
+import {
+  validate,
+  createGroceryListSchema,
+  patchGroceryListSchema,
+  toggleGroceryItemSchema,
+  addGroceryItemSchema,
+} from '../lib/validators'
 
 const groceryListsRouter = new Hono()
-
-// Helper to get session
-async function getSession(c: any) {
-  const session = await auth.api.getSession({ headers: c.req.raw.headers })
-  return session
-}
-
-// Helper to get user with household
-async function getUserWithHousehold(userId: string) {
-  const result = await db.select().from(user).where(eq(user.id, userId)).limit(1)
-  return result[0]
-}
 
 // POST /grocery-lists - Create a new grocery list from recipes
 groceryListsRouter.post('/', async (c) => {
@@ -39,14 +34,11 @@ groceryListsRouter.post('/', async (c) => {
   }
 
   const body = await c.req.json()
-  const { name, recipes: recipeSelections } = body as {
-    name: string
-    recipes: { recipeId: string; servings: number }[]
+  const parsed = validate(createGroceryListSchema, body)
+  if (!parsed.success) {
+    return c.json({ error: parsed.error }, 400)
   }
-
-  if (!name || !recipeSelections || recipeSelections.length === 0) {
-    return c.json({ error: 'Name and at least one recipe are required' }, 400)
-  }
+  const { name, recipes: recipeSelections } = parsed.data
 
   // Fetch all selected recipes with their ingredients
   const recipeIds = recipeSelections.map((r) => r.recipeId)
@@ -371,7 +363,11 @@ groceryListsRouter.patch('/:id', async (c) => {
 
   const id = c.req.param('id')
   const body = await c.req.json()
-  const { name, status } = body as { name?: string; status?: 'active' | 'completed' | 'archived' }
+  const parsed = validate(patchGroceryListSchema, body)
+  if (!parsed.success) {
+    return c.json({ error: parsed.error }, 400)
+  }
+  const { name, status } = parsed.data
 
   const [existing] = await db
     .select()
@@ -445,7 +441,11 @@ groceryListsRouter.patch('/:id/items/:itemId', async (c) => {
   const listId = c.req.param('id')
   const itemId = c.req.param('itemId')
   const body = await c.req.json()
-  const { isChecked } = body as { isChecked: boolean }
+  const parsed = validate(toggleGroceryItemSchema, body)
+  if (!parsed.success) {
+    return c.json({ error: parsed.error }, 400)
+  }
+  const { isChecked } = parsed.data
 
   // Verify the grocery list belongs to the household
   const [groceryList] = await db
@@ -493,15 +493,11 @@ groceryListsRouter.post('/:id/items', async (c) => {
 
   const listId = c.req.param('id')
   const body = await c.req.json()
-  const { ingredientName, quantity, unit } = body as {
-    ingredientName: string
-    quantity: string
-    unit: string
+  const parsed = validate(addGroceryItemSchema, body)
+  if (!parsed.success) {
+    return c.json({ error: parsed.error }, 400)
   }
-
-  if (!ingredientName || !quantity || !unit) {
-    return c.json({ error: 'Ingredient name, quantity, and unit are required' }, 400)
-  }
+  const { ingredientName, quantity, unit } = parsed.data
 
   // Verify the grocery list belongs to the household
   const [groceryList] = await db

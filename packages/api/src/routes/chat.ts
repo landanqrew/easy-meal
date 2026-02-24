@@ -1,16 +1,9 @@
 import { Hono } from 'hono'
-import { eq } from 'drizzle-orm'
-import { db } from '../db'
-import { user } from '../db/auth-schema'
-import { auth } from '../lib/auth'
+import { getSession, getUserWithHousehold } from '../lib/auth-helpers'
 import { chatRecipeGeneration } from '../services/ai'
-import type { ChatMessage } from '../services/ai'
+import { validate, chatRecipeSchema } from '../lib/validators'
 
 const chatRouter = new Hono()
-
-async function getSession(c: any) {
-  return auth.api.getSession({ headers: c.req.raw.headers })
-}
 
 // POST /chat/recipe - Multi-turn chat for recipe generation
 chatRouter.post('/recipe', async (c) => {
@@ -19,20 +12,18 @@ chatRouter.post('/recipe', async (c) => {
     return c.json({ error: 'Unauthorized' }, 401)
   }
 
-  const currentUser = await db.query.user.findFirst({
-    where: eq(user.id, session.user.id),
-  })
+  const currentUser = await getUserWithHousehold(session.user.id)
 
   if (!currentUser?.householdId) {
     return c.json({ error: 'You must be in a household to create recipes' }, 400)
   }
 
   try {
-    const { messages } = await c.req.json<{ messages: ChatMessage[] }>()
-
-    if (!messages?.length) {
-      return c.json({ error: 'Messages are required' }, 400)
+    const parsed = validate(chatRecipeSchema, await c.req.json())
+    if (!parsed.success) {
+      return c.json({ error: parsed.error }, 400)
     }
+    const { messages } = parsed.data
 
     // Parse user's dietary restrictions
     let dietaryRestrictions: string[] | undefined

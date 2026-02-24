@@ -3,19 +3,9 @@ import { eq, and, desc, ilike, or, sql, count } from 'drizzle-orm'
 import { db } from '../db'
 import { recipes, recipeIngredients, ingredients, recipeCheckins } from '../db/schema'
 import { user } from '../db/auth-schema'
-import { auth } from '../lib/auth'
+import { getSession, getUserWithHousehold } from '../lib/auth-helpers'
 
 const discoverRouter = new Hono()
-
-async function getSession(c: any) {
-  return auth.api.getSession({ headers: c.req.raw.headers })
-}
-
-async function getUserWithHousehold(userId: string) {
-  return db.query.user.findFirst({
-    where: eq(user.id, userId),
-  })
-}
 
 // GET /discover/recipes - paginated public recipe list
 discoverRouter.get('/recipes', async (c) => {

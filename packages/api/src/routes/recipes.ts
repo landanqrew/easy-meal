@@ -2,22 +2,12 @@ import { Hono } from 'hono'
 import { eq, and, not, desc } from 'drizzle-orm'
 import { db } from '../db'
 import { recipes, recipeIngredients, ingredients, recipeTags, tags } from '../db/schema'
-import { user } from '../db/auth-schema'
-import { auth } from '../lib/auth'
+import { getSession, getUserWithHousehold } from '../lib/auth-helpers'
 import { generateRecipe, extractRecipeFromPDF } from '../services/ai'
+import { validate, createRecipeSchema, addTagToRecipeSchema } from '../lib/validators'
 import type { RecipePreferences } from '@easy-meal/shared'
 
 const recipesRouter = new Hono()
-
-async function getSession(c: any) {
-  return auth.api.getSession({ headers: c.req.raw.headers })
-}
-
-async function getUserWithHousehold(userId: string) {
-  return db.query.user.findFirst({
-    where: eq(user.id, userId),
-  })
-}
 
 // POST /recipes/generate - Generate a new recipe with AI
 recipesRouter.post('/generate', async (c) => {
@@ -115,11 +105,11 @@ recipesRouter.post('/', async (c) => {
   }
 
   const body = await c.req.json()
-  const { title, description, servings, prepTime, cookTime, cuisine, instructions, ingredients: recipeIngs, source = 'ai_generated', type = 'full_meal' } = body
-
-  if (!title) {
-    return c.json({ error: 'Recipe title is required' }, 400)
+  const parsed = validate(createRecipeSchema, body)
+  if (!parsed.success) {
+    return c.json({ error: parsed.error }, 400)
   }
+  const { title, description, servings, prepTime, cookTime, cuisine, instructions, ingredients: recipeIngs, source, type } = parsed.data
 
   // Create the recipe
   const [recipe] = await db
@@ -509,7 +499,11 @@ recipesRouter.post('/:id/tags', async (c) => {
   }
 
   const recipeId = c.req.param('id')
-  const { tagId } = await c.req.json()
+  const parsed = validate(addTagToRecipeSchema, await c.req.json())
+  if (!parsed.success) {
+    return c.json({ error: parsed.error }, 400)
+  }
+  const { tagId } = parsed.data
 
   // Verify recipe and tag belong to household
   const recipe = await db.query.recipes.findFirst({

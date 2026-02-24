@@ -2,20 +2,10 @@ import { Hono } from 'hono'
 import { eq, and } from 'drizzle-orm'
 import { db } from '../db'
 import { tags } from '../db/schema'
-import { user } from '../db/auth-schema'
-import { auth } from '../lib/auth'
+import { getSession, getUserWithHousehold } from '../lib/auth-helpers'
+import { validate, createTagSchema, patchTagSchema } from '../lib/validators'
 
 const tagsRouter = new Hono()
-
-async function getSession(c: any) {
-  return auth.api.getSession({ headers: c.req.raw.headers })
-}
-
-async function getUserWithHousehold(userId: string) {
-  return db.query.user.findFirst({
-    where: eq(user.id, userId),
-  })
-}
 
 // GET /tags - List all tags in the household
 tagsRouter.get('/', async (c) => {
@@ -55,11 +45,11 @@ tagsRouter.post('/', async (c) => {
     return c.json({ error: 'You must be in a household to create tags' }, 400)
   }
 
-  const { name, color } = await c.req.json()
-
-  if (!name || typeof name !== 'string' || name.trim().length === 0) {
-    return c.json({ error: 'Tag name is required' }, 400)
+  const parsed = validate(createTagSchema, await c.req.json())
+  if (!parsed.success) {
+    return c.json({ error: parsed.error }, 400)
   }
+  const { name, color } = parsed.data
 
   // Check for duplicate
   const existing = await db.query.tags.findFirst({
@@ -118,7 +108,11 @@ tagsRouter.patch('/:id', async (c) => {
     return c.json({ error: 'Tag not found' }, 404)
   }
 
-  const { name, color } = await c.req.json()
+  const parsed = validate(patchTagSchema, await c.req.json())
+  if (!parsed.success) {
+    return c.json({ error: parsed.error }, 400)
+  }
+  const { name, color } = parsed.data
 
   const updates: Record<string, any> = {
     updatedAt: new Date(),

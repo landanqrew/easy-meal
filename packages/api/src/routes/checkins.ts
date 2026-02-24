@@ -3,13 +3,10 @@ import { eq, and, desc } from 'drizzle-orm'
 import { db } from '../db'
 import { recipes, recipeCheckins } from '../db/schema'
 import { user } from '../db/auth-schema'
-import { auth } from '../lib/auth'
+import { getSession } from '../lib/auth-helpers'
+import { validate, createCheckinSchema } from '../lib/validators'
 
 const checkinsRouter = new Hono()
-
-async function getSession(c: any) {
-  return auth.api.getSession({ headers: c.req.raw.headers })
-}
 
 // POST /checkins - create check-in
 checkinsRouter.post('/', async (c) => {
@@ -19,17 +16,11 @@ checkinsRouter.post('/', async (c) => {
   }
 
   const body = await c.req.json()
-  const { recipeId, notes, enjoymentRating, instructionRating } = body
-
-  if (!recipeId) {
-    return c.json({ error: 'recipeId is required' }, 400)
+  const parsed = validate(createCheckinSchema, body)
+  if (!parsed.success) {
+    return c.json({ error: parsed.error }, 400)
   }
-  if (!enjoymentRating || enjoymentRating < 1 || enjoymentRating > 5) {
-    return c.json({ error: 'enjoymentRating must be between 1 and 5' }, 400)
-  }
-  if (!instructionRating || instructionRating < 1 || instructionRating > 5) {
-    return c.json({ error: 'instructionRating must be between 1 and 5' }, 400)
-  }
+  const { recipeId, notes, enjoymentRating, instructionRating } = parsed.data
 
   // Verify recipe exists
   const recipe = await db.query.recipes.findFirst({
