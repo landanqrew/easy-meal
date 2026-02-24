@@ -4,6 +4,7 @@ import { db } from '../db'
 import { mealPlans, recipes } from '../db/schema'
 import { user } from '../db/auth-schema'
 import { auth } from '../lib/auth'
+import { getWeekStartMonday } from '../lib/dates'
 
 const mealPlansRouter = new Hono()
 
@@ -35,11 +36,7 @@ mealPlansRouter.get('/', async (c) => {
   if (weekStartParam) {
     weekStart = new Date(weekStartParam + 'T00:00:00Z')
   } else {
-    // Default to current week's Monday
-    const now = new Date()
-    const day = now.getUTCDay()
-    const diff = day === 0 ? -6 : 1 - day
-    weekStart = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate() + diff))
+    weekStart = getWeekStartMonday(new Date())
   }
 
   const weekEnd = new Date(weekStart)

@@ -38,8 +38,9 @@ packages/
 | `bun run lint` | ESLint across all packages |
 | `bun run db:push` | Push Drizzle schema to database |
 | `bun run db:studio` | Open Drizzle Studio GUI |
+| `bun run test` | Run unit tests (bun test) |
 
-No test suite is configured yet.
+Tests live in `packages/api/src/lib/*.test.ts` and cover pure utility functions (units, dates, invite codes, preferences).
 
 ## Design System
 
@@ -53,12 +54,12 @@ See `design.md` for the full design system. Key points:
 
 - All recipes are household-scoped; enforce household authorization on all data access
 - AI generation uses structured preference selection (not free-text prompts)
-- No test suite yet — verify changes manually or via typecheck
+- Run `bun run test` to verify changes; also verify via typecheck
 - Database runs on port 5433 (not default 5432) to avoid conflicts
 
 ## Current Priorities
 
-* Complete Phase 7 (UI modernization — transitions, card designs, responsive layouts)
-* Complete Phase 8 (chat-based recipe creation, custom wizard inputs)
-* Fix typecheck JSX errors in the web package
-* Add a test suite for critical functions
+* ~~Complete Phase 7 (UI modernization — transitions, card designs, responsive layouts)~~ Done
+* ~~Complete Phase 8 (chat-based recipe creation, custom wizard inputs)~~ Done
+* ~~Fix typecheck JSX errors in the web package~~ Done
+* ~~Add a test suite for critical functions~~ Done

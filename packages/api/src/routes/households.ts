@@ -13,15 +13,7 @@ async function getSession(c: any) {
   return session
 }
 
-// Generate a random invite code
-function generateInviteCode(): string {
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789' // Avoid confusing characters
-  let code = ''
-  for (let i = 0; i < 8; i++) {
-    code += chars.charAt(Math.floor(Math.random() * chars.length))
-  }
-  return code
-}
+import { generateInviteCode } from '../lib/invite-code'
 
 // GET /households/me - Get current user's household
 householdsRouter.get('/me', async (c) => {
