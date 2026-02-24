@@ -139,7 +139,7 @@ export default function Recipes() {
             {recipes.length} recipe{recipes.length !== 1 ? 's' : ''} in your household
           </p>
         </div>
-        <div style={{ display: 'flex', gap: '0.5rem' }}>
+        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' as const }}>
           <Link to="/recipe-lists" className="btn-secondary" style={{ textDecoration: 'none', fontSize: '0.8125rem', padding: '0.625rem 1rem' }}>
             My Lists
           </Link>

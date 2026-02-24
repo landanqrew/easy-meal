@@ -334,7 +334,7 @@ export default function MealPlan() {
                     {MEAL_TYPES.map((mealType) => {
                       const slotEntries = getEntriesForSlot(day, mealType)
                       return (
-                        <div key={mealType} style={styles.mealSlot}>
+                        <div key={mealType} className="meal-slot" style={styles.mealSlot}>
                           <div style={styles.mealSlotLabel}>
                             {mealType}
                           </div>
@@ -348,6 +348,7 @@ export default function MealPlan() {
                               </Link>
                               <button
                                 onClick={() => handleRemoveEntry(entry.id)}
+                                className="meal-remove-btn"
                                 style={styles.removeButton}
                               >
                                 ×
@@ -361,6 +362,7 @@ export default function MealPlan() {
                                 mealType,
                               })
                             }
+                            className="meal-add-btn"
                             style={styles.addButton}
                           >
                             + Add
@@ -515,6 +517,7 @@ export default function MealPlan() {
                     state: { returnTo: '/meal-plan' },
                   })
                 }}
+                className="picker-create-btn"
                 style={styles.pickerCreateButton}
               >
                 + Wizard
@@ -528,6 +531,7 @@ export default function MealPlan() {
                     state: { returnTo: '/meal-plan' },
                   })
                 }}
+                className="picker-create-btn"
                 style={styles.pickerCreateButton}
               >
                 + Chat with AI

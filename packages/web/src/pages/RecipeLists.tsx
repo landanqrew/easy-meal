@@ -134,7 +134,7 @@ export default function RecipeLists() {
       {error && <div className="error-message" style={{ maxWidth: '900px', margin: '0 auto 1rem' }}>{error}</div>}
 
       {showCreate && (
-        <div style={styles.createForm}>
+        <div className="form-entrance" style={styles.createForm}>
           <input
             type="text"
             value={newName}

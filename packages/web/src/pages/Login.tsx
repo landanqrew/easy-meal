@@ -40,7 +40,7 @@ export default function Login() {
 
   return (
     <div style={styles.container}>
-      <div style={styles.card}>
+      <div className="auth-card" style={styles.card}>
         <div style={styles.logoRow}>
           <span style={{ fontSize: '2rem' }}>🥘</span>
         </div>

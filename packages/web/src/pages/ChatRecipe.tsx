@@ -219,8 +219,8 @@ export default function ChatRecipe() {
               </div>
               <p style={styles.recipeDesc}>{recipe.description}</p>
 
-              <details style={styles.details}>
-                <summary style={styles.detailsSummary}>
+              <details className="recipe-details-section">
+                <summary>
                   Ingredients ({recipe.ingredients.length})
                 </summary>
                 <ul style={styles.ingredientList}>
@@ -233,8 +233,8 @@ export default function ChatRecipe() {
                 </ul>
               </details>
 
-              <details style={styles.details}>
-                <summary style={styles.detailsSummary}>
+              <details className="recipe-details-section">
+                <summary>
                   Instructions ({recipe.instructions.length} steps)
                 </summary>
                 <ol style={styles.instructionList}>
@@ -362,19 +362,6 @@ const styles: Record<string, React.CSSProperties> = {
     lineHeight: 1.5,
     fontSize: '0.9375rem',
     marginBottom: '1rem',
-  },
-  details: {
-    marginBottom: '0.5rem',
-  },
-  detailsSummary: {
-    cursor: 'pointer',
-    fontSize: '0.8125rem',
-    fontWeight: 600,
-    color: colors.textSecondary,
-    textTransform: 'uppercase',
-    letterSpacing: '0.3px',
-    padding: '0.5rem 0',
-    borderTop: `1px solid ${colors.borderLight}`,
   },
   ingredientList: {
     listStyle: 'disc',

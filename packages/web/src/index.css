@@ -1082,3 +1082,140 @@ body {
   box-shadow: 0 4px 12px rgba(184, 165, 150, 0.25);
   transform: translateY(-1px);
 }
+
+/* ============================================================ */
+/* MEAL PLAN                                                     */
+/* ============================================================ */
+
+.meal-slot {
+  transition: background var(--transition-fast), border-color var(--transition-fast);
+}
+.meal-slot:hover {
+  background: var(--color-primary-light);
+  border-color: var(--color-primary);
+}
+
+.meal-add-btn {
+  transition: color var(--transition-fast);
+}
+.meal-add-btn:hover {
+  color: var(--color-primary-hover);
+}
+
+.meal-remove-btn {
+  transition: color var(--transition-fast);
+}
+.meal-remove-btn:hover {
+  color: var(--color-danger);
+}
+
+.picker-create-btn {
+  transition: background var(--transition-fast), border-color var(--transition-fast);
+}
+.picker-create-btn:hover {
+  background: var(--color-primary-light);
+}
+
+/* ============================================================ */
+/* DIETARY CHIPS                                                 */
+/* ============================================================ */
+
+.dietary-chip {
+  transition: all var(--transition-fast);
+}
+.dietary-chip:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  transform: translateY(-1px);
+}
+.dietary-chip.selected {
+  background: var(--color-primary);
+  color: white;
+  border-color: var(--color-primary);
+}
+.dietary-chip.selected:hover {
+  background: var(--color-primary-hover);
+  color: white;
+  transform: translateY(-1px);
+}
+
+/* ============================================================ */
+/* SELECTABLE RECIPE CARD                                        */
+/* ============================================================ */
+
+.selectable-recipe {
+  transition: all var(--transition-fast);
+}
+.selectable-recipe:hover {
+  border-color: var(--color-primary);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
+}
+
+/* ============================================================ */
+/* CHAT RECIPE DETAILS                                           */
+/* ============================================================ */
+
+.recipe-details-section {
+  margin-bottom: 0.5rem;
+}
+.recipe-details-section summary {
+  cursor: pointer;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  padding: 0.5rem 0;
+  border-top: 1px solid var(--color-border-light);
+  list-style: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  transition: color var(--transition-fast);
+}
+.recipe-details-section summary::-webkit-details-marker {
+  display: none;
+}
+.recipe-details-section summary::after {
+  content: '›';
+  font-size: 1rem;
+  transition: transform var(--transition-fast);
+}
+.recipe-details-section[open] summary::after {
+  transform: rotate(90deg);
+}
+.recipe-details-section summary:hover {
+  color: var(--color-primary);
+}
+
+/* ============================================================ */
+/* AUTH CARD ENTRANCE                                             */
+/* ============================================================ */
+
+.auth-card {
+  animation: modalSlideUp var(--transition-slow) ease;
+}
+
+/* ============================================================ */
+/* HOUSEHOLD MEMBER                                              */
+/* ============================================================ */
+
+.member-item {
+  transition: background var(--transition-fast);
+  border-radius: var(--radius-sm);
+  margin: 0 -0.5rem;
+  padding-left: 0.5rem;
+  padding-right: 0.5rem;
+}
+.member-item:hover {
+  background: var(--color-primary-light);
+}
+
+/* ============================================================ */
+/* FORM ENTRANCE                                                 */
+/* ============================================================ */
+
+.form-entrance {
+  animation: fadeIn var(--transition-base) ease;
+}

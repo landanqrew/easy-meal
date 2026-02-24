@@ -105,7 +105,34 @@ export default function Discover() {
   }
 
   if (isPending) {
-    return <div style={styles.container}><p>Loading...</p></div>
+    return (
+      <div style={styles.container}>
+        <div style={styles.header}>
+          <div>
+            <div className="skeleton" style={{ width: '180px', height: '1.5rem', marginBottom: '0.5rem' }} />
+            <div className="skeleton" style={{ width: '240px', height: '0.875rem' }} />
+          </div>
+        </div>
+        <div style={styles.searchBar}>
+          <div className="skeleton" style={{ width: '100%', height: '44px', borderRadius: radius.md }} />
+        </div>
+        <div style={styles.recipeGrid}>
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="skeleton-card">
+              <div className="skeleton" style={{ width: '70%', height: '1.125rem', marginBottom: '0.5rem' }} />
+              <div className="skeleton" style={{ width: '100%', height: '0.875rem', marginBottom: '0.375rem' }} />
+              <div className="skeleton" style={{ width: '85%', height: '0.875rem', marginBottom: '0.75rem' }} />
+              <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '0.75rem' }}>
+                <div className="skeleton" style={{ width: '60px', height: '0.75rem' }} />
+                <div className="skeleton" style={{ width: '60px', height: '0.75rem' }} />
+              </div>
+              <div className="skeleton" style={{ width: '100%', height: '1px', marginBottom: '0.75rem' }} />
+              <div className="skeleton" style={{ width: '40%', height: '0.75rem' }} />
+            </div>
+          ))}
+        </div>
+      </div>
+    )
   }
 
   return (

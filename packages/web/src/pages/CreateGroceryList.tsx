@@ -196,6 +196,7 @@ export default function CreateGroceryList() {
                 return (
                   <div
                     key={recipe.id}
+                    className="selectable-recipe"
                     style={{
                       ...styles.recipeCard,
                       ...(isSelected ? styles.recipeCardSelected : {}),

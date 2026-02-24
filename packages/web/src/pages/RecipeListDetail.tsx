@@ -312,7 +312,7 @@ export default function RecipeListDetail() {
         <>
           <div style={styles.recipeGrid}>
             {list.recipes.map((recipe) => (
-              <div key={recipe.id} style={styles.recipeCard}>
+              <div key={recipe.id} className="recipe-card" style={{ position: 'relative' as const }}>
                 <Link
                   to={`/recipes/${recipe.id}`}
                   style={styles.recipeLink}
@@ -341,6 +341,7 @@ export default function RecipeListDetail() {
                 </Link>
                 <button
                   onClick={() => handleRemoveRecipe(recipe.id)}
+                  className="edit-remove-btn"
                   style={styles.removeButton}
                   title="Remove from list"
                 >
@@ -351,7 +352,7 @@ export default function RecipeListDetail() {
           </div>
 
           {!showAddRecipe && (
-            <button onClick={openAddRecipe} style={styles.addRecipeButton}>
+            <button onClick={openAddRecipe} className="grocery-add-btn">
               + Add Recipe
             </button>
           )}
@@ -484,13 +485,6 @@ const styles: Record<string, React.CSSProperties> = {
     margin: '0 auto',
   },
   recipeCard: {
-    background: 'white',
-    borderRadius: radius.md,
-    padding: '1.25rem',
-    boxShadow: shadows.sm,
-    border: `1px solid ${colors.borderLight}`,
-    display: 'flex',
-    flexDirection: 'column',
     position: 'relative',
   },
   recipeLink: {
@@ -536,30 +530,6 @@ const styles: Record<string, React.CSSProperties> = {
     position: 'absolute',
     top: '0.75rem',
     right: '0.75rem',
-    width: '28px',
-    height: '28px',
-    borderRadius: radius.sm,
-    border: 'none',
-    background: 'transparent',
-    cursor: 'pointer',
-    fontSize: '1.25rem',
-    color: colors.textMuted,
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  addRecipeButton: {
-    display: 'block',
-    width: '100%',
-    maxWidth: '900px',
-    margin: '1rem auto 0',
-    padding: '0.75rem',
-    borderRadius: radius.sm,
-    border: `1px dashed ${colors.border}`,
-    background: 'transparent',
-    color: colors.textSecondary,
-    cursor: 'pointer',
-    fontSize: '0.875rem',
   },
   addSection: {
     background: 'white',

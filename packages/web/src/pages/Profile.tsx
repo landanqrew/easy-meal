@@ -171,12 +171,8 @@ export default function Profile() {
               <button
                 key={restriction}
                 onClick={() => handleToggleRestriction(restriction)}
-                style={{
-                  ...styles.chip,
-                  ...(dietaryRestrictions.includes(restriction)
-                    ? styles.chipSelected
-                    : {}),
-                }}
+                className={`dietary-chip${dietaryRestrictions.includes(restriction) ? ' selected' : ''}`}
+                style={styles.chip}
               >
                 {restriction}
               </button>
@@ -265,10 +261,5 @@ const styles: Record<string, React.CSSProperties> = {
     cursor: 'pointer',
     fontSize: '0.875rem',
     textTransform: 'capitalize',
-  },
-  chipSelected: {
-    background: colors.primary,
-    color: 'white',
-    borderColor: colors.primary,
   },
 }

@@ -250,7 +250,7 @@ export default function HouseholdPage() {
               <h3 style={styles.sectionTitle}>Members</h3>
               <ul style={styles.memberList}>
                 {household.members.map((member) => (
-                  <li key={member.id} style={styles.memberItem}>
+                  <li key={member.id} className="member-item" style={styles.memberItem}>
                     <div style={styles.memberAvatar}>
                       {member.name?.charAt(0).toUpperCase() || '?'}
                     </div>
@@ -295,7 +295,7 @@ export default function HouseholdPage() {
             )}
 
             {showCreateForm && (
-              <form onSubmit={handleCreate} style={styles.form}>
+              <form onSubmit={handleCreate} className="form-entrance" style={styles.form}>
                 <h3 style={styles.formTitle}>Create Household</h3>
                 <div style={styles.field}>
                   <label style={styles.label}>Household Name</label>
@@ -325,7 +325,7 @@ export default function HouseholdPage() {
             )}
 
             {showJoinForm && (
-              <form onSubmit={handleJoin} style={styles.form}>
+              <form onSubmit={handleJoin} className="form-entrance" style={styles.form}>
                 <h3 style={styles.formTitle}>Join Household</h3>
                 <div style={styles.field}>
                   <label style={styles.label}>Invite Code</label>
