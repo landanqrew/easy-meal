@@ -2,9 +2,8 @@ import { useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useSession } from '../lib/auth'
 import { colors, shadows, radius } from '../lib/theme'
+import { apiPost } from '../lib/api'
 import type { GeneratedRecipe, RecipeType } from '@easy-meal/shared'
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001'
 
 const DEFAULT_PROTEINS = ['Chicken', 'Beef', 'Pork', 'Fish', 'Shrimp', 'Tofu', 'Tempeh', 'Eggs', 'None']
 const DEFAULT_VEGETABLES = ['Broccoli', 'Bell Peppers', 'Onions', 'Tomatoes', 'Carrots', 'Mushrooms', 'Spinach', 'Zucchini', 'Corn', 'Garlic']
@@ -103,31 +102,19 @@ export default function CreateRecipe() {
     setStep(5)
 
     try {
-      const res = await fetch(`${API_URL}/api/recipes/generate`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({
-          protein: protein === 'None' ? undefined : protein?.toLowerCase(),
-          vegetables: vegetables.map((v) => v.toLowerCase()),
-          fruits: fruits.map((f) => f.toLowerCase()),
-          cuisine: cuisine === 'Surprise me' ? undefined : cuisine?.toLowerCase(),
-          cookingMethod: cookingMethods.length > 0 ? cookingMethods.map((m) => m.toLowerCase().replace(' ', '-')).join(', ') : undefined,
-          timeConstraint,
-          servings,
-          recipeType,
-        }),
+      const data = await apiPost<GeneratedRecipe>('/api/recipes/generate', {
+        protein: protein === 'None' ? undefined : protein?.toLowerCase(),
+        vegetables: vegetables.map((v) => v.toLowerCase()),
+        fruits: fruits.map((f) => f.toLowerCase()),
+        cuisine: cuisine === 'Surprise me' ? undefined : cuisine?.toLowerCase(),
+        cookingMethod: cookingMethods.length > 0 ? cookingMethods.map((m) => m.toLowerCase().replace(' ', '-')).join(', ') : undefined,
+        timeConstraint,
+        servings,
+        recipeType,
       })
-
-      const data = await res.json()
-      if (!res.ok) {
-        setError(data.error || 'Failed to generate recipe')
-        setStep(4)
-      } else {
-        setRecipe(data.data)
-      }
-    } catch {
-      setError('Failed to generate recipe')
+      setRecipe(data)
+    } catch (err: any) {
+      setError(err.message || 'Failed to generate recipe')
       setStep(4)
     } finally {
       setGenerating(false)
@@ -140,32 +127,21 @@ export default function CreateRecipe() {
     setSaving(true)
 
     try {
-      const res = await fetch(`${API_URL}/api/recipes`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({
-          title: recipe.title,
-          description: recipe.description,
-          servings: recipe.servings,
-          prepTime: recipe.prepTime,
-          cookTime: recipe.cookTime,
-          cuisine: recipe.cuisine,
-          instructions: recipe.instructions,
-          ingredients: recipe.ingredients,
-          source: 'ai_generated',
-          type: recipe.type || recipeType,
-        }),
+      const data = await apiPost<{ id: string }>('/api/recipes', {
+        title: recipe.title,
+        description: recipe.description,
+        servings: recipe.servings,
+        prepTime: recipe.prepTime,
+        cookTime: recipe.cookTime,
+        cuisine: recipe.cuisine,
+        instructions: recipe.instructions,
+        ingredients: recipe.ingredients,
+        source: 'ai_generated',
+        type: recipe.type || recipeType,
       })
-
-      const data = await res.json()
-      if (!res.ok) {
-        setError(data.error || 'Failed to save recipe')
-      } else {
-        navigate(returnTo || `/recipes/${data.data.id}`)
-      }
-    } catch {
-      setError('Failed to save recipe')
+      navigate(returnTo || `/recipes/${data.id}`)
+    } catch (err: any) {
+      setError(err.message || 'Failed to save recipe')
     } finally {
       setSaving(false)
     }

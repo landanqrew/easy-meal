@@ -1,9 +1,9 @@
 import { useState, useEffect, useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { useQuery } from '@tanstack/react-query'
 import { useSession } from '../lib/auth'
 import { colors, radius, shadows } from '../lib/theme'
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001'
+import { API_URL, queryKeys } from '../lib/api'
 
 type DiscoverRecipe = {
   id: string
@@ -51,11 +51,9 @@ export { StarDisplay }
 export default function Discover() {
   const navigate = useNavigate()
   const { data: session, isPending } = useSession()
-  const [recipes, setRecipes] = useState<DiscoverRecipe[]>([])
-  const [pagination, setPagination] = useState<Pagination | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [page, setPage] = useState(1)
   const [search, setSearch] = useState('')
-  const [error, setError] = useState('')
+  const [debouncedSearch, setDebouncedSearch] = useState('')
   const debounceRef = useRef<ReturnType<typeof setTimeout>>()
 
   useEffect(() => {
@@ -64,43 +62,45 @@ export default function Discover() {
     }
   }, [session, isPending, navigate])
 
+  // Debounce search input
   useEffect(() => {
-    if (session) {
-      fetchRecipes(1, search)
-    }
-  }, [session])
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+    debounceRef.current = setTimeout(() => {
+      setDebouncedSearch(search)
+      setPage(1)
+    }, 400)
+    return () => { if (debounceRef.current) clearTimeout(debounceRef.current) }
+  }, [search])
 
-  const fetchRecipes = async (page: number, searchTerm: string) => {
-    setLoading(true)
-    setError('')
-    try {
-      const params = new URLSearchParams({ page: String(page), limit: '20' })
-      if (searchTerm) params.set('search', searchTerm)
-      const res = await fetch(`${API_URL}/api/discover/recipes?${params}`, { credentials: 'include' })
-      const data = await res.json()
-      if (res.ok) {
-        setRecipes(data.data)
-        setPagination(data.pagination)
-      } else {
-        setError(data.error || 'Failed to load recipes')
-      }
-    } catch {
-      setError('Failed to load recipes')
-    } finally {
-      setLoading(false)
-    }
+  type DiscoverResponse = {
+    recipes: DiscoverRecipe[]
+    pagination: Pagination
   }
+
+  const { data: discoverData, isLoading, error: queryError } = useQuery<DiscoverResponse>({
+    queryKey: queryKeys.discover(page, debouncedSearch),
+    queryFn: async () => {
+      const params = new URLSearchParams({ page: String(page), limit: '20' })
+      if (debouncedSearch) params.set('search', debouncedSearch)
+      const res = await fetch(`${API_URL}/api/discover/recipes?${params}`, { credentials: 'include' })
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.error || 'Failed to load recipes')
+      return { recipes: json.data as DiscoverRecipe[], pagination: json.pagination as Pagination }
+    },
+    enabled: !!session,
+    placeholderData: (prev) => prev,
+  })
+
+  const recipes = discoverData?.recipes ?? []
+  const pagination = discoverData?.pagination ?? null
+  const error = queryError?.message ?? ''
 
   const handleSearchChange = (value: string) => {
     setSearch(value)
-    if (debounceRef.current) clearTimeout(debounceRef.current)
-    debounceRef.current = setTimeout(() => {
-      fetchRecipes(1, value)
-    }, 400)
   }
 
-  const handlePageChange = (page: number) => {
-    fetchRecipes(page, search)
+  const handlePageChange = (newPage: number) => {
+    setPage(newPage)
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
@@ -159,7 +159,7 @@ export default function Discover() {
 
       {error && <div className="error-message" style={{ maxWidth: '900px', margin: '0 auto 1rem' }}>{error}</div>}
 
-      {loading ? (
+      {isLoading && !discoverData ? (
         <div style={styles.recipeGrid}>
           {Array.from({ length: 6 }).map((_, i) => (
             <div key={i} className="skeleton-card">

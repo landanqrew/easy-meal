@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useSession } from '../lib/auth'
 import { colors, shadows, radius } from '../lib/theme'
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001'
+import { apiFetch, apiPost, apiPatch, apiDelete, queryKeys } from '../lib/api'
 
 type Tag = { id: string; name: string; color: string | null }
 
@@ -36,15 +36,13 @@ export default function RecipeListDetail() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const { data: session, isPending } = useSession()
-  const [list, setList] = useState<RecipeList | null>(null)
-  const [loading, setLoading] = useState(true)
+  const queryClient = useQueryClient()
   const [error, setError] = useState('')
   const [deleting, setDeleting] = useState(false)
   const [editing, setEditing] = useState(false)
   const [editName, setEditName] = useState('')
   const [editDescription, setEditDescription] = useState('')
   const [showAddRecipe, setShowAddRecipe] = useState(false)
-  const [householdRecipes, setHouseholdRecipes] = useState<HouseholdRecipe[]>([])
   const [recipeSearch, setRecipeSearch] = useState('')
   const [addingRecipeId, setAddingRecipeId] = useState<string | null>(null)
 
@@ -54,59 +52,27 @@ export default function RecipeListDetail() {
     }
   }, [session, isPending, navigate])
 
-  useEffect(() => {
-    if (session && id) {
-      fetchList()
-    }
-  }, [session, id])
+  const { data: list, isLoading } = useQuery({
+    queryKey: queryKeys.recipeList(id!),
+    queryFn: () => apiFetch<RecipeList>(`/api/recipe-lists/${id}`),
+    enabled: !!session && !!id,
+  })
 
-  const fetchList = async () => {
-    try {
-      const res = await fetch(`${API_URL}/api/recipe-lists/${id}`, {
-        credentials: 'include',
-      })
-      const data = await res.json()
-      if (res.ok) {
-        setList(data.data)
-      } else {
-        setError(data.error || 'Failed to load list')
-      }
-    } catch {
-      setError('Failed to load list')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const fetchHouseholdRecipes = async () => {
-    try {
-      const res = await fetch(`${API_URL}/api/recipes`, {
-        credentials: 'include',
-      })
-      const data = await res.json()
-      if (res.ok) {
-        setHouseholdRecipes(data.data)
-      }
-    } catch {}
-  }
+  const { data: householdRecipes = [] } = useQuery({
+    queryKey: queryKeys.recipes,
+    queryFn: () => apiFetch<HouseholdRecipe[]>('/api/recipes'),
+    enabled: !!session && showAddRecipe,
+  })
 
   const handleDelete = async () => {
     if (!confirm('Delete this list? Recipes won\'t be affected.')) return
     setDeleting(true)
 
     try {
-      const res = await fetch(`${API_URL}/api/recipe-lists/${id}`, {
-        method: 'DELETE',
-        credentials: 'include',
-      })
-      if (res.ok) {
-        navigate('/recipe-lists')
-      } else {
-        const data = await res.json()
-        setError(data.error || 'Failed to delete list')
-      }
-    } catch {
-      setError('Failed to delete list')
+      await apiDelete(`/api/recipe-lists/${id}`)
+      navigate('/recipe-lists')
+    } catch (err: any) {
+      setError(err.message || 'Failed to delete list')
     } finally {
       setDeleting(false)
     }
@@ -116,28 +82,16 @@ export default function RecipeListDetail() {
     if (!editName.trim()) return
 
     try {
-      const res = await fetch(`${API_URL}/api/recipe-lists/${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({
-          name: editName.trim(),
-          description: editDescription.trim() || null,
-        }),
+      const data = await apiPatch<{ name: string; description: string | null }>(`/api/recipe-lists/${id}`, {
+        name: editName.trim(),
+        description: editDescription.trim() || null,
       })
-      const data = await res.json()
-      if (res.ok) {
-        setList((prev) =>
-          prev
-            ? { ...prev, name: data.data.name, description: data.data.description }
-            : null
-        )
-        setEditing(false)
-      } else {
-        setError(data.error || 'Failed to update list')
-      }
-    } catch {
-      setError('Failed to update list')
+      queryClient.setQueryData(queryKeys.recipeList(id!), (prev: RecipeList | undefined) =>
+        prev ? { ...prev, name: data.name, description: data.description } : undefined
+      )
+      setEditing(false)
+    } catch (err: any) {
+      setError(err.message || 'Failed to update list')
     }
   }
 
@@ -146,45 +100,32 @@ export default function RecipeListDetail() {
     setError('')
 
     try {
-      const res = await fetch(`${API_URL}/api/recipe-lists/${id}/recipes`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ recipeId }),
-      })
-      if (res.ok) {
-        await fetchList()
-        setRecipeSearch('')
-      } else {
-        const data = await res.json()
-        setError(data.error || 'Failed to add recipe')
-      }
-    } catch {
-      setError('Failed to add recipe')
+      await apiPost(`/api/recipe-lists/${id}/recipes`, { recipeId })
+      queryClient.invalidateQueries({ queryKey: queryKeys.recipeList(id!) })
+      setRecipeSearch('')
+    } catch (err: any) {
+      setError(err.message || 'Failed to add recipe')
     } finally {
       setAddingRecipeId(null)
     }
   }
 
   const handleRemoveRecipe = async (recipeId: string) => {
+    // Optimistic update
+    queryClient.setQueryData(queryKeys.recipeList(id!), (prev: RecipeList | undefined) =>
+      prev ? { ...prev, recipes: prev.recipes.filter((r) => r.id !== recipeId) } : undefined
+    )
     try {
-      await fetch(`${API_URL}/api/recipe-lists/${id}/recipes/${recipeId}`, {
-        method: 'DELETE',
-        credentials: 'include',
-      })
-      setList((prev) =>
-        prev
-          ? { ...prev, recipes: prev.recipes.filter((r) => r.id !== recipeId) }
-          : null
-      )
+      await apiDelete(`/api/recipe-lists/${id}/recipes/${recipeId}`)
     } catch {
+      // Revert on failure
+      queryClient.invalidateQueries({ queryKey: queryKeys.recipeList(id!) })
       setError('Failed to remove recipe')
     }
   }
 
   const openAddRecipe = () => {
     setShowAddRecipe(true)
-    fetchHouseholdRecipes()
   }
 
   const availableRecipes = householdRecipes.filter(
@@ -194,7 +135,7 @@ export default function RecipeListDetail() {
         hr.title.toLowerCase().includes(recipeSearch.toLowerCase()))
   )
 
-  if (isPending || loading) {
+  if (isPending || isLoading) {
     return (
       <div style={styles.container}>
         <div style={styles.topBar}>

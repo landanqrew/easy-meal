@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useSession } from '../lib/auth'
 import { colors, shadows, radius } from '../lib/theme'
+import { apiFetch, apiPost, apiPatch, apiDelete, queryKeys } from '../lib/api'
 import type { RecipeType } from '@easy-meal/shared'
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001'
 
 const RECIPE_TYPE_LABELS: Record<RecipeType, string> = {
   full_meal: 'Full Meal',
@@ -113,20 +113,30 @@ export default function RecipeDetail() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const { data: session, isPending } = useSession()
-  const [recipe, setRecipe] = useState<Recipe | null>(null)
-  const [loading, setLoading] = useState(true)
+  const queryClient = useQueryClient()
   const [error, setError] = useState('')
   const [deleting, setDeleting] = useState(false)
   const [editing, setEditing] = useState(false)
   const [editData, setEditData] = useState<EditData | null>(null)
   const [saving, setSaving] = useState(false)
   const [publishing, setPublishing] = useState(false)
-  const [checkins, setCheckins] = useState<Checkin[]>([])
   const [showCheckinForm, setShowCheckinForm] = useState(false)
   const [enjoymentRating, setEnjoymentRating] = useState(0)
   const [instructionRating, setInstructionRating] = useState(0)
   const [checkinNotes, setCheckinNotes] = useState('')
   const [submittingCheckin, setSubmittingCheckin] = useState(false)
+
+  const { data: recipe, isLoading, error: queryError } = useQuery({
+    queryKey: queryKeys.recipe(id!),
+    queryFn: () => apiFetch<Recipe>(`/api/recipes/${id}`),
+    enabled: !!session && !!id,
+  })
+
+  const { data: checkins = [] } = useQuery({
+    queryKey: queryKeys.checkins(id!),
+    queryFn: () => apiFetch<Checkin[]>(`/api/checkins/recipe/${id}`),
+    enabled: !!session && !!id,
+  })
 
   useEffect(() => {
     if (!isPending && !session) {
@@ -134,47 +144,15 @@ export default function RecipeDetail() {
     }
   }, [session, isPending, navigate])
 
-  useEffect(() => {
-    if (session && id) {
-      fetchRecipe()
-      fetchCheckins()
-    }
-  }, [session, id])
-
-  const fetchRecipe = async () => {
-    try {
-      const res = await fetch(`${API_URL}/api/recipes/${id}`, { credentials: 'include' })
-      const data = await res.json()
-      if (res.ok) {
-        setRecipe(data.data)
-      } else {
-        setError(data.error || 'Failed to load recipe')
-      }
-    } catch {
-      setError('Failed to load recipe')
-    } finally {
-      setLoading(false)
-    }
-  }
-
   const handleDelete = async () => {
     if (!confirm('Are you sure you want to delete this recipe?')) return
     setDeleting(true)
 
     try {
-      const res = await fetch(`${API_URL}/api/recipes/${id}`, {
-        method: 'DELETE',
-        credentials: 'include',
-      })
-
-      if (res.ok) {
-        navigate('/recipes')
-      } else {
-        const data = await res.json()
-        setError(data.error || 'Failed to delete recipe')
-      }
-    } catch {
-      setError('Failed to delete recipe')
+      await apiDelete(`/api/recipes/${id}`)
+      navigate('/recipes')
+    } catch (err: any) {
+      setError(err.message || 'Failed to delete recipe')
     } finally {
       setDeleting(false)
     }
@@ -183,29 +161,15 @@ export default function RecipeDetail() {
   const handlePublish = async () => {
     setPublishing(true)
     try {
-      const res = await fetch(`${API_URL}/api/recipes/${id}/publish`, {
-        method: 'POST',
-        credentials: 'include',
-      })
-      const data = await res.json()
-      if (res.ok && recipe) {
-        setRecipe({ ...recipe, isPublic: data.data.isPublic })
-      }
+      const data = await apiPost<{ isPublic: boolean }>(`/api/recipes/${id}/publish`, {})
+      queryClient.setQueryData(queryKeys.recipe(id!), (old: Recipe | undefined) =>
+        old ? { ...old, isPublic: data.isPublic } : old
+      )
     } catch {
       setError('Failed to update publish status')
     } finally {
       setPublishing(false)
     }
-  }
-
-  const fetchCheckins = async () => {
-    try {
-      const res = await fetch(`${API_URL}/api/checkins/recipe/${id}`, { credentials: 'include' })
-      const data = await res.json()
-      if (res.ok) {
-        setCheckins(data.data)
-      }
-    } catch {}
   }
 
   const handleCheckin = async () => {
@@ -216,29 +180,19 @@ export default function RecipeDetail() {
     setSubmittingCheckin(true)
     setError('')
     try {
-      const res = await fetch(`${API_URL}/api/checkins`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          recipeId: id,
-          notes: checkinNotes || undefined,
-          enjoymentRating,
-          instructionRating,
-        }),
+      await apiPost('/api/checkins', {
+        recipeId: id,
+        notes: checkinNotes || undefined,
+        enjoymentRating,
+        instructionRating,
       })
-      if (res.ok) {
-        setEnjoymentRating(0)
-        setInstructionRating(0)
-        setCheckinNotes('')
-        setShowCheckinForm(false)
-        fetchCheckins()
-      } else {
-        const data = await res.json()
-        setError(data.error || 'Failed to submit check-in')
-      }
-    } catch {
-      setError('Failed to submit check-in')
+      setEnjoymentRating(0)
+      setInstructionRating(0)
+      setCheckinNotes('')
+      setShowCheckinForm(false)
+      queryClient.invalidateQueries({ queryKey: queryKeys.checkins(id!) })
+    } catch (err: any) {
+      setError(err.message || 'Failed to submit check-in')
     } finally {
       setSubmittingCheckin(false)
     }
@@ -246,13 +200,8 @@ export default function RecipeDetail() {
 
   const handleDeleteCheckin = async (checkinId: string) => {
     try {
-      const res = await fetch(`${API_URL}/api/checkins/${checkinId}`, {
-        method: 'DELETE',
-        credentials: 'include',
-      })
-      if (res.ok) {
-        fetchCheckins()
-      }
+      await apiDelete(`/api/checkins/${checkinId}`)
+      queryClient.invalidateQueries({ queryKey: queryKeys.checkins(id!) })
     } catch {}
   }
 
@@ -291,36 +240,25 @@ export default function RecipeDetail() {
     setError('')
 
     try {
-      const res = await fetch(`${API_URL}/api/recipes/${id}`, {
-        method: 'PATCH',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          title: editData.title,
-          description: editData.description || null,
-          servings: editData.servings,
-          prepTime: editData.prepTime,
-          cookTime: editData.cookTime,
-          cuisine: editData.cuisine || null,
-          type: editData.type,
-          instructions: editData.instructions.map((s, i) => ({
-            stepNumber: i + 1,
-            text: s.text,
-          })),
-          ingredients: editData.ingredients,
-        }),
+      const data = await apiPatch<Recipe>(`/api/recipes/${id}`, {
+        title: editData.title,
+        description: editData.description || null,
+        servings: editData.servings,
+        prepTime: editData.prepTime,
+        cookTime: editData.cookTime,
+        cuisine: editData.cuisine || null,
+        type: editData.type,
+        instructions: editData.instructions.map((s, i) => ({
+          stepNumber: i + 1,
+          text: s.text,
+        })),
+        ingredients: editData.ingredients,
       })
-
-      const data = await res.json()
-      if (res.ok) {
-        setRecipe(data.data)
-        setEditing(false)
-        setEditData(null)
-      } else {
-        setError(data.error || 'Failed to save recipe')
-      }
-    } catch {
-      setError('Failed to save recipe')
+      queryClient.setQueryData(queryKeys.recipe(id!), data)
+      setEditing(false)
+      setEditData(null)
+    } catch (err: any) {
+      setError(err.message || 'Failed to save recipe')
     } finally {
       setSaving(false)
     }
@@ -367,7 +305,7 @@ export default function RecipeDetail() {
     })
   }
 
-  if (isPending || loading) {
+  if (isPending || isLoading) {
     return (
       <div style={styles.container}>
         <div style={styles.card}>
@@ -457,7 +395,7 @@ export default function RecipeDetail() {
           </div>
         </div>
 
-        {error && <div className="error-message">{error}</div>}
+        {(error || queryError) && <div className="error-message">{error || (queryError as Error)?.message}</div>}
 
         {/* Title */}
         {editing && editData ? (

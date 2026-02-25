@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useSession } from '../lib/auth'
 import { colors, shadows, radius } from '../lib/theme'
 import { StarDisplay } from './Discover'
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001'
+import { apiFetch, apiPost, apiDelete, queryKeys } from '../lib/api'
 
 type Ingredient = {
   id: string
@@ -69,8 +69,7 @@ export default function PublicRecipeDetail() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const { data: session, isPending } = useSession()
-  const [recipe, setRecipe] = useState<PublicRecipe | null>(null)
-  const [loading, setLoading] = useState(true)
+  const queryClient = useQueryClient()
   const [error, setError] = useState('')
   const [copying, setCopying] = useState(false)
   const [copyResult, setCopyResult] = useState<{ id: string; title: string } | null>(null)
@@ -87,43 +86,19 @@ export default function PublicRecipeDetail() {
     }
   }, [session, isPending, navigate])
 
-  useEffect(() => {
-    if (session && id) {
-      fetchRecipe()
-    }
-  }, [session, id])
-
-  const fetchRecipe = async () => {
-    try {
-      const res = await fetch(`${API_URL}/api/discover/recipes/${id}`, { credentials: 'include' })
-      const data = await res.json()
-      if (res.ok) {
-        setRecipe(data.data)
-      } else {
-        setError(data.error || 'Failed to load recipe')
-      }
-    } catch {
-      setError('Failed to load recipe')
-    } finally {
-      setLoading(false)
-    }
-  }
+  const { data: recipe, isLoading, error: queryError } = useQuery({
+    queryKey: queryKeys.publicRecipe(id!),
+    queryFn: () => apiFetch<PublicRecipe>(`/api/discover/recipes/${id}`),
+    enabled: !!session && !!id,
+  })
 
   const handleCopy = async () => {
     setCopying(true)
     try {
-      const res = await fetch(`${API_URL}/api/discover/recipes/${id}/copy`, {
-        method: 'POST',
-        credentials: 'include',
-      })
-      const data = await res.json()
-      if (res.ok) {
-        setCopyResult(data.data)
-      } else {
-        setError(data.error || 'Failed to copy recipe')
-      }
-    } catch {
-      setError('Failed to copy recipe')
+      const data = await apiPost<{ id: string; title: string }>(`/api/discover/recipes/${id}/copy`, {})
+      setCopyResult(data)
+    } catch (err: any) {
+      setError(err.message || 'Failed to copy recipe')
     } finally {
       setCopying(false)
     }
@@ -137,28 +112,18 @@ export default function PublicRecipeDetail() {
     setSubmittingCheckin(true)
     setError('')
     try {
-      const res = await fetch(`${API_URL}/api/checkins`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          recipeId: id,
-          notes: checkinNotes || undefined,
-          enjoymentRating,
-          instructionRating,
-        }),
+      await apiPost('/api/checkins', {
+        recipeId: id,
+        notes: checkinNotes || undefined,
+        enjoymentRating,
+        instructionRating,
       })
-      if (res.ok) {
-        setEnjoymentRating(0)
-        setInstructionRating(0)
-        setCheckinNotes('')
-        fetchRecipe()
-      } else {
-        const data = await res.json()
-        setError(data.error || 'Failed to submit check-in')
-      }
-    } catch {
-      setError('Failed to submit check-in')
+      setEnjoymentRating(0)
+      setInstructionRating(0)
+      setCheckinNotes('')
+      queryClient.invalidateQueries({ queryKey: queryKeys.publicRecipe(id!) })
+    } catch (err: any) {
+      setError(err.message || 'Failed to submit check-in')
     } finally {
       setSubmittingCheckin(false)
     }
@@ -166,17 +131,12 @@ export default function PublicRecipeDetail() {
 
   const handleDeleteCheckin = async (checkinId: string) => {
     try {
-      const res = await fetch(`${API_URL}/api/checkins/${checkinId}`, {
-        method: 'DELETE',
-        credentials: 'include',
-      })
-      if (res.ok) {
-        fetchRecipe()
-      }
+      await apiDelete(`/api/checkins/${checkinId}`)
+      queryClient.invalidateQueries({ queryKey: queryKeys.publicRecipe(id!) })
     } catch {}
   }
 
-  if (isPending || loading) {
+  if (isPending || isLoading) {
     return (
       <div style={styles.container}>
         <div style={styles.card}>
@@ -203,7 +163,7 @@ export default function PublicRecipeDetail() {
     return (
       <div style={styles.container}>
         <div style={styles.card}>
-          <p>{error || 'Recipe not found'}</p>
+          <p>{error || queryError?.message || 'Recipe not found'}</p>
           <Link to="/discover">Back to Discover</Link>
         </div>
       </div>

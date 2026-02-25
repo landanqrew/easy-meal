@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useSession, signOut } from '../lib/auth'
 import { colors, shadows, radius } from '../lib/theme'
+import { apiPatch } from '../lib/api'
 import type { DietaryRestriction } from '@easy-meal/shared'
 
 const DIETARY_OPTIONS: DietaryRestriction[] = [
@@ -55,27 +56,10 @@ export default function Profile() {
     setMessage('')
 
     try {
-      const res = await fetch(
-        `${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/api/users/me`,
-        {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify({
-            name,
-            dietaryRestrictions,
-          }),
-        }
-      )
-
-      if (res.ok) {
-        setMessage('Profile updated successfully')
-      } else {
-        const data = await res.json()
-        setMessage(data.error || 'Failed to update profile')
-      }
-    } catch {
-      setMessage('Failed to update profile')
+      await apiPatch('/api/users/me', { name, dietaryRestrictions })
+      setMessage('Profile updated successfully')
+    } catch (err) {
+      setMessage((err as Error).message || 'Failed to update profile')
     } finally {
       setSaving(false)
     }

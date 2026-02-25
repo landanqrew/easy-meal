@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useSession } from '../lib/auth'
+import { apiFetch, apiPost, queryKeys } from '../lib/api'
 import { colors, shadows, radius } from '../lib/theme'
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001'
 
 type RecipeList = {
   id: string
@@ -17,13 +17,10 @@ type RecipeList = {
 export default function RecipeLists() {
   const navigate = useNavigate()
   const { data: session, isPending } = useSession()
-  const [lists, setLists] = useState<RecipeList[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
+  const queryClient = useQueryClient()
   const [showCreate, setShowCreate] = useState(false)
   const [newName, setNewName] = useState('')
   const [newDescription, setNewDescription] = useState('')
-  const [creating, setCreating] = useState(false)
 
   useEffect(() => {
     if (!isPending && !session) {
@@ -31,63 +28,32 @@ export default function RecipeLists() {
     }
   }, [session, isPending, navigate])
 
-  useEffect(() => {
-    if (session) {
-      fetchLists()
-    }
-  }, [session])
+  const { data: lists = [], isLoading, error: queryError } = useQuery({
+    queryKey: queryKeys.recipeLists,
+    queryFn: () => apiFetch<RecipeList[]>('/api/recipe-lists'),
+    enabled: !!session,
+  })
 
-  const fetchLists = async () => {
-    try {
-      const res = await fetch(`${API_URL}/api/recipe-lists`, {
-        credentials: 'include',
-      })
-      const data = await res.json()
-      if (res.ok) {
-        setLists(data.data)
-      } else {
-        setError(data.error || 'Failed to load lists')
-      }
-    } catch {
-      setError('Failed to load lists')
-    } finally {
-      setLoading(false)
-    }
-  }
+  const createMutation = useMutation({
+    mutationFn: (body: { name: string; description?: string }) =>
+      apiPost('/api/recipe-lists', body),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.recipeLists })
+      setNewName('')
+      setNewDescription('')
+      setShowCreate(false)
+    },
+  })
 
-  const handleCreate = async () => {
+  const handleCreate = () => {
     if (!newName.trim()) return
-
-    setCreating(true)
-    setError('')
-
-    try {
-      const res = await fetch(`${API_URL}/api/recipe-lists`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({
-          name: newName.trim(),
-          description: newDescription.trim() || undefined,
-        }),
-      })
-      const data = await res.json()
-      if (res.ok) {
-        setLists([...lists, data.data])
-        setNewName('')
-        setNewDescription('')
-        setShowCreate(false)
-      } else {
-        setError(data.error || 'Failed to create list')
-      }
-    } catch {
-      setError('Failed to create list')
-    } finally {
-      setCreating(false)
-    }
+    createMutation.mutate({
+      name: newName.trim(),
+      description: newDescription.trim() || undefined,
+    })
   }
 
-  if (isPending || loading) {
+  if (isPending || isLoading) {
     return (
       <div style={styles.container}>
         <div style={styles.header}>
@@ -131,7 +97,7 @@ export default function RecipeLists() {
         </button>
       </div>
 
-      {error && <div className="error-message" style={{ maxWidth: '900px', margin: '0 auto 1rem' }}>{error}</div>}
+      {(queryError || createMutation.error) && <div className="error-message" style={{ maxWidth: '900px', margin: '0 auto 1rem' }}>{queryError?.message || createMutation.error?.message}</div>}
 
       {showCreate && (
         <div className="form-entrance" style={styles.createForm}>
@@ -155,11 +121,11 @@ export default function RecipeLists() {
           <div style={styles.createActions}>
             <button
               onClick={handleCreate}
-              disabled={creating || !newName.trim()}
+              disabled={createMutation.isPending || !newName.trim()}
               className="btn-primary"
               style={{ fontSize: '0.875rem', padding: '0.625rem 1.25rem' }}
             >
-              {creating ? 'Creating...' : 'Create'}
+              {createMutation.isPending ? 'Creating...' : 'Create'}
             </button>
             <button
               onClick={() => {

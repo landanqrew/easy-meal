@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { useQuery } from '@tanstack/react-query'
 import { useSession } from '../lib/auth'
+import { apiFetch, queryKeys } from '../lib/api'
 import { colors, radius } from '../lib/theme'
 import type { RecipeType } from '@easy-meal/shared'
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001'
 
 const RECIPE_TYPE_LABELS: Record<RecipeType, string> = {
   full_meal: 'Full Meal',
@@ -48,10 +48,6 @@ type Recipe = {
 export default function Recipes() {
   const navigate = useNavigate()
   const { data: session, isPending } = useSession()
-  const [recipes, setRecipes] = useState<Recipe[]>([])
-  const [tags, setTags] = useState<Tag[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
   const [filterTag, setFilterTag] = useState<string | null>(null)
   const [filterType, setFilterType] = useState<RecipeType | null>(null)
 
@@ -61,44 +57,23 @@ export default function Recipes() {
     }
   }, [session, isPending, navigate])
 
-  useEffect(() => {
-    if (session) {
-      fetchRecipes()
-      fetchTags()
-    }
-  }, [session])
+  const { data: recipes = [], isLoading: recipesLoading, error: recipesError } = useQuery({
+    queryKey: queryKeys.recipes,
+    queryFn: () => apiFetch<Recipe[]>('/api/recipes'),
+    enabled: !!session,
+  })
 
-  const fetchRecipes = async () => {
-    try {
-      const res = await fetch(`${API_URL}/api/recipes`, { credentials: 'include' })
-      const data = await res.json()
-      if (res.ok) {
-        setRecipes(data.data)
-      } else {
-        setError(data.error || 'Failed to load recipes')
-      }
-    } catch {
-      setError('Failed to load recipes')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const fetchTags = async () => {
-    try {
-      const res = await fetch(`${API_URL}/api/tags`, { credentials: 'include' })
-      const data = await res.json()
-      if (res.ok) {
-        setTags(data.data)
-      }
-    } catch {}
-  }
+  const { data: tags = [] } = useQuery({
+    queryKey: queryKeys.tags,
+    queryFn: () => apiFetch<Tag[]>('/api/tags'),
+    enabled: !!session,
+  })
 
   const filteredRecipes = recipes
     .filter((r) => !filterTag || r.tags.some((t) => t.id === filterTag))
     .filter((r) => !filterType || r.type === filterType)
 
-  if (isPending || loading) {
+  if (isPending || recipesLoading) {
     return (
       <div style={styles.container}>
         <div style={styles.header}>
@@ -167,7 +142,7 @@ export default function Recipes() {
         </Link>
       </div>
 
-      {error && <div className="error-message" style={{ maxWidth: '900px', margin: '0 auto 1rem' }}>{error}</div>}
+      {recipesError && <div className="error-message" style={{ maxWidth: '900px', margin: '0 auto 1rem' }}>{recipesError.message}</div>}
 
       <div style={styles.filterSection}>
         <span style={styles.filterLabel}>Type:</span>

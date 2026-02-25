@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { useQuery } from '@tanstack/react-query'
 import { useSession } from '../lib/auth'
+import { apiFetch, queryKeys } from '../lib/api'
 import { colors, radius } from '../lib/theme'
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001'
 
 type GroceryList = {
   id: string
@@ -16,9 +16,6 @@ type GroceryList = {
 export default function GroceryLists() {
   const navigate = useNavigate()
   const { data: session, isPending } = useSession()
-  const [lists, setLists] = useState<GroceryList[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
   const [filter, setFilter] = useState<'all' | 'active' | 'completed'>('active')
 
   useEffect(() => {
@@ -27,29 +24,11 @@ export default function GroceryLists() {
     }
   }, [session, isPending, navigate])
 
-  useEffect(() => {
-    if (session) {
-      fetchLists()
-    }
-  }, [session])
-
-  const fetchLists = async () => {
-    try {
-      const res = await fetch(`${API_URL}/api/grocery-lists`, {
-        credentials: 'include',
-      })
-      const data = await res.json()
-      if (res.ok) {
-        setLists(data.data)
-      } else {
-        setError(data.error || 'Failed to load grocery lists')
-      }
-    } catch {
-      setError('Failed to load grocery lists')
-    } finally {
-      setLoading(false)
-    }
-  }
+  const { data: lists = [], isLoading, error } = useQuery({
+    queryKey: queryKeys.groceryLists,
+    queryFn: () => apiFetch<GroceryList[]>('/api/grocery-lists'),
+    enabled: !!session,
+  })
 
   const filteredLists = lists.filter((list) => {
     if (filter === 'all') return true
@@ -59,7 +38,7 @@ export default function GroceryLists() {
   const activeLists = lists.filter((l) => l.status === 'active')
   const completedLists = lists.filter((l) => l.status === 'completed')
 
-  if (isPending || loading) {
+  if (isPending || isLoading) {
     return (
       <div style={styles.container}>
         <div style={styles.header}>
@@ -106,7 +85,7 @@ export default function GroceryLists() {
         </Link>
       </div>
 
-      {error && <div className="error-message" style={{ maxWidth: '900px', margin: '0 auto 1rem' }}>{error}</div>}
+      {error && <div className="error-message" style={{ maxWidth: '900px', margin: '0 auto 1rem' }}>{error.message}</div>}
 
       <div style={styles.filterSection}>
         <button

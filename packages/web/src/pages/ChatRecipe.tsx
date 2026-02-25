@@ -2,9 +2,8 @@ import { useState, useRef, useEffect } from 'react'
 import { useNavigate, useLocation, Link } from 'react-router-dom'
 import { useSession } from '../lib/auth'
 import { colors, shadows, radius } from '../lib/theme'
+import { apiPost } from '../lib/api'
 import type { GeneratedRecipe } from '@easy-meal/shared'
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001'
 
 type ChatMessage = {
   role: 'user' | 'assistant'
@@ -54,30 +53,19 @@ export default function ChatRecipe() {
       // Only send user/assistant messages (skip the initial greeting for the API)
       const apiMessages = updatedMessages.filter((_, i) => i > 0)
 
-      const res = await fetch(`${API_URL}/api/chat/recipe`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ messages: apiMessages }),
-      })
-
-      const data = await res.json()
-      if (!res.ok) {
-        setError(data.error || 'Something went wrong')
-        return
-      }
+      const data = await apiPost<{ message: string; recipe?: GeneratedRecipe }>('/api/chat/recipe', { messages: apiMessages })
 
       const assistantMessage: ChatMessage = {
         role: 'assistant',
-        content: data.data.message,
+        content: data.message,
       }
       setMessages((prev) => [...prev, assistantMessage])
 
-      if (data.data.recipe) {
-        setRecipe(data.data.recipe)
+      if (data.recipe) {
+        setRecipe(data.recipe)
       }
-    } catch {
-      setError('Failed to send message')
+    } catch (err: any) {
+      setError(err.message || 'Failed to send message')
     } finally {
       setLoading(false)
       inputRef.current?.focus()
@@ -90,32 +78,21 @@ export default function ChatRecipe() {
     setSaving(true)
 
     try {
-      const res = await fetch(`${API_URL}/api/recipes`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({
-          title: recipe.title,
-          description: recipe.description,
-          servings: recipe.servings,
-          prepTime: recipe.prepTime,
-          cookTime: recipe.cookTime,
-          cuisine: recipe.cuisine,
-          instructions: recipe.instructions,
-          ingredients: recipe.ingredients,
-          source: 'ai_generated',
-          type: recipe.type || 'full_meal',
-        }),
+      const data = await apiPost<{ id: string }>('/api/recipes', {
+        title: recipe.title,
+        description: recipe.description,
+        servings: recipe.servings,
+        prepTime: recipe.prepTime,
+        cookTime: recipe.cookTime,
+        cuisine: recipe.cuisine,
+        instructions: recipe.instructions,
+        ingredients: recipe.ingredients,
+        source: 'ai_generated',
+        type: recipe.type || 'full_meal',
       })
-
-      const data = await res.json()
-      if (!res.ok) {
-        setError(data.error || 'Failed to save recipe')
-      } else {
-        navigate(returnTo || `/recipes/${data.data.id}`)
-      }
-    } catch {
-      setError('Failed to save recipe')
+      navigate(returnTo || `/recipes/${data.id}`)
+    } catch (err: any) {
+      setError(err.message || 'Failed to save recipe')
     } finally {
       setSaving(false)
     }
@@ -133,18 +110,10 @@ export default function ChatRecipe() {
 
     const apiMessages = [...messages, retryMessage].filter((_, i) => i > 0)
 
-    fetch(`${API_URL}/api/chat/recipe`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-      body: JSON.stringify({ messages: apiMessages }),
-    })
-      .then((res) => res.json())
+    apiPost<{ message: string; recipe?: GeneratedRecipe }>('/api/chat/recipe', { messages: apiMessages })
       .then((data) => {
-        if (data.data) {
-          setMessages((prev) => [...prev, { role: 'assistant', content: data.data.message }])
-          if (data.data.recipe) setRecipe(data.data.recipe)
-        }
+        setMessages((prev) => [...prev, { role: 'assistant', content: data.message }])
+        if (data.recipe) setRecipe(data.recipe)
       })
       .catch(() => setError('Failed to send message'))
       .finally(() => setLoading(false))

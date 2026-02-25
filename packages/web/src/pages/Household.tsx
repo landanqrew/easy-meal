@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useSession } from '../lib/auth'
 import { colors, shadows, radius } from '../lib/theme'
+import { apiFetch, apiPost, queryKeys } from '../lib/api'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 
 type HouseholdMember = {
   id: string
@@ -18,13 +20,10 @@ type Household = {
   members: HouseholdMember[]
 }
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001'
-
 export default function HouseholdPage() {
   const navigate = useNavigate()
   const { data: session, isPending } = useSession()
-  const [household, setHousehold] = useState<Household | null>(null)
-  const [loading, setLoading] = useState(true)
+  const queryClient = useQueryClient()
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
 
@@ -35,6 +34,12 @@ export default function HouseholdPage() {
   const [inviteCode, setInviteCode] = useState('')
   const [submitting, setSubmitting] = useState(false)
 
+  const { data: household = null, isLoading, error: queryError } = useQuery({
+    queryKey: queryKeys.household,
+    queryFn: () => apiFetch<Household | null>('/api/households/me'),
+    enabled: !!session,
+  })
+
   useEffect(() => {
     if (!isPending && !session) {
       navigate('/login')
@@ -42,24 +47,10 @@ export default function HouseholdPage() {
   }, [session, isPending, navigate])
 
   useEffect(() => {
-    if (session) {
-      fetchHousehold()
+    if (queryError) {
+      setError((queryError as Error).message || 'Failed to load household')
     }
-  }, [session])
-
-  const fetchHousehold = async () => {
-    try {
-      const res = await fetch(`${API_URL}/api/households/me`, {
-        credentials: 'include',
-      })
-      const data = await res.json()
-      setHousehold(data.data)
-    } catch {
-      setError('Failed to load household')
-    } finally {
-      setLoading(false)
-    }
-  }
+  }, [queryError])
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -67,24 +58,13 @@ export default function HouseholdPage() {
     setSubmitting(true)
 
     try {
-      const res = await fetch(`${API_URL}/api/households`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ name: householdName }),
-      })
-
-      const data = await res.json()
-      if (!res.ok) {
-        setError(data.error || 'Failed to create household')
-      } else {
-        setMessage('Household created!')
-        setShowCreateForm(false)
-        setHouseholdName('')
-        fetchHousehold()
-      }
-    } catch {
-      setError('Failed to create household')
+      await apiPost('/api/households', { name: householdName })
+      setMessage('Household created!')
+      setShowCreateForm(false)
+      setHouseholdName('')
+      queryClient.invalidateQueries({ queryKey: queryKeys.household })
+    } catch (err) {
+      setError((err as Error).message || 'Failed to create household')
     } finally {
       setSubmitting(false)
     }
@@ -96,24 +76,13 @@ export default function HouseholdPage() {
     setSubmitting(true)
 
     try {
-      const res = await fetch(`${API_URL}/api/households/join`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ inviteCode }),
-      })
-
-      const data = await res.json()
-      if (!res.ok) {
-        setError(data.error || 'Failed to join household')
-      } else {
-        setMessage('Joined household!')
-        setShowJoinForm(false)
-        setInviteCode('')
-        fetchHousehold()
-      }
-    } catch {
-      setError('Failed to join household')
+      await apiPost('/api/households/join', { inviteCode })
+      setMessage('Joined household!')
+      setShowJoinForm(false)
+      setInviteCode('')
+      queryClient.invalidateQueries({ queryKey: queryKeys.household })
+    } catch (err) {
+      setError((err as Error).message || 'Failed to join household')
     } finally {
       setSubmitting(false)
     }
@@ -124,42 +93,22 @@ export default function HouseholdPage() {
 
     setError('')
     try {
-      const res = await fetch(`${API_URL}/api/households/leave`, {
-        method: 'POST',
-        credentials: 'include',
-      })
-
-      if (res.ok) {
-        setMessage('Left household')
-        setHousehold(null)
-      } else {
-        const data = await res.json()
-        setError(data.error || 'Failed to leave household')
-      }
-    } catch {
-      setError('Failed to leave household')
+      await apiPost('/api/households/leave', {})
+      setMessage('Left household')
+      queryClient.invalidateQueries({ queryKey: queryKeys.household })
+    } catch (err) {
+      setError((err as Error).message || 'Failed to leave household')
     }
   }
 
   const handleRegenerateCode = async () => {
     setError('')
     try {
-      const res = await fetch(`${API_URL}/api/households/regenerate-code`, {
-        method: 'POST',
-        credentials: 'include',
-      })
-
-      const data = await res.json()
-      if (res.ok) {
-        setHousehold((prev) =>
-          prev ? { ...prev, inviteCode: data.data.inviteCode } : null
-        )
-        setMessage('Invite code regenerated')
-      } else {
-        setError(data.error || 'Failed to regenerate code')
-      }
-    } catch {
-      setError('Failed to regenerate code')
+      await apiPost('/api/households/regenerate-code', {})
+      setMessage('Invite code regenerated')
+      queryClient.invalidateQueries({ queryKey: queryKeys.household })
+    } catch (err) {
+      setError((err as Error).message || 'Failed to regenerate code')
     }
   }
 
@@ -171,7 +120,7 @@ export default function HouseholdPage() {
     }
   }
 
-  if (isPending || loading) {
+  if (isPending || isLoading) {
     return (
       <div style={styles.container}>
         <div style={styles.card}>

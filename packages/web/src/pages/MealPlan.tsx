@@ -1,10 +1,10 @@
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useSession } from '../lib/auth'
 import { colors, radius } from '../lib/theme'
+import { apiFetch, apiPost, apiDelete, queryKeys } from '../lib/api'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import type { MealType, RecipeType } from '@easy-meal/shared'
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001'
 
 type MealPlanEntry = {
   id: string
@@ -99,15 +99,51 @@ function formatWeekRange(monday: Date): string {
 export default function MealPlan() {
   const navigate = useNavigate()
   const { data: session, isPending } = useSession()
+  const queryClient = useQueryClient()
   const [weekStart, setWeekStart] = useState<Date>(() => getMonday(new Date()))
-  const [entries, setEntries] = useState<MealPlanEntry[]>([])
-  const [recipes, setRecipes] = useState<Recipe[]>([])
-  const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [pickerOpen, setPickerOpen] = useState<{ date: string; mealType: MealType } | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [pickerTypeFilter, setPickerTypeFilter] = useState<RecipeType | null>(null)
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768)
+
+  const weekParam = formatDateParam(weekStart)
+
+  const { data: entries = [], isLoading: entriesLoading, error: entriesError } = useQuery({
+    queryKey: queryKeys.mealPlanEntries(weekParam),
+    queryFn: () => apiFetch<MealPlanEntry[]>(`/api/meal-plans?weekStart=${weekParam}`),
+    enabled: !!session,
+  })
+
+  const { data: recipes = [] } = useQuery({
+    queryKey: queryKeys.recipes,
+    queryFn: () => apiFetch<Recipe[]>('/api/recipes'),
+    enabled: !!session,
+  })
+
+  const assignMutation = useMutation({
+    mutationFn: (body: { recipeId: string; date: string; mealType: string }) =>
+      apiPost('/api/meal-plans', body),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.mealPlanEntries(weekParam) })
+      setPickerOpen(null)
+      setSearchQuery('')
+      setPickerTypeFilter(null)
+    },
+    onError: (err: Error) => {
+      setError(err.message || 'Failed to assign recipe')
+    },
+  })
+
+  const removeMutation = useMutation({
+    mutationFn: (entryId: string) => apiDelete(`/api/meal-plans/${entryId}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.mealPlanEntries(weekParam) })
+    },
+    onError: (err: Error) => {
+      setError(err.message || 'Failed to remove entry')
+    },
+  })
 
   useEffect(() => {
     if (!isPending && !session) {
@@ -116,52 +152,16 @@ export default function MealPlan() {
   }, [session, isPending, navigate])
 
   useEffect(() => {
+    if (entriesError) {
+      setError((entriesError as Error).message || 'Failed to load meal plan')
+    }
+  }, [entriesError])
+
+  useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 768)
     window.addEventListener('resize', handleResize)
     return () => window.removeEventListener('resize', handleResize)
   }, [])
-
-  const fetchEntries = useCallback(async () => {
-    try {
-      const res = await fetch(
-        `${API_URL}/api/meal-plans?weekStart=${formatDateParam(weekStart)}`,
-        { credentials: 'include' }
-      )
-      const data = await res.json()
-      if (res.ok) {
-        setEntries(data.data)
-      } else {
-        setError(data.error || 'Failed to load meal plan')
-      }
-    } catch {
-      setError('Failed to load meal plan')
-    } finally {
-      setLoading(false)
-    }
-  }, [weekStart])
-
-  const fetchRecipes = useCallback(async () => {
-    try {
-      const res = await fetch(`${API_URL}/api/recipes`, { credentials: 'include' })
-      const data = await res.json()
-      if (res.ok) {
-        setRecipes(data.data)
-      }
-    } catch {}
-  }, [])
-
-  useEffect(() => {
-    if (session) {
-      setLoading(true)
-      fetchEntries()
-    }
-  }, [session, fetchEntries])
-
-  useEffect(() => {
-    if (session) {
-      fetchRecipes()
-    }
-  }, [session, fetchRecipes])
 
   const getEntriesForSlot = (date: Date, mealType: MealType): MealPlanEntry[] => {
     const dateStr = formatDateParam(date)
@@ -173,53 +173,19 @@ export default function MealPlan() {
       .sort((a, b) => a.sortOrder - b.sortOrder)
   }
 
-  const handleAssignRecipe = async (recipeId: string) => {
+  const handleAssignRecipe = (recipeId: string) => {
     if (!pickerOpen) return
     setError('')
-
-    try {
-      const res = await fetch(`${API_URL}/api/meal-plans`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({
-          recipeId,
-          date: pickerOpen.date,
-          mealType: pickerOpen.mealType,
-        }),
-      })
-
-      if (res.ok) {
-        setPickerOpen(null)
-        setSearchQuery('')
-        setPickerTypeFilter(null)
-        fetchEntries()
-      } else {
-        const data = await res.json()
-        setError(data.error || 'Failed to assign recipe')
-      }
-    } catch {
-      setError('Failed to assign recipe')
-    }
+    assignMutation.mutate({
+      recipeId,
+      date: pickerOpen.date,
+      mealType: pickerOpen.mealType,
+    })
   }
 
-  const handleRemoveEntry = async (entryId: string) => {
+  const handleRemoveEntry = (entryId: string) => {
     setError('')
-    try {
-      const res = await fetch(`${API_URL}/api/meal-plans/${entryId}`, {
-        method: 'DELETE',
-        credentials: 'include',
-      })
-
-      if (res.ok) {
-        setEntries((prev) => prev.filter((e) => e.id !== entryId))
-      } else {
-        const data = await res.json()
-        setError(data.error || 'Failed to remove entry')
-      }
-    } catch {
-      setError('Failed to remove entry')
-    }
+    removeMutation.mutate(entryId)
   }
 
   const navigateWeek = (direction: number) => {
@@ -255,7 +221,7 @@ export default function MealPlan() {
     .filter((r) => r.title.toLowerCase().includes(searchQuery.toLowerCase()))
     .filter((r) => !pickerTypeFilter || r.type === pickerTypeFilter)
 
-  if (isPending || loading) {
+  if (isPending || entriesLoading) {
     return (
       <div style={styles.container}>
         <div style={styles.content}>

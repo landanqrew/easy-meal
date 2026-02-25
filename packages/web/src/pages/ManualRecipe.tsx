@@ -2,9 +2,8 @@ import { useState, useEffect } from 'react'
 import { useNavigate, useLocation, Link } from 'react-router-dom'
 import { useSession } from '../lib/auth'
 import { colors, shadows, radius } from '../lib/theme'
+import { apiPost } from '../lib/api'
 import type { RecipeType } from '@easy-meal/shared'
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001'
 
 const RECIPE_TYPE_OPTIONS: { value: RecipeType; label: string }[] = [
   { value: 'full_meal', label: 'Full Meal' },
@@ -94,41 +93,30 @@ export default function ManualRecipe() {
     setError('')
 
     try {
-      const res = await fetch(`${API_URL}/api/recipes`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({
-          title: title.trim(),
-          description: description.trim() || undefined,
-          servings,
-          prepTime: prepTime ? parseInt(prepTime) : undefined,
-          cookTime: cookTime ? parseInt(cookTime) : undefined,
-          cuisine: cuisine.trim() || undefined,
-          type: recipeType,
-          source: 'manual',
-          ingredients: validIngredients.map((ing) => ({
-            name: ing.name.trim().toLowerCase(),
-            quantity: parseFloat(ing.quantity),
-            unit: ing.unit.trim() || 'piece',
-            category: ing.category,
-            preparation: ing.preparation.trim() || undefined,
-          })),
-          instructions: validInstructions.map((inst, i) => ({
-            stepNumber: i + 1,
-            text: inst.text.trim(),
-          })),
-        }),
+      const data = await apiPost<{ id: string }>('/api/recipes', {
+        title: title.trim(),
+        description: description.trim() || undefined,
+        servings,
+        prepTime: prepTime ? parseInt(prepTime) : undefined,
+        cookTime: cookTime ? parseInt(cookTime) : undefined,
+        cuisine: cuisine.trim() || undefined,
+        type: recipeType,
+        source: 'manual',
+        ingredients: validIngredients.map((ing) => ({
+          name: ing.name.trim().toLowerCase(),
+          quantity: parseFloat(ing.quantity),
+          unit: ing.unit.trim() || 'piece',
+          category: ing.category,
+          preparation: ing.preparation.trim() || undefined,
+        })),
+        instructions: validInstructions.map((inst, i) => ({
+          stepNumber: i + 1,
+          text: inst.text.trim(),
+        })),
       })
-
-      const data = await res.json()
-      if (res.ok) {
-        navigate(returnTo || `/recipes/${data.data.id}`)
-      } else {
-        setError(data.error || 'Failed to save recipe')
-      }
-    } catch {
-      setError('Failed to save recipe')
+      navigate(returnTo || `/recipes/${data.id}`)
+    } catch (err) {
+      setError((err as Error).message || 'Failed to save recipe')
     } finally {
       setSaving(false)
     }

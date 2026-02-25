@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useSession } from '../lib/auth'
 import { colors, radius } from '../lib/theme'
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001'
+import { apiFetch, apiPost, apiPatch, apiDelete, queryKeys } from '../lib/api'
 
 type Ingredient = {
   id: string
@@ -69,13 +69,18 @@ export default function GroceryListDetail() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const { data: session, isPending } = useSession()
-  const [groceryList, setGroceryList] = useState<GroceryList | null>(null)
-  const [loading, setLoading] = useState(true)
+  const queryClient = useQueryClient()
   const [error, setError] = useState('')
   const [deleting, setDeleting] = useState(false)
   const [showAddItem, setShowAddItem] = useState(false)
   const [newItem, setNewItem] = useState({ name: '', quantity: '1', unit: '' })
   const [adding, setAdding] = useState(false)
+
+  const { data: groceryList, isLoading, error: queryError } = useQuery({
+    queryKey: queryKeys.groceryList(id!),
+    queryFn: () => apiFetch<GroceryList>(`/api/grocery-lists/${id}`),
+    enabled: !!session && !!id,
+  })
 
   useEffect(() => {
     if (!isPending && !session) {
@@ -83,35 +88,11 @@ export default function GroceryListDetail() {
     }
   }, [session, isPending, navigate])
 
-  useEffect(() => {
-    if (session && id) {
-      fetchGroceryList()
-    }
-  }, [session, id])
-
-  const fetchGroceryList = async () => {
-    try {
-      const res = await fetch(`${API_URL}/api/grocery-lists/${id}`, {
-        credentials: 'include',
-      })
-      const data = await res.json()
-      if (res.ok) {
-        setGroceryList(data.data)
-      } else {
-        setError(data.error || 'Failed to load grocery list')
-      }
-    } catch {
-      setError('Failed to load grocery list')
-    } finally {
-      setLoading(false)
-    }
-  }
-
   const toggleItem = async (itemId: string, currentChecked: boolean) => {
     if (!groceryList) return
 
     // Optimistic update
-    setGroceryList({
+    queryClient.setQueryData(queryKeys.groceryList(id!), {
       ...groceryList,
       items: groceryList.items.map((item) =>
         item.id === itemId ? { ...item, isChecked: !currentChecked } : item
@@ -127,15 +108,10 @@ export default function GroceryListDetail() {
     })
 
     try {
-      await fetch(`${API_URL}/api/grocery-lists/${id}/items/${itemId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ isChecked: !currentChecked }),
-      })
+      await apiPatch(`/api/grocery-lists/${id}/items/${itemId}`, { isChecked: !currentChecked })
     } catch {
       // Revert on error
-      fetchGroceryList()
+      queryClient.invalidateQueries({ queryKey: queryKeys.groceryList(id!) })
     }
   }
 
@@ -144,19 +120,10 @@ export default function GroceryListDetail() {
     setDeleting(true)
 
     try {
-      const res = await fetch(`${API_URL}/api/grocery-lists/${id}`, {
-        method: 'DELETE',
-        credentials: 'include',
-      })
-
-      if (res.ok) {
-        navigate('/grocery-lists')
-      } else {
-        const data = await res.json()
-        setError(data.error || 'Failed to delete grocery list')
-      }
-    } catch {
-      setError('Failed to delete grocery list')
+      await apiDelete(`/api/grocery-lists/${id}`)
+      navigate('/grocery-lists')
+    } catch (err: any) {
+      setError(err.message || 'Failed to delete grocery list')
     } finally {
       setDeleting(false)
     }
@@ -166,16 +133,10 @@ export default function GroceryListDetail() {
     if (!groceryList) return
 
     try {
-      const res = await fetch(`${API_URL}/api/grocery-lists/${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ status: 'completed' }),
-      })
-
-      if (res.ok) {
-        setGroceryList({ ...groceryList, status: 'completed' })
-      }
+      await apiPatch(`/api/grocery-lists/${id}`, { status: 'completed' })
+      queryClient.setQueryData(queryKeys.groceryList(id!), (old: GroceryList | undefined) =>
+        old ? { ...old, status: 'completed' as const } : old
+      )
     } catch {
       setError('Failed to update status')
     }
@@ -191,27 +152,16 @@ export default function GroceryListDetail() {
     setError('')
 
     try {
-      const res = await fetch(`${API_URL}/api/grocery-lists/${id}/items`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({
-          ingredientName: newItem.name,
-          quantity: newItem.quantity,
-          unit: newItem.unit,
-        }),
+      await apiPost(`/api/grocery-lists/${id}/items`, {
+        ingredientName: newItem.name,
+        quantity: newItem.quantity,
+        unit: newItem.unit,
       })
-
-      if (res.ok) {
-        setNewItem({ name: '', quantity: '1', unit: '' })
-        setShowAddItem(false)
-        fetchGroceryList()
-      } else {
-        const data = await res.json()
-        setError(data.error || 'Failed to add item')
-      }
-    } catch {
-      setError('Failed to add item')
+      setNewItem({ name: '', quantity: '1', unit: '' })
+      setShowAddItem(false)
+      queryClient.invalidateQueries({ queryKey: queryKeys.groceryList(id!) })
+    } catch (err: any) {
+      setError(err.message || 'Failed to add item')
     } finally {
       setAdding(false)
     }
@@ -219,11 +169,8 @@ export default function GroceryListDetail() {
 
   const handleRemoveItem = async (itemId: string) => {
     try {
-      await fetch(`${API_URL}/api/grocery-lists/${id}/items/${itemId}`, {
-        method: 'DELETE',
-        credentials: 'include',
-      })
-      fetchGroceryList()
+      await apiDelete(`/api/grocery-lists/${id}/items/${itemId}`)
+      queryClient.invalidateQueries({ queryKey: queryKeys.groceryList(id!) })
     } catch {
       setError('Failed to remove item')
     }
@@ -252,7 +199,7 @@ export default function GroceryListDetail() {
     alert('Copied to clipboard!')
   }
 
-  if (isPending || loading) {
+  if (isPending || isLoading) {
     return (
       <div style={styles.container}>
         <div style={styles.card}>
@@ -326,7 +273,7 @@ export default function GroceryListDetail() {
           </div>
         </div>
 
-        {error && <div className="error-message">{error}</div>}
+        {(error || queryError) && <div className="error-message">{error || (queryError as Error)?.message}</div>}
 
         <h1 style={styles.title}>{groceryList.name}</h1>
 

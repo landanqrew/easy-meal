@@ -2,9 +2,8 @@ import { useState, useRef } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useSession } from '../lib/auth'
 import { colors, shadows, radius } from '../lib/theme'
+import { apiFetch, apiPost } from '../lib/api'
 import type { GeneratedRecipe } from '@easy-meal/shared'
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001'
 
 type State = 'upload' | 'processing' | 'preview' | 'error'
 
@@ -40,22 +39,14 @@ export default function ImportRecipe() {
       const formData = new FormData()
       formData.append('file', file)
 
-      const res = await fetch(`${API_URL}/api/recipes/import-pdf`, {
+      const data = await apiFetch<GeneratedRecipe>('/api/recipes/import-pdf', {
         method: 'POST',
-        credentials: 'include',
         body: formData,
       })
-
-      const data = await res.json()
-      if (!res.ok) {
-        setError(data.error || 'Failed to extract recipe from PDF')
-        setState('error')
-      } else {
-        setRecipe(data.data)
-        setState('preview')
-      }
-    } catch {
-      setError('Failed to extract recipe from PDF')
+      setRecipe(data)
+      setState('preview')
+    } catch (err: any) {
+      setError(err.message || 'Failed to extract recipe from PDF')
       setState('error')
     }
   }
@@ -78,32 +69,21 @@ export default function ImportRecipe() {
     setSaving(true)
 
     try {
-      const res = await fetch(`${API_URL}/api/recipes`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({
-          title: recipe.title,
-          description: recipe.description,
-          servings: recipe.servings,
-          prepTime: recipe.prepTime,
-          cookTime: recipe.cookTime,
-          cuisine: recipe.cuisine,
-          instructions: recipe.instructions,
-          ingredients: recipe.ingredients,
-          source: 'imported',
-          type: recipe.type || 'full_meal',
-        }),
+      const data = await apiPost<{ id: string }>('/api/recipes', {
+        title: recipe.title,
+        description: recipe.description,
+        servings: recipe.servings,
+        prepTime: recipe.prepTime,
+        cookTime: recipe.cookTime,
+        cuisine: recipe.cuisine,
+        instructions: recipe.instructions,
+        ingredients: recipe.ingredients,
+        source: 'imported',
+        type: recipe.type || 'full_meal',
       })
-
-      const data = await res.json()
-      if (!res.ok) {
-        setError(data.error || 'Failed to save recipe')
-      } else {
-        navigate(`/recipes/${data.data.id}`)
-      }
-    } catch {
-      setError('Failed to save recipe')
+      navigate(`/recipes/${data.id}`)
+    } catch (err: any) {
+      setError(err.message || 'Failed to save recipe')
     } finally {
       setSaving(false)
     }

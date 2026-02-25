@@ -2,8 +2,8 @@ import { useState, useEffect } from 'react'
 import { useNavigate, useLocation, Link } from 'react-router-dom'
 import { useSession } from '../lib/auth'
 import { colors, shadows, radius } from '../lib/theme'
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001'
+import { apiFetch, apiPost, queryKeys } from '../lib/api'
+import { useQuery } from '@tanstack/react-query'
 
 type Recipe = {
   id: string
@@ -22,8 +22,6 @@ export default function CreateGroceryList() {
   const navigate = useNavigate()
   const location = useLocation()
   const { data: session, isPending } = useSession()
-  const [recipes, setRecipes] = useState<Recipe[]>([])
-  const [loading, setLoading] = useState(true)
   const [creating, setCreating] = useState(false)
   const [error, setError] = useState('')
   const [initialized, setInitialized] = useState(false)
@@ -38,37 +36,21 @@ export default function CreateGroceryList() {
   const [listName, setListName] = useState(mealPlanState?.weekLabel || '')
   const [selectedRecipes, setSelectedRecipes] = useState<Map<string, number>>(new Map())
 
+  const { data: recipes = [], isLoading } = useQuery({
+    queryKey: queryKeys.recipes,
+    queryFn: () => apiFetch<Recipe[]>('/api/recipes'),
+    enabled: !!session,
+  })
+
   useEffect(() => {
     if (!isPending && !session) {
       navigate('/login')
     }
   }, [session, isPending, navigate])
 
-  useEffect(() => {
-    if (session) {
-      fetchRecipes()
-    }
-  }, [session])
-
-  const fetchRecipes = async () => {
-    try {
-      const res = await fetch(`${API_URL}/api/recipes`, { credentials: 'include' })
-      const data = await res.json()
-      if (res.ok) {
-        setRecipes(data.data)
-      } else {
-        setError(data.error || 'Failed to load recipes')
-      }
-    } catch {
-      setError('Failed to load recipes')
-    } finally {
-      setLoading(false)
-    }
-  }
-
   // Pre-select recipes from meal plan navigation
   useEffect(() => {
-    if (!initialized && !loading && recipes.length > 0 && mealPlanState?.recipeIds?.length) {
+    if (!initialized && !isLoading && recipes.length > 0 && mealPlanState?.recipeIds?.length) {
       const preSelected = new Map<string, number>()
       for (const id of mealPlanState.recipeIds) {
         const recipe = recipes.find((r) => r.id === id)
@@ -81,7 +63,7 @@ export default function CreateGroceryList() {
       }
       setInitialized(true)
     }
-  }, [initialized, loading, recipes, mealPlanState])
+  }, [initialized, isLoading, recipes, mealPlanState])
 
   const toggleRecipe = (recipe: Recipe) => {
     const newSelected = new Map(selectedRecipes)
@@ -119,30 +101,19 @@ export default function CreateGroceryList() {
     })
 
     try {
-      const res = await fetch(`${API_URL}/api/grocery-lists`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({
-          name: listName,
-          recipes: recipeSelections,
-        }),
+      const data = await apiPost<{ id: string }>('/api/grocery-lists', {
+        name: listName,
+        recipes: recipeSelections,
       })
-
-      const data = await res.json()
-      if (res.ok) {
-        navigate(`/grocery-lists/${data.data.id}`)
-      } else {
-        setError(data.error || 'Failed to create grocery list')
-      }
-    } catch {
-      setError('Failed to create grocery list')
+      navigate(`/grocery-lists/${data.id}`)
+    } catch (err) {
+      setError((err as Error).message || 'Failed to create grocery list')
     } finally {
       setCreating(false)
     }
   }
 
-  if (isPending || loading) {
+  if (isPending || isLoading) {
     return (
       <div style={styles.container}>
         <div style={styles.card}>
