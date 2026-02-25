@@ -15,6 +15,7 @@ import GroceryListDetail from './pages/GroceryListDetail'
 import MealPlan from './pages/MealPlan'
 import ChatRecipe from './pages/ChatRecipe'
 import ImportRecipe from './pages/ImportRecipe'
+import ManualRecipe from './pages/ManualRecipe'
 import RecipeLists from './pages/RecipeLists'
 import RecipeListDetail from './pages/RecipeListDetail'
 import Discover from './pages/Discover'
@@ -212,6 +213,14 @@ export default function App() {
           element={
             <ProtectedRoute>
               <ChatRecipe />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/recipes/manual"
+          element={
+            <ProtectedRoute>
+              <ManualRecipe />
             </ProtectedRoute>
           }
         />

@@ -155,10 +155,15 @@ export default function Recipes() {
           <span style={styles.createLabel}>Chat</span>
           <span style={styles.createHint}>Describe a craving</span>
         </Link>
+        <Link to="/recipes/manual" className="create-method-card" style={styles.createCard}>
+          <span style={styles.createIcon}>✏️</span>
+          <span style={styles.createLabel}>Manual</span>
+          <span style={styles.createHint}>Type your own recipe</span>
+        </Link>
         <Link to="/recipes/import" className="create-method-card" style={styles.createCardSecondary}>
           <span style={styles.createIcon}>📄</span>
           <span style={styles.createLabel}>Import</span>
-          <span style={styles.createHint}>From URL or text</span>
+          <span style={styles.createHint}>From PDF or image</span>
         </Link>
       </div>
 
