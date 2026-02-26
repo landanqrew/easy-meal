@@ -4,8 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useSession } from '../lib/auth'
 import { colors, shadows, radius } from '../lib/theme'
 import { apiFetch, apiPost, apiPatch, apiDelete, queryKeys } from '../lib/api'
-
-type Tag = { id: string; name: string; color: string | null }
+import type { Tag } from '@easy-meal/shared'
 
 type RecipeInList = {
   id: string

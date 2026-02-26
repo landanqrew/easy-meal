@@ -4,22 +4,7 @@ import { useSession } from '../lib/auth'
 import { colors, radius } from '../lib/theme'
 import { apiFetch, apiPost, apiDelete, queryKeys } from '../lib/api'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import type { MealType, RecipeType } from '@easy-meal/shared'
-
-type MealPlanEntry = {
-  id: string
-  recipeId: string
-  date: string
-  mealType: MealType
-  sortOrder: number
-  recipe: {
-    id: string
-    title: string
-    prepTime: number | null
-    cookTime: number | null
-    type: RecipeType
-  }
-}
+import type { MealType, RecipeType, MealPlanEntry } from '@easy-meal/shared'
 
 type Recipe = {
   id: string

@@ -5,24 +5,7 @@ import { useSession } from '../lib/auth'
 import { colors, shadows, radius } from '../lib/theme'
 import { StarDisplay } from './Discover'
 import { apiFetch, apiPost, apiDelete, queryKeys } from '../lib/api'
-
-type Ingredient = {
-  id: string
-  name: string
-  quantity: string
-  unit: string
-  preparation: string | null
-  category: string
-}
-
-type Checkin = {
-  id: string
-  notes: string | null
-  enjoymentRating: number
-  instructionRating: number
-  createdAt: string
-  userName: string | null
-}
+import type { Ingredient, Checkin } from '@easy-meal/shared'
 
 type PublicRecipe = {
   id: string

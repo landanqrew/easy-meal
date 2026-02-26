@@ -4,21 +4,7 @@ import { useSession } from '../lib/auth'
 import { colors, shadows, radius } from '../lib/theme'
 import { apiFetch, apiPost, queryKeys } from '../lib/api'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-
-type HouseholdMember = {
-  id: string
-  name: string
-  email: string
-  image: string | null
-}
-
-type Household = {
-  id: string
-  name: string
-  inviteCode: string
-  createdAt: string
-  members: HouseholdMember[]
-}
+import type { HouseholdDetail } from '@easy-meal/shared'
 
 export default function HouseholdPage() {
   const navigate = useNavigate()
@@ -36,7 +22,7 @@ export default function HouseholdPage() {
 
   const { data: household = null, isLoading, error: queryError } = useQuery({
     queryKey: queryKeys.household,
-    queryFn: () => apiFetch<Household | null>('/api/households/me'),
+    queryFn: () => apiFetch<HouseholdDetail | null>('/api/households/me'),
     enabled: !!session,
   })
 

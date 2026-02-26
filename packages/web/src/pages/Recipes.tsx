@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useSession } from '../lib/auth'
 import { apiFetch, queryKeys } from '../lib/api'
 import { colors, radius } from '../lib/theme'
-import type { RecipeType } from '@easy-meal/shared'
+import type { RecipeType, Tag, RecipeCard } from '@easy-meal/shared'
 
 const RECIPE_TYPE_LABELS: Record<RecipeType, string> = {
   full_meal: 'Full Meal',
@@ -29,27 +29,13 @@ const RECIPE_TYPE_FILTERS: { value: RecipeType | null; label: string }[] = [
   { value: 'other', label: 'Other' },
 ]
 
-type Tag = { id: string; name: string; color: string | null }
-type Recipe = {
-  id: string
-  title: string
-  description: string | null
-  servings: number
-  prepTime: number | null
-  cookTime: number | null
-  cuisine: string | null
-  source: string
-  type: RecipeType
-  createdAt: string
-  createdBy: { id: string; name: string } | null
-  tags: Tag[]
-}
-
 export default function Recipes() {
   const navigate = useNavigate()
   const { data: session, isPending } = useSession()
   const [filterTag, setFilterTag] = useState<string | null>(null)
   const [filterType, setFilterType] = useState<RecipeType | null>(null)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [sortBy, setSortBy] = useState('newest')
 
   useEffect(() => {
     if (!isPending && !session) {
@@ -59,7 +45,7 @@ export default function Recipes() {
 
   const { data: recipes = [], isLoading: recipesLoading, error: recipesError } = useQuery({
     queryKey: queryKeys.recipes,
-    queryFn: () => apiFetch<Recipe[]>('/api/recipes'),
+    queryFn: () => apiFetch<RecipeCard[]>('/api/recipes'),
     enabled: !!session,
   })
 
@@ -72,6 +58,30 @@ export default function Recipes() {
   const filteredRecipes = recipes
     .filter((r) => !filterTag || r.tags.some((t) => t.id === filterTag))
     .filter((r) => !filterType || r.type === filterType)
+    .filter((r) => {
+      if (!searchQuery) return true
+      const q = searchQuery.toLowerCase()
+      return (
+        r.title.toLowerCase().includes(q) ||
+        (r.description && r.description.toLowerCase().includes(q))
+      )
+    })
+    .sort((a, b) => {
+      switch (sortBy) {
+        case 'oldest':
+          return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+        case 'az':
+          return a.title.localeCompare(b.title)
+        case 'za':
+          return b.title.localeCompare(a.title)
+        case 'cooktime':
+          return ((a.prepTime ?? 0) + (a.cookTime ?? 0)) - ((b.prepTime ?? 0) + (b.cookTime ?? 0))
+        case 'servings':
+          return a.servings - b.servings
+        default: // newest
+          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      }
+    })
 
   if (isPending || recipesLoading) {
     return (
@@ -143,6 +153,28 @@ export default function Recipes() {
       </div>
 
       {recipesError && <div className="error-message" style={{ maxWidth: '900px', margin: '0 auto 1rem' }}>{recipesError.message}</div>}
+
+      <div style={styles.searchRow}>
+        <input
+          type="text"
+          placeholder="Search recipes..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          style={styles.searchInput}
+        />
+        <select
+          value={sortBy}
+          onChange={(e) => setSortBy(e.target.value)}
+          style={styles.sortSelect}
+        >
+          <option value="newest">Newest</option>
+          <option value="oldest">Oldest</option>
+          <option value="az">A-Z</option>
+          <option value="za">Z-A</option>
+          <option value="cooktime">Cook Time</option>
+          <option value="servings">Servings</option>
+        </select>
+      </div>
 
       <div style={styles.filterSection}>
         <span style={styles.filterLabel}>Type:</span>
@@ -299,6 +331,36 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: '0.75rem',
     color: colors.textSecondary,
     textAlign: 'center',
+  },
+  searchRow: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.5rem',
+    marginBottom: '1.5rem',
+    maxWidth: '900px',
+    margin: '0 auto 1.5rem',
+    flexWrap: 'wrap',
+  },
+  searchInput: {
+    flex: 1,
+    padding: '0.5rem 0.75rem',
+    fontSize: '0.875rem',
+    border: `1px solid ${colors.border}`,
+    borderRadius: radius.sm,
+    background: colors.surface,
+    color: colors.text,
+    outline: 'none',
+    minWidth: '0',
+  },
+  sortSelect: {
+    padding: '0.5rem 0.75rem',
+    fontSize: '0.875rem',
+    border: `1px solid ${colors.border}`,
+    borderRadius: radius.sm,
+    background: colors.surface,
+    color: colors.text,
+    outline: 'none',
+    cursor: 'pointer',
   },
   filterSection: {
     display: 'flex',

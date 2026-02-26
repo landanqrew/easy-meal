@@ -4,14 +4,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useSession } from '../lib/auth'
 import { apiFetch, queryKeys } from '../lib/api'
 import { colors, radius } from '../lib/theme'
-
-type GroceryList = {
-  id: string
-  name: string
-  status: 'active' | 'completed' | 'archived'
-  createdAt: string
-  createdBy: { id: string; name: string } | null
-}
+import type { GroceryListSummary } from '@easy-meal/shared'
 
 export default function GroceryLists() {
   const navigate = useNavigate()
@@ -26,7 +19,7 @@ export default function GroceryLists() {
 
   const { data: lists = [], isLoading, error } = useQuery({
     queryKey: queryKeys.groceryLists,
-    queryFn: () => apiFetch<GroceryList[]>('/api/grocery-lists'),
+    queryFn: () => apiFetch<GroceryListSummary[]>('/api/grocery-lists'),
     enabled: !!session,
   })
 

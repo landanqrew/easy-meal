@@ -123,4 +123,76 @@ export type MealPlanEntry = {
   }
 }
 
+// Frontend view types
+
+export type Tag = {
+  id: string
+  name: string
+  color: string | null
+}
+
+export type Ingredient = {
+  id: string
+  name: string
+  quantity: string
+  unit: string
+  preparation: string | null
+  category: string
+}
+
+export type RecipeCard = {
+  id: string
+  title: string
+  description: string | null
+  servings: number
+  prepTime: number | null
+  cookTime: number | null
+  cuisine: string | null
+  source: string
+  type: RecipeType
+  createdAt: string
+  createdBy: { id: string; name: string } | null
+  tags: Tag[]
+}
+
+export type Checkin = {
+  id: string
+  notes: string | null
+  enjoymentRating: number
+  instructionRating: number
+  createdAt: string
+  userId: string
+  userName: string | null
+}
+
+export type GroceryListSummary = {
+  id: string
+  name: string
+  status: GroceryListStatus
+  createdAt: string
+  createdBy: { id: string; name: string } | null
+}
+
+export type HouseholdMember = {
+  id: string
+  name: string
+  email: string
+  image: string | null
+}
+
+export type HouseholdDetail = {
+  id: string
+  name: string
+  inviteCode: string
+  createdAt: string
+  members: HouseholdMember[]
+}
+
+export type Pagination = {
+  page: number
+  limit: number
+  total: number
+  totalPages: number
+}
+
 // Auth types are provided by Better Auth client

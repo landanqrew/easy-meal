@@ -1,25 +1,27 @@
+import { lazy, Suspense } from 'react'
 import { BrowserRouter, Routes, Route, Link, Navigate } from 'react-router-dom'
 import { useSession } from './lib/auth'
 import { colors, radius, shadows } from './lib/theme'
 import NavBar from './components/NavBar'
 import Login from './pages/Login'
 import Register from './pages/Register'
-import Profile from './pages/Profile'
-import Household from './pages/Household'
-import Recipes from './pages/Recipes'
-import CreateRecipe from './pages/CreateRecipe'
-import RecipeDetail from './pages/RecipeDetail'
-import GroceryLists from './pages/GroceryLists'
-import CreateGroceryList from './pages/CreateGroceryList'
-import GroceryListDetail from './pages/GroceryListDetail'
-import MealPlan from './pages/MealPlan'
-import ChatRecipe from './pages/ChatRecipe'
-import ImportRecipe from './pages/ImportRecipe'
-import ManualRecipe from './pages/ManualRecipe'
-import RecipeLists from './pages/RecipeLists'
-import RecipeListDetail from './pages/RecipeListDetail'
-import Discover from './pages/Discover'
-import PublicRecipeDetail from './pages/PublicRecipeDetail'
+
+const Profile = lazy(() => import('./pages/Profile'))
+const Household = lazy(() => import('./pages/Household'))
+const Recipes = lazy(() => import('./pages/Recipes'))
+const CreateRecipe = lazy(() => import('./pages/CreateRecipe'))
+const ChatRecipe = lazy(() => import('./pages/ChatRecipe'))
+const ManualRecipe = lazy(() => import('./pages/ManualRecipe'))
+const ImportRecipe = lazy(() => import('./pages/ImportRecipe'))
+const RecipeDetail = lazy(() => import('./pages/RecipeDetail'))
+const GroceryLists = lazy(() => import('./pages/GroceryLists'))
+const CreateGroceryList = lazy(() => import('./pages/CreateGroceryList'))
+const GroceryListDetail = lazy(() => import('./pages/GroceryListDetail'))
+const MealPlan = lazy(() => import('./pages/MealPlan'))
+const RecipeLists = lazy(() => import('./pages/RecipeLists'))
+const RecipeListDetail = lazy(() => import('./pages/RecipeListDetail'))
+const Discover = lazy(() => import('./pages/Discover'))
+const PublicRecipeDetail = lazy(() => import('./pages/PublicRecipeDetail'))
 
 function Home() {
   const { data: session, isPending } = useSession()
@@ -172,6 +174,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 export default function App() {
   return (
     <BrowserRouter>
+      <Suspense fallback={<div style={styles.loading}>Loading...</div>}>
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
@@ -305,6 +308,7 @@ export default function App() {
           }
         />
       </Routes>
+      </Suspense>
     </BrowserRouter>
   )
 }

@@ -4,7 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useSession } from '../lib/auth'
 import { colors, shadows, radius } from '../lib/theme'
 import { apiFetch, apiPost, apiPatch, apiDelete, queryKeys } from '../lib/api'
-import type { RecipeType } from '@easy-meal/shared'
+import type { RecipeType, Tag, Ingredient, Checkin } from '@easy-meal/shared'
 
 const RECIPE_TYPE_LABELS: Record<RecipeType, string> = {
   full_meal: 'Full Meal',
@@ -18,17 +18,6 @@ const RECIPE_TYPE_LABELS: Record<RecipeType, string> = {
 }
 
 const RECIPE_TYPES: RecipeType[] = ['full_meal', 'entree', 'side', 'dessert', 'appetizer', 'snack', 'drink', 'other']
-
-type Ingredient = {
-  id: string
-  name: string
-  quantity: string
-  unit: string
-  preparation: string | null
-  category: string
-}
-
-type Tag = { id: string; name: string; color: string | null }
 
 type Recipe = {
   id: string
@@ -68,17 +57,6 @@ type EditData = {
   type: RecipeType
   instructions: { stepNumber: number; text: string }[]
   ingredients: EditIngredient[]
-}
-
-type Checkin = {
-  id: string
-  recipeId: string
-  notes: string | null
-  enjoymentRating: number
-  instructionRating: number
-  createdAt: string
-  userId: string
-  userName: string | null
 }
 
 function StarInput({ value, onChange }: { value: number; onChange: (v: number) => void }) {

@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useSession } from '../lib/auth'
 import { colors, radius, shadows } from '../lib/theme'
 import { API_URL, queryKeys } from '../lib/api'
+import type { Pagination } from '@easy-meal/shared'
 
 type DiscoverRecipe = {
   id: string
@@ -19,13 +20,6 @@ type DiscoverRecipe = {
   avgEnjoymentRating: number
   avgInstructionRating: number
   checkinCount: number
-}
-
-type Pagination = {
-  page: number
-  limit: number
-  total: number
-  totalPages: number
 }
 
 function StarDisplay({ rating, count }: { rating: number; count?: number }) {
