@@ -1,10 +1,10 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { useSession } from '../lib/auth'
-import { apiFetch, queryKeys } from '../lib/api'
+import { API_URL, apiFetch, queryKeys } from '../lib/api'
 import { colors, radius } from '../lib/theme'
-import type { RecipeType, Tag, RecipeCard } from '@easy-meal/shared'
+import type { RecipeType, Tag, RecipeCard, Pagination } from '@easy-meal/shared'
 
 const RECIPE_TYPE_LABELS: Record<RecipeType, string> = {
   full_meal: 'Full Meal',
@@ -32,10 +32,13 @@ const RECIPE_TYPE_FILTERS: { value: RecipeType | null; label: string }[] = [
 export default function Recipes() {
   const navigate = useNavigate()
   const { data: session, isPending } = useSession()
+  const [page, setPage] = useState(1)
   const [filterTag, setFilterTag] = useState<string | null>(null)
   const [filterType, setFilterType] = useState<RecipeType | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
+  const [debouncedSearch, setDebouncedSearch] = useState('')
   const [sortBy, setSortBy] = useState('newest')
+  const debounceRef = useRef<ReturnType<typeof setTimeout>>()
 
   useEffect(() => {
     if (!isPending && !session) {
@@ -43,11 +46,45 @@ export default function Recipes() {
     }
   }, [session, isPending, navigate])
 
-  const { data: recipes = [], isLoading: recipesLoading, error: recipesError } = useQuery({
-    queryKey: queryKeys.recipes,
-    queryFn: () => apiFetch<RecipeCard[]>('/api/recipes'),
+  // Debounce search input
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+    debounceRef.current = setTimeout(() => {
+      setDebouncedSearch(searchQuery)
+      setPage(1)
+    }, 400)
+    return () => { if (debounceRef.current) clearTimeout(debounceRef.current) }
+  }, [searchQuery])
+
+  type RecipesResponse = {
+    recipes: RecipeCard[]
+    pagination: Pagination
+  }
+
+  const { data: recipesData, isLoading: recipesLoading, error: recipesError } = useQuery<RecipesResponse>({
+    queryKey: queryKeys.recipesFiltered({
+      page,
+      search: debouncedSearch,
+      sort: sortBy,
+      type: filterType || '',
+      tag: filterTag || '',
+    }),
+    queryFn: async () => {
+      const params = new URLSearchParams({ page: String(page), limit: '20', sort: sortBy })
+      if (debouncedSearch) params.set('search', debouncedSearch)
+      if (filterType) params.set('type', filterType)
+      if (filterTag) params.set('tag', filterTag)
+      const res = await fetch(`${API_URL}/api/recipes?${params}`, { credentials: 'include' })
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.error || 'Failed to load recipes')
+      return { recipes: json.data as RecipeCard[], pagination: json.pagination as Pagination }
+    },
     enabled: !!session,
+    placeholderData: (prev) => prev,
   })
+
+  const recipes = recipesData?.recipes ?? []
+  const pagination = recipesData?.pagination ?? null
 
   const { data: tags = [] } = useQuery({
     queryKey: queryKeys.tags,
@@ -55,33 +92,25 @@ export default function Recipes() {
     enabled: !!session,
   })
 
-  const filteredRecipes = recipes
-    .filter((r) => !filterTag || r.tags.some((t) => t.id === filterTag))
-    .filter((r) => !filterType || r.type === filterType)
-    .filter((r) => {
-      if (!searchQuery) return true
-      const q = searchQuery.toLowerCase()
-      return (
-        r.title.toLowerCase().includes(q) ||
-        (r.description && r.description.toLowerCase().includes(q))
-      )
-    })
-    .sort((a, b) => {
-      switch (sortBy) {
-        case 'oldest':
-          return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
-        case 'az':
-          return a.title.localeCompare(b.title)
-        case 'za':
-          return b.title.localeCompare(a.title)
-        case 'cooktime':
-          return ((a.prepTime ?? 0) + (a.cookTime ?? 0)) - ((b.prepTime ?? 0) + (b.cookTime ?? 0))
-        case 'servings':
-          return a.servings - b.servings
-        default: // newest
-          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-      }
-    })
+  const handleFilterType = (type: RecipeType | null) => {
+    setFilterType(filterType === type ? null : type)
+    setPage(1)
+  }
+
+  const handleFilterTag = (tagId: string | null) => {
+    setFilterTag(filterTag === tagId ? null : tagId)
+    setPage(1)
+  }
+
+  const handleSort = (sort: string) => {
+    setSortBy(sort)
+    setPage(1)
+  }
+
+  const handlePageChange = (newPage: number) => {
+    setPage(newPage)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
 
   if (isPending || recipesLoading) {
     return (
@@ -121,7 +150,7 @@ export default function Recipes() {
         <div>
           <h1 style={styles.title}>Recipes</h1>
           <p style={styles.subtitle}>
-            {recipes.length} recipe{recipes.length !== 1 ? 's' : ''} in your household
+            {pagination?.total ?? recipes.length} recipe{(pagination?.total ?? recipes.length) !== 1 ? 's' : ''} in your household
           </p>
         </div>
         <Link to="/recipe-lists" className="btn-secondary" style={{ textDecoration: 'none', fontSize: '0.8125rem', padding: '0.625rem 1rem' }}>
@@ -164,7 +193,7 @@ export default function Recipes() {
         />
         <select
           value={sortBy}
-          onChange={(e) => setSortBy(e.target.value)}
+          onChange={(e) => handleSort(e.target.value)}
           style={styles.sortSelect}
         >
           <option value="newest">Newest</option>
@@ -181,7 +210,7 @@ export default function Recipes() {
         {RECIPE_TYPE_FILTERS.map((t) => (
           <button
             key={t.label}
-            onClick={() => setFilterType(filterType === t.value ? null : t.value)}
+            onClick={() => handleFilterType(t.value)}
             className={`filter-chip${filterType === t.value ? ' active' : ''}`}
           >
             {t.label}
@@ -193,7 +222,7 @@ export default function Recipes() {
         <div style={styles.filterSection}>
           <span style={styles.filterLabel}>Tag:</span>
           <button
-            onClick={() => setFilterTag(null)}
+            onClick={() => handleFilterTag(null)}
             className={`filter-chip${filterTag === null ? ' active' : ''}`}
           >
             All
@@ -201,7 +230,7 @@ export default function Recipes() {
           {tags.map((tag) => (
             <button
               key={tag.id}
-              onClick={() => setFilterTag(filterTag === tag.id ? null : tag.id)}
+              onClick={() => handleFilterTag(tag.id)}
               className={`filter-chip${filterTag === tag.id ? ' active' : ''}`}
             >
               {tag.name}
@@ -210,7 +239,7 @@ export default function Recipes() {
         </div>
       )}
 
-      {filteredRecipes.length === 0 ? (
+      {recipes.length === 0 ? (
         <div style={styles.emptyState}>
           <p style={{ fontSize: '1.125rem', marginBottom: '0.25rem' }}>📝</p>
           <p>No recipes yet</p>
@@ -220,7 +249,7 @@ export default function Recipes() {
         </div>
       ) : (
         <div style={styles.recipeGrid}>
-          {filteredRecipes.map((recipe) => (
+          {recipes.map((recipe) => (
             <Link
               key={recipe.id}
               to={`/recipes/${recipe.id}`}
@@ -260,6 +289,30 @@ export default function Recipes() {
               </div>
             </Link>
           ))}
+        </div>
+      )}
+
+      {pagination && pagination.totalPages > 1 && (
+        <div style={styles.pagination}>
+          <button
+            onClick={() => handlePageChange(pagination.page - 1)}
+            disabled={pagination.page <= 1}
+            className="btn-secondary"
+            style={styles.pageBtn}
+          >
+            Previous
+          </button>
+          <span style={styles.pageInfo}>
+            Page {pagination.page} of {pagination.totalPages}
+          </span>
+          <button
+            onClick={() => handlePageChange(pagination.page + 1)}
+            disabled={pagination.page >= pagination.totalPages}
+            className="btn-secondary"
+            style={styles.pageBtn}
+          >
+            Next
+          </button>
         </div>
       )}
     </div>
@@ -428,5 +481,22 @@ const styles: Record<string, React.CSSProperties> = {
     color: colors.textMuted,
     borderTop: `1px solid ${colors.border}`,
     paddingTop: '0.75rem',
+  },
+  pagination: {
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: '1rem',
+    marginTop: '2rem',
+    maxWidth: '900px',
+    margin: '2rem auto 0',
+  },
+  pageBtn: {
+    fontSize: '0.875rem',
+    padding: '0.5rem 1rem',
+  },
+  pageInfo: {
+    fontSize: '0.875rem',
+    color: colors.textSecondary,
   },
 }

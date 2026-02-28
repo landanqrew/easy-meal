@@ -34,6 +34,8 @@ export async function apiDelete(path: string): Promise<void> {
 
 export const queryKeys = {
   recipes: ['recipes'] as const,
+  recipesFiltered: (params: { page: number; search: string; sort: string; type: string; tag: string }) =>
+    ['recipes', 'list', params.page, params.search, params.sort, params.type, params.tag] as const,
   recipe: (id: string) => ['recipes', id] as const,
   tags: ['tags'] as const,
   household: ['household'] as const,

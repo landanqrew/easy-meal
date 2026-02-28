@@ -1,5 +1,5 @@
 import { Hono } from 'hono'
-import { eq, and, not, desc } from 'drizzle-orm'
+import { eq, and, not, desc, asc, ilike, or, count, inArray } from 'drizzle-orm'
 import { db } from '../db'
 import { recipes, recipeIngredients, ingredients, recipeTags, tags } from '../db/schema'
 import { getSession, getUserWithHousehold } from '../lib/auth-helpers'
@@ -167,7 +167,7 @@ recipesRouter.post('/', async (c) => {
   return c.json({ data: recipe }, 201)
 })
 
-// GET /recipes - List all recipes in the household
+// GET /recipes - List recipes in the household (paginated when ?page= is provided)
 recipesRouter.get('/', async (c) => {
   const session = await getSession(c)
   if (!session) {
@@ -179,40 +179,102 @@ recipesRouter.get('/', async (c) => {
     return c.json({ error: 'You must be in a household to view recipes' }, 400)
   }
 
+  const pageParam = c.req.query('page')
+  const paginated = !!pageParam
+  const page = Math.max(1, Number(pageParam) || 1)
+  const limit = Math.min(50, Math.max(1, Number(c.req.query('limit')) || 20))
+  const search = c.req.query('search')?.trim()
+  const sort = c.req.query('sort')?.trim() || 'newest'
+  const type = c.req.query('type')?.trim()
+  const tag = c.req.query('tag')?.trim()
+  const offset = (page - 1) * limit
+
+  // Build dynamic where conditions
+  const conditions = [eq(recipes.householdId, currentUser.householdId)]
+
+  if (search) {
+    conditions.push(
+      or(
+        ilike(recipes.title, `%${search}%`),
+        ilike(recipes.description, `%${search}%`)
+      )!
+    )
+  }
+
+  if (type) {
+    conditions.push(eq(recipes.type, type as any))
+  }
+
+  if (tag) {
+    const taggedRecipeIds = db
+      .select({ recipeId: recipeTags.recipeId })
+      .from(recipeTags)
+      .where(eq(recipeTags.tagId, tag))
+    conditions.push(inArray(recipes.id, taggedRecipeIds))
+  }
+
+  const where = and(...conditions)
+
+  // Build sort order
+  const orderByClause = (() => {
+    switch (sort) {
+      case 'oldest': return [asc(recipes.createdAt)]
+      case 'az': return [asc(recipes.title)]
+      case 'za': return [desc(recipes.title)]
+      case 'cooktime': return [asc(recipes.cookTime)]
+      case 'servings': return [asc(recipes.servings)]
+      default: return [desc(recipes.createdAt)]
+    }
+  })()
+
   const householdRecipes = await db.query.recipes.findMany({
-    where: eq(recipes.householdId, currentUser.householdId),
-    orderBy: [desc(recipes.createdAt)],
+    where,
+    orderBy: orderByClause,
     with: {
-      recipeTags: {
-        with: {
-          tag: true,
-        },
-      },
+      recipeTags: { with: { tag: true } },
       createdBy: true,
     },
+    ...(paginated ? { limit, offset } : {}),
   })
 
-  return c.json({
-    data: householdRecipes.map((r) => ({
-      id: r.id,
-      title: r.title,
-      description: r.description,
-      servings: r.servings,
-      prepTime: r.prepTime,
-      cookTime: r.cookTime,
-      cuisine: r.cuisine,
-      source: r.source,
-      type: r.type,
-      isPublic: r.isPublic,
-      copiedFromRecipeId: r.copiedFromRecipeId,
-      createdAt: r.createdAt,
-      createdBy: r.createdBy ? { id: r.createdBy.id, name: r.createdBy.name } : null,
-      tags: r.recipeTags.map((rt) => ({
-        id: rt.tag.id,
-        name: rt.tag.name,
-        color: rt.tag.color,
-      })),
+  const data = householdRecipes.map((r) => ({
+    id: r.id,
+    title: r.title,
+    description: r.description,
+    servings: r.servings,
+    prepTime: r.prepTime,
+    cookTime: r.cookTime,
+    cuisine: r.cuisine,
+    source: r.source,
+    type: r.type,
+    isPublic: r.isPublic,
+    copiedFromRecipeId: r.copiedFromRecipeId,
+    createdAt: r.createdAt,
+    createdBy: r.createdBy ? { id: r.createdBy.id, name: r.createdBy.name } : null,
+    tags: r.recipeTags.map((rt) => ({
+      id: rt.tag.id,
+      name: rt.tag.name,
+      color: rt.tag.color,
     })),
+  }))
+
+  if (!paginated) {
+    return c.json({ data })
+  }
+
+  const [{ total }] = await db
+    .select({ total: count() })
+    .from(recipes)
+    .where(where)
+
+  return c.json({
+    data,
+    pagination: {
+      page,
+      limit,
+      total: Number(total),
+      totalPages: Math.ceil(Number(total) / limit),
+    },
   })
 })
 

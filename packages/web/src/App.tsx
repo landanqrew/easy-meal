@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Link, Navigate } from 'react-router-dom'
 import { useSession } from './lib/auth'
 import { colors, radius, shadows } from './lib/theme'
 import NavBar from './components/NavBar'
+import RouteErrorBoundary from './components/RouteErrorBoundary'
 import Login from './pages/Login'
 import Register from './pages/Register'
 
@@ -166,7 +167,9 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   return (
     <>
       <NavBar />
-      {children}
+      <RouteErrorBoundary>
+        {children}
+      </RouteErrorBoundary>
     </>
   )
 }
@@ -176,9 +179,9 @@ export default function App() {
     <BrowserRouter>
       <Suspense fallback={<div style={styles.loading}>Loading...</div>}>
       <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
+        <Route path="/" element={<RouteErrorBoundary><Home /></RouteErrorBoundary>} />
+        <Route path="/login" element={<RouteErrorBoundary><Login /></RouteErrorBoundary>} />
+        <Route path="/register" element={<RouteErrorBoundary><Register /></RouteErrorBoundary>} />
         <Route
           path="/profile"
           element={
