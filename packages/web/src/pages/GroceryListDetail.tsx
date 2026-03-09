@@ -322,7 +322,7 @@ export default function GroceryListDetail() {
         </div>
 
         {/* Mark Complete */}
-        {!isComplete && totalCount > 0 && (
+        {!isComplete && checkedCount > 0 && (
           <button onClick={handleMarkComplete} className="btn-primary" style={styles.completeButton}>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <polyline points="20 6 9 17 4 12" />
