@@ -265,6 +265,27 @@ export default function MealPlan() {
     },
   })
 
+  const copyWeekMutation = useMutation({
+    mutationFn: (args: { sourceWeekStart: string; targetWeekStart: string }) =>
+      apiPost<{ copiedCount: number }>('/api/meal-plans/copy-week', args),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.mealPlanEntries(weekParam) })
+    },
+    onError: (err: Error) => {
+      setError(err.message || 'Failed to copy week')
+    },
+  })
+
+  const handleCopyPreviousWeek = () => {
+    const prevMonday = new Date(weekStart)
+    prevMonday.setDate(prevMonday.getDate() - 7)
+    setError('')
+    copyWeekMutation.mutate({
+      sourceWeekStart: formatDateParam(prevMonday),
+      targetWeekStart: weekParam,
+    })
+  }
+
   const [activeEntry, setActiveEntry] = useState<MealPlanEntry | null>(null)
 
   const sensors = useSensors(
@@ -480,6 +501,18 @@ export default function MealPlan() {
               )}
             </div>
             <div style={styles.headerActions}>
+              <button
+                onClick={handleCopyPreviousWeek}
+                className="btn-secondary"
+                style={styles.groceryButton}
+                disabled={copyWeekMutation.isPending}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                  <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
+                </svg>
+                {copyWeekMutation.isPending ? 'Copying...' : 'Copy Previous Week'}
+              </button>
               {weekRecipeIds.length > 0 && (
                 <button
                   onClick={handleCreateGroceryList}
