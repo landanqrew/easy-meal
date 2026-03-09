@@ -359,6 +359,8 @@ export default function MealPlan() {
       const scrollLeft = col.offsetLeft - grid.offsetLeft - (grid.clientWidth / 2) + (col.offsetWidth / 2)
       grid.scrollTo({ left: Math.max(0, scrollLeft), behavior: 'smooth' })
     }
+  // entriesLoading is intentional: the grid ref isn't mounted while loading,
+  // so we re-run this effect once data arrives and the real grid renders.
   }, [weekParam, isMobile, entriesLoading])
 
   const getEntriesForSlot = (date: Date, mealType: MealType): MealPlanEntry[] => {
@@ -998,6 +1000,7 @@ const styles: Record<string, React.CSSProperties> = {
     paddingBottom: '0.5rem',
     scrollbarWidth: 'thin',
     scrollbarColor: `${colors.border} transparent`,
+    position: 'relative',
   },
   dayColumn: {
     display: 'flex',
