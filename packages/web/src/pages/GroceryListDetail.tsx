@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useSession } from '../lib/auth'
-import { colors, radius } from '../lib/theme'
+import { colors, radius, shadows } from '../lib/theme'
 import { apiFetch, apiPost, apiPatch, apiDelete, queryKeys } from '../lib/api'
 
 type Ingredient = {
@@ -41,16 +41,16 @@ const CATEGORY_LABELS: Record<string, string> = {
   other: 'Other',
 }
 
-const CATEGORY_EMOJI: Record<string, string> = {
-  produce: '🥬',
-  meat: '🥩',
-  seafood: '🐟',
-  dairy: '🧀',
-  bakery: '🍞',
-  frozen: '❄️',
-  pantry: '🫙',
-  beverages: '🥤',
-  other: '📦',
+const CATEGORY_COLORS: Record<string, { bg: string; dot: string }> = {
+  produce: { bg: 'rgba(129, 163, 132, 0.1)', dot: '#81A384' },
+  meat: { bg: 'rgba(217, 122, 118, 0.1)', dot: '#D97A76' },
+  seafood: { bg: 'rgba(100, 160, 180, 0.1)', dot: '#64A0B4' },
+  dairy: { bg: 'rgba(212, 163, 115, 0.1)', dot: '#D4A373' },
+  bakery: { bg: 'rgba(208, 135, 112, 0.1)', dot: '#D08770' },
+  frozen: { bg: 'rgba(140, 170, 200, 0.1)', dot: '#8CAAC8' },
+  pantry: { bg: 'rgba(184, 165, 150, 0.1)', dot: '#B8A596' },
+  beverages: { bg: 'rgba(129, 163, 132, 0.1)', dot: '#81A384' },
+  other: { bg: 'rgba(184, 165, 150, 0.1)', dot: '#B8A596' },
 }
 
 const CATEGORY_ORDER = [
@@ -75,6 +75,7 @@ export default function GroceryListDetail() {
   const [showAddItem, setShowAddItem] = useState(false)
   const [newItem, setNewItem] = useState({ name: '', quantity: '1', unit: '' })
   const [adding, setAdding] = useState(false)
+  const [copied, setCopied] = useState(false)
 
   const { data: groceryList, isLoading, error: queryError } = useQuery({
     queryKey: queryKeys.groceryList(id!),
@@ -91,7 +92,6 @@ export default function GroceryListDetail() {
   const toggleItem = async (itemId: string, currentChecked: boolean) => {
     if (!groceryList) return
 
-    // Optimistic update
     queryClient.setQueryData(queryKeys.groceryList(id!), {
       ...groceryList,
       items: groceryList.items.map((item) =>
@@ -110,7 +110,6 @@ export default function GroceryListDetail() {
     try {
       await apiPatch(`/api/grocery-lists/${id}/items/${itemId}`, { isChecked: !currentChecked })
     } catch {
-      // Revert on error
       queryClient.invalidateQueries({ queryKey: queryKeys.groceryList(id!) })
     }
   }
@@ -196,7 +195,8 @@ export default function GroceryListDetail() {
       .join('\n')
 
     await navigator.clipboard.writeText(`${groceryList.name}\n${text}`)
-    alert('Copied to clipboard!')
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
   }
 
   if (isPending || isLoading) {
@@ -249,18 +249,33 @@ export default function GroceryListDetail() {
   const checkedCount = groceryList.items.filter((i) => i.isChecked).length
   const totalCount = groceryList.items.length
   const progress = totalCount > 0 ? (checkedCount / totalCount) * 100 : 0
+  const isComplete = groceryList.status === 'completed'
+  const allChecked = checkedCount === totalCount && totalCount > 0
 
   return (
     <div style={styles.container}>
       <div style={styles.card}>
         {/* Header */}
         <div style={styles.header}>
-          <Link to="/grocery-lists" className="back-link">
-            ← Back
+          <Link to="/grocery-lists" className="back-link" style={styles.backLink}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="15 18 9 12 15 6" />
+            </svg>
+            Back
           </Link>
           <div style={styles.headerActions}>
             <button onClick={copyToClipboard} className="btn-secondary" style={styles.headerBtn}>
-              Copy
+              {copied ? (
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={colors.success} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="20 6 9 17 4 12" />
+                </svg>
+              ) : (
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                  <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
+                </svg>
+              )}
+              {copied ? 'Copied' : 'Copy'}
             </button>
             <button
               onClick={handleDelete}
@@ -268,6 +283,10 @@ export default function GroceryListDetail() {
               style={styles.headerBtn}
               disabled={deleting}
             >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="3 6 5 6 21 6" />
+                <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" />
+              </svg>
               {deleting ? '...' : 'Delete'}
             </button>
           </div>
@@ -279,28 +298,46 @@ export default function GroceryListDetail() {
 
         {/* Progress */}
         <div style={styles.progressSection}>
-          <div style={styles.progressRow}>
-            <span style={styles.progressLabel}>
-              {checkedCount} of {totalCount} items
+          <div style={styles.progressTop}>
+            <div style={styles.progressStats}>
+              <span style={styles.progressChecked}>{checkedCount}</span>
+              <span style={styles.progressTotal}> / {totalCount} items</span>
+            </div>
+            <span style={{
+              ...styles.progressPercent,
+              color: progress === 100 ? colors.success : colors.primary,
+            }}>
+              {Math.round(progress)}%
             </span>
-            <span style={styles.progressPercent}>{Math.round(progress)}%</span>
           </div>
           <div style={styles.progressBar}>
-            <div style={{ ...styles.progressFill, width: `${progress}%` }} />
+            <div style={{
+              ...styles.progressFill,
+              width: `${progress}%`,
+              background: progress === 100
+                ? colors.success
+                : `linear-gradient(90deg, ${colors.primary}, ${colors.primaryHover})`,
+            }} />
           </div>
         </div>
 
         {/* Mark Complete */}
-        {groceryList.status === 'active' && checkedCount === totalCount && totalCount > 0 && (
+        {!isComplete && allChecked && (
           <button onClick={handleMarkComplete} className="btn-primary" style={styles.completeButton}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
             Mark as Complete
           </button>
         )}
 
         {/* Completed Badge */}
-        {groceryList.status === 'completed' && (
+        {isComplete && (
           <div style={styles.completedBadge}>
-            <span style={{ marginRight: '0.5rem' }}>✓</span>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M22 11.08V12a10 10 0 11-5.93-9.14" />
+              <polyline points="22 4 12 14.01 9 11.01" />
+            </svg>
             Shopping Complete
           </div>
         )}
@@ -309,13 +346,25 @@ export default function GroceryListDetail() {
         {CATEGORY_ORDER.map((category) => {
           const items = groceryList.itemsByCategory[category]
           if (!items || items.length === 0) return null
+          const categoryColor = CATEGORY_COLORS[category] || CATEGORY_COLORS.other
+          const checkedInCategory = items.filter((i) => i.isChecked).length
 
           return (
             <section key={category} style={styles.categorySection}>
-              <h2 style={styles.categoryTitle}>
-                <span style={styles.categoryEmoji}>{CATEGORY_EMOJI[category]}</span>
-                {CATEGORY_LABELS[category]}
-              </h2>
+              <div style={styles.categoryHeader}>
+                <div style={styles.categoryTitleRow}>
+                  <span style={{
+                    ...styles.categoryDot,
+                    background: categoryColor.dot,
+                  }} />
+                  <h2 style={styles.categoryTitle}>
+                    {CATEGORY_LABELS[category]}
+                  </h2>
+                </div>
+                <span style={styles.categoryCount}>
+                  {checkedInCategory}/{items.length}
+                </span>
+              </div>
               <ul style={styles.itemList}>
                 {items.map((item) => (
                   <li
@@ -325,8 +374,13 @@ export default function GroceryListDetail() {
                     <button
                       onClick={() => toggleItem(item.id, item.isChecked)}
                       className={`grocery-check${item.isChecked ? ' checked' : ''}`}
+                      aria-label={item.isChecked ? 'Uncheck item' : 'Check item'}
                     >
-                      {item.isChecked ? '✓' : ''}
+                      {item.isChecked && (
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                          <polyline points="20 6 9 17 4 12" />
+                        </svg>
+                      )}
                     </button>
                     <span style={{
                       ...styles.itemText,
@@ -340,8 +394,12 @@ export default function GroceryListDetail() {
                     <button
                       onClick={() => handleRemoveItem(item.id)}
                       className="grocery-remove"
+                      aria-label={`Remove ${item.ingredient.name}`}
                     >
-                      ×
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18" />
+                        <line x1="6" y1="6" x2="18" y2="18" />
+                      </svg>
                     </button>
                   </li>
                 ))}
@@ -353,6 +411,19 @@ export default function GroceryListDetail() {
         {/* Add Item */}
         {showAddItem ? (
           <div style={styles.addItemForm}>
+            <div style={styles.addFormHeader}>
+              <span style={styles.addFormTitle}>Add Item</span>
+              <button
+                onClick={() => setShowAddItem(false)}
+                style={styles.addFormClose}
+                aria-label="Close add item form"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
+            </div>
             <div style={styles.addInputRow}>
               <input
                 type="text"
@@ -360,6 +431,7 @@ export default function GroceryListDetail() {
                 onChange={(e) => setNewItem({ ...newItem, name: e.target.value })}
                 placeholder="Ingredient name"
                 style={styles.addInput}
+                autoFocus
               />
               <input
                 type="text"
@@ -376,27 +448,22 @@ export default function GroceryListDetail() {
                 style={{ ...styles.addInput, flex: '0 0 80px' }}
               />
             </div>
-            <div style={styles.addActions}>
-              <button
-                onClick={handleAddItem}
-                disabled={adding}
-                className="btn-primary"
-                style={{ padding: '0.5rem 1.25rem', fontSize: '0.875rem' }}
-              >
-                {adding ? 'Adding...' : 'Add Item'}
-              </button>
-              <button
-                onClick={() => setShowAddItem(false)}
-                className="btn-secondary"
-                style={{ padding: '0.5rem 1rem', fontSize: '0.875rem' }}
-              >
-                Cancel
-              </button>
-            </div>
+            <button
+              onClick={handleAddItem}
+              disabled={adding}
+              className="btn-primary"
+              style={styles.addSubmitBtn}
+            >
+              {adding ? 'Adding...' : 'Add'}
+            </button>
           </div>
         ) : (
-          <button onClick={() => setShowAddItem(true)} className="grocery-add-btn">
-            + Add Item
+          <button onClick={() => setShowAddItem(true)} className="grocery-add-btn" style={styles.addBtn}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="12" y1="5" x2="12" y2="19" />
+              <line x1="5" y1="12" x2="19" y2="12" />
+            </svg>
+            Add Item
           </button>
         )}
       </div>
@@ -408,14 +475,14 @@ const styles: Record<string, React.CSSProperties> = {
   container: {
     minHeight: '100vh',
     background: colors.bg,
-    padding: '2rem 1rem',
+    padding: '1.5rem 1rem 2rem',
     paddingTop: '4.5rem',
   },
   card: {
-    background: 'white',
+    background: colors.surface,
     padding: '1.75rem',
     borderRadius: radius.lg,
-    boxShadow: `0 4px 16px rgba(184, 165, 150, 0.15), 0 1px 3px rgba(184, 165, 150, 0.1)`,
+    boxShadow: shadows.md,
     maxWidth: '540px',
     margin: '0 auto',
     border: `1px solid ${colors.borderLight}`,
@@ -426,6 +493,11 @@ const styles: Record<string, React.CSSProperties> = {
     alignItems: 'center',
     marginBottom: '1.25rem',
   },
+  backLink: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '0.25rem',
+  },
   headerActions: {
     display: 'flex',
     gap: '0.5rem',
@@ -434,34 +506,45 @@ const styles: Record<string, React.CSSProperties> = {
     padding: '0.375rem 0.75rem',
     fontSize: '0.8125rem',
     minHeight: '32px',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.375rem',
   },
   title: {
     margin: '0 0 1.25rem',
-    fontSize: '1.75rem',
+    fontSize: '1.5rem',
     fontWeight: 700,
     color: colors.text,
     letterSpacing: '-0.02em',
   },
+
+  // Progress
   progressSection: {
     marginBottom: '1.25rem',
-    padding: '1rem',
+    padding: '1rem 1.125rem',
     background: colors.warmBg,
     borderRadius: radius.md,
   },
-  progressRow: {
+  progressTop: {
     display: 'flex',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'baseline',
     marginBottom: '0.5rem',
   },
-  progressLabel: {
+  progressStats: {
     fontSize: '0.8125rem',
     color: colors.textSecondary,
-    fontWeight: 500,
+  },
+  progressChecked: {
+    fontWeight: 700,
+    fontSize: '1.125rem',
+    color: colors.text,
+  },
+  progressTotal: {
+    fontWeight: 400,
   },
   progressPercent: {
-    fontSize: '0.8125rem',
-    color: colors.success,
+    fontSize: '0.875rem',
     fontWeight: 700,
   },
   progressBar: {
@@ -472,45 +555,72 @@ const styles: Record<string, React.CSSProperties> = {
   },
   progressFill: {
     height: '100%',
-    background: colors.success,
     borderRadius: radius.full,
-    transition: 'width 0.3s ease',
+    transition: 'width 300ms ease',
   },
+
   completeButton: {
     width: '100%',
     padding: '0.75rem',
     fontSize: '0.9375rem',
     marginBottom: '1.25rem',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '0.5rem',
   },
   completedBadge: {
     background: colors.successBg,
     color: colors.successText,
     padding: '0.75rem 1rem',
-    borderRadius: radius.sm,
+    borderRadius: radius.md,
     fontSize: '0.875rem',
     fontWeight: 600,
     textAlign: 'center',
     marginBottom: '1.25rem',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '0.5rem',
   },
+
+  // Categories
   categorySection: {
-    marginBottom: '1.5rem',
+    marginBottom: '1.25rem',
   },
-  categoryTitle: {
+  categoryHeader: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingBottom: '0.5rem',
+    borderBottom: `1px solid ${colors.borderLight}`,
+    marginBottom: '0.25rem',
+  },
+  categoryTitleRow: {
     display: 'flex',
     alignItems: 'center',
     gap: '0.5rem',
-    fontSize: '0.875rem',
+  },
+  categoryDot: {
+    width: '8px',
+    height: '8px',
+    borderRadius: radius.full,
+    flexShrink: 0,
+  },
+  categoryTitle: {
+    fontSize: '0.8125rem',
     fontWeight: 700,
     color: colors.text,
     textTransform: 'uppercase',
     letterSpacing: '0.04em',
-    marginBottom: '0.25rem',
-    paddingBottom: '0.5rem',
-    borderBottom: `1px solid ${colors.borderLight}`,
+    margin: 0,
   },
-  categoryEmoji: {
-    fontSize: '1rem',
+  categoryCount: {
+    fontSize: '0.6875rem',
+    color: colors.textMuted,
+    fontWeight: 500,
   },
+
   itemList: {
     listStyle: 'none',
     padding: 0,
@@ -531,12 +641,45 @@ const styles: Record<string, React.CSSProperties> = {
     marginRight: '0.375rem',
     fontWeight: 500,
   },
+
+  // Add item
+  addBtn: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '0.375rem',
+  },
   addItemForm: {
     marginTop: '1rem',
-    padding: '1.25rem',
+    padding: '1rem 1.25rem',
     background: colors.warmBg,
     borderRadius: radius.md,
     border: `1px solid ${colors.borderLight}`,
+  },
+  addFormHeader: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: '0.75rem',
+  },
+  addFormTitle: {
+    fontSize: '0.8125rem',
+    fontWeight: 600,
+    color: colors.text,
+  },
+  addFormClose: {
+    background: 'none',
+    border: 'none',
+    cursor: 'pointer',
+    color: colors.textMuted,
+    padding: '0.25rem',
+    lineHeight: 1,
+    minHeight: 'unset',
+    borderRadius: radius.sm,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    transition: 'color 150ms ease',
   },
   addInputRow: {
     display: 'flex',
@@ -551,10 +694,10 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: '0.875rem',
     flex: 1,
     minWidth: '80px',
-    background: 'white',
+    background: colors.surface,
   },
-  addActions: {
-    display: 'flex',
-    gap: '0.5rem',
+  addSubmitBtn: {
+    padding: '0.5rem 1.25rem',
+    fontSize: '0.875rem',
   },
 }

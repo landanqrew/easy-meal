@@ -1088,31 +1088,47 @@ body {
 /* ============================================================ */
 
 .meal-slot {
-  transition: background var(--transition-fast), border-color var(--transition-fast);
+  transition: background var(--transition-fast), border-color var(--transition-fast), box-shadow var(--transition-fast);
 }
 .meal-slot:hover {
-  background: var(--color-primary-light);
-  border-color: var(--color-primary);
+  border-color: var(--color-border);
+  box-shadow: 0 2px 8px rgba(184, 165, 150, 0.12);
 }
 
 .meal-add-btn {
-  transition: color var(--transition-fast);
+  transition: all var(--transition-fast) !important;
 }
 .meal-add-btn:hover {
-  color: var(--color-primary-hover);
+  color: var(--color-primary) !important;
+  border-color: var(--color-primary) !important;
+  background: var(--color-primary-light) !important;
 }
 
 .meal-remove-btn {
-  transition: color var(--transition-fast);
+  transition: all var(--transition-fast);
+  opacity: 0;
+}
+.meal-slot:hover .meal-remove-btn {
+  opacity: 1;
 }
 .meal-remove-btn:hover {
-  color: var(--color-danger);
+  color: var(--color-danger) !important;
+  background: var(--color-danger-bg) !important;
 }
 
 .picker-create-btn {
-  transition: background var(--transition-fast), border-color var(--transition-fast);
+  transition: all var(--transition-fast);
 }
 .picker-create-btn:hover {
+  background: var(--color-primary-light) !important;
+  border-color: var(--color-primary) !important;
+  color: var(--color-primary) !important;
+}
+
+/* Week nav button hover */
+.week-nav-btn:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
   background: var(--color-primary-light);
 }
 
@@ -1144,12 +1160,31 @@ body {
 /* ============================================================ */
 
 .selectable-recipe {
-  transition: all var(--transition-fast);
+  transition: border-color var(--transition-fast), background var(--transition-fast);
 }
 .selectable-recipe:hover {
-  border-color: var(--color-primary);
+  background: var(--color-bg);
+}
+
+.grocery-recipe-card {
+  transition: border-color var(--transition-fast), background var(--transition-fast), box-shadow var(--transition-fast), transform var(--transition-fast);
+  outline: none;
+}
+.grocery-recipe-card:hover {
+  border-color: var(--color-text-muted) !important;
+  box-shadow: 0 2px 8px rgba(184, 165, 150, 0.15);
   transform: translateY(-1px);
-  box-shadow: var(--shadow-sm);
+}
+.grocery-recipe-card:active {
+  transform: scale(0.99);
+  outline: none;
+}
+.grocery-recipe-card:focus {
+  outline: none;
+}
+.grocery-recipe-card:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
 }
 
 /* ============================================================ */

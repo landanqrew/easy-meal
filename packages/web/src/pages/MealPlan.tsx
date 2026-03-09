@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useSession } from '../lib/auth'
-import { colors, radius } from '../lib/theme'
+import { colors, radius, shadows } from '../lib/theme'
 import { apiFetch, apiPost, apiDelete, queryKeys } from '../lib/api'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import type { MealType, RecipeType, MealPlanEntry } from '@easy-meal/shared'
@@ -38,7 +38,15 @@ const PICKER_TYPE_FILTERS: { value: RecipeType | null; label: string }[] = [
 
 const MEAL_TYPES: MealType[] = ['breakfast', 'lunch', 'dinner']
 const DAY_NAMES = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+const DAY_NAMES_FULL = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
 const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+
+const MEAL_TYPE_COLORS: Record<MealType, { dot: string; bg: string; text: string }> = {
+  breakfast: { dot: '#D4A373', bg: 'rgba(212, 163, 115, 0.08)', text: '#A67B4B' },
+  lunch: { dot: '#81A384', bg: 'rgba(129, 163, 132, 0.08)', text: '#5B7A5E' },
+  dinner: { dot: '#D08770', bg: 'rgba(208, 135, 112, 0.08)', text: '#B06A52' },
+  snack: { dot: '#B8A596', bg: 'rgba(184, 165, 150, 0.08)', text: '#857163' },
+}
 
 function getMonday(date: Date): Date {
   const d = new Date(date)
@@ -79,6 +87,13 @@ function formatWeekRange(monday: Date): string {
     return `${mStart} ${monday.getDate()} – ${sunday.getDate()}`
   }
   return `${mStart} ${monday.getDate()} – ${mEnd} ${sunday.getDate()}`
+}
+
+function formatPickerDate(dateStr: string): string {
+  const d = new Date(dateStr + 'T00:00:00')
+  const dayName = DAY_NAMES_FULL[d.getDay() === 0 ? 6 : d.getDay() - 1]
+  const month = MONTH_NAMES[d.getMonth()]
+  return `${dayName}, ${month} ${d.getDate()}`
 }
 
 export default function MealPlan() {
@@ -192,6 +207,8 @@ export default function MealPlan() {
     return [...new Set(entries.map((e) => e.recipeId))]
   }, [entries])
 
+  const totalMealsPlanned = entries.length
+
   const handleCreateGroceryList = () => {
     navigate('/grocery-lists/create', {
       state: {
@@ -210,28 +227,29 @@ export default function MealPlan() {
     return (
       <div style={styles.container}>
         <div style={styles.content}>
-          <div style={styles.header}>
-            <div className="skeleton" style={{ width: '120px', height: '1.5rem' }} />
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-              <div className="skeleton" style={{ width: '36px', height: '36px', borderRadius: '6px' }} />
-              <div className="skeleton" style={{ width: '140px', height: '0.9375rem' }} />
-              <div className="skeleton" style={{ width: '36px', height: '36px', borderRadius: '6px' }} />
-              <div className="skeleton" style={{ width: '55px', height: '32px', borderRadius: '6px' }} />
+          <div style={styles.headerCard}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div className="skeleton" style={{ width: '160px', height: '1.75rem' }} />
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <div className="skeleton" style={{ width: '36px', height: '36px', borderRadius: radius.full }} />
+                <div className="skeleton" style={{ width: '120px', height: '1rem' }} />
+                <div className="skeleton" style={{ width: '36px', height: '36px', borderRadius: radius.full }} />
+              </div>
             </div>
           </div>
           {isMobile ? (
             <div style={styles.mobileList}>
               {Array.from({ length: 7 }).map((_, i) => (
                 <div key={i} style={styles.mobileDay}>
-                  <div style={{ ...styles.mobileDayHeader, display: 'flex', justifyContent: 'space-between', padding: '0.75rem 1rem' }}>
-                    <div className="skeleton" style={{ width: '30px', height: '0.75rem', background: 'rgba(255,255,255,0.3)' }} />
-                    <div className="skeleton" style={{ width: '24px', height: '1.125rem', background: 'rgba(255,255,255,0.3)' }} />
+                  <div style={styles.mobileDayHeader}>
+                    <div className="skeleton" style={{ width: '80px', height: '1rem', background: 'rgba(255,255,255,0.3)' }} />
+                    <div className="skeleton" style={{ width: '32px', height: '32px', borderRadius: radius.full, background: 'rgba(255,255,255,0.3)' }} />
                   </div>
                   <div style={styles.mobileMeals}>
                     {Array.from({ length: 3 }).map((_, j) => (
                       <div key={j} style={styles.mealSlot}>
-                        <div className="skeleton" style={{ width: '50px', height: '0.625rem', marginBottom: '0.375rem' }} />
-                        <div className="skeleton" style={{ width: '60px', height: '0.75rem' }} />
+                        <div className="skeleton" style={{ width: '50px', height: '0.625rem', marginBottom: '0.5rem' }} />
+                        <div className="skeleton" style={{ width: '80%', height: '2rem', borderRadius: radius.sm }} />
                       </div>
                     ))}
                   </div>
@@ -242,14 +260,14 @@ export default function MealPlan() {
             <div style={styles.calendarGrid}>
               {Array.from({ length: 7 }).map((_, i) => (
                 <div key={i} style={styles.dayColumn}>
-                  <div style={{ ...styles.dayHeader, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.125rem' }}>
-                    <div className="skeleton" style={{ width: '24px', height: '0.75rem', background: 'rgba(255,255,255,0.3)' }} />
-                    <div className="skeleton" style={{ width: '20px', height: '1.125rem', background: 'rgba(255,255,255,0.3)' }} />
+                  <div style={styles.dayHeader}>
+                    <div className="skeleton" style={{ width: '24px', height: '0.6875rem', background: 'rgba(255,255,255,0.3)' }} />
+                    <div className="skeleton" style={{ width: '32px', height: '32px', borderRadius: radius.full, background: 'rgba(255,255,255,0.3)' }} />
                   </div>
                   {Array.from({ length: 3 }).map((_, j) => (
                     <div key={j} style={styles.mealSlot}>
-                      <div className="skeleton" style={{ width: '50px', height: '0.625rem', marginBottom: '0.375rem' }} />
-                      <div className="skeleton" style={{ width: '70%', height: '0.75rem' }} />
+                      <div className="skeleton" style={{ width: '50px', height: '0.625rem', marginBottom: '0.5rem' }} />
+                      <div className="skeleton" style={{ width: '80%', height: '2rem', borderRadius: radius.sm }} />
                     </div>
                   ))}
                 </div>
@@ -264,28 +282,58 @@ export default function MealPlan() {
   return (
     <div style={styles.container}>
       <div style={styles.content}>
-        <div style={styles.header}>
-          <div style={styles.headerLeft}>
-            <h1 style={styles.title}>Meal Plan</h1>
-            {weekRecipeIds.length > 0 && (
-              <button
-                onClick={handleCreateGroceryList}
-                className="btn-secondary"
-                style={styles.groceryButton}
-              >
-                Grocery List
-              </button>
-            )}
+        {/* Header card */}
+        <div style={styles.headerCard}>
+          <div style={styles.headerTop}>
+            <div style={styles.headerLeft}>
+              <h1 style={styles.title}>Meal Plan</h1>
+              {totalMealsPlanned > 0 && (
+                <span style={styles.mealCount}>
+                  {totalMealsPlanned} meal{totalMealsPlanned !== 1 ? 's' : ''} planned
+                </span>
+              )}
+            </div>
+            <div style={styles.headerActions}>
+              {weekRecipeIds.length > 0 && (
+                <button
+                  onClick={handleCreateGroceryList}
+                  className="btn-secondary"
+                  style={styles.groceryButton}
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z" />
+                    <line x1="3" y1="6" x2="21" y2="6" />
+                    <path d="M16 10a4 4 0 01-8 0" />
+                  </svg>
+                  Grocery List
+                </button>
+              )}
+            </div>
           </div>
-          <div style={styles.weekNav}>
-            <button onClick={() => navigateWeek(-1)} className="btn-secondary" style={{ padding: '0.5rem 0.75rem', fontSize: '1.125rem', lineHeight: 1, minHeight: 'unset' }}>
-              ‹
+          <div style={styles.weekNavRow}>
+            <button
+              onClick={() => navigateWeek(-1)}
+              style={styles.weekNavButton}
+              aria-label="Previous week"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="15 18 9 12 15 6" />
+              </svg>
             </button>
-            <span style={styles.weekLabel}>{formatWeekRange(weekStart)}</span>
-            <button onClick={() => navigateWeek(1)} className="btn-secondary" style={{ padding: '0.5rem 0.75rem', fontSize: '1.125rem', lineHeight: 1, minHeight: 'unset' }}>
-              ›
+            <div style={styles.weekLabelGroup}>
+              <span style={styles.weekLabel}>{formatWeekRange(weekStart)}</span>
+              <span style={styles.yearLabel}>{weekStart.getFullYear()}</span>
+            </div>
+            <button
+              onClick={() => navigateWeek(1)}
+              style={styles.weekNavButton}
+              aria-label="Next week"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="9 6 15 12 9 18" />
+              </svg>
             </button>
-            <button onClick={goToToday} className="btn-primary" style={{ padding: '0.5rem 1rem', fontSize: '0.8125rem', minHeight: 'unset' }}>
+            <button onClick={goToToday} style={styles.todayButton}>
               Today
             </button>
           </div>
@@ -294,41 +342,155 @@ export default function MealPlan() {
         {error && <div className="error-message">{error}</div>}
 
         {isMobile ? (
-          // Mobile: vertical day list
           <div style={styles.mobileList}>
             {days.map((day, i) => {
               const isToday = isSameDay(day, today)
               return (
-                <div key={i} style={styles.mobileDay}>
+                <div key={i} style={{
+                  ...styles.mobileDay,
+                  ...(isToday ? styles.mobileDayToday : {}),
+                }}>
                   <div style={{
                     ...styles.mobileDayHeader,
                     ...(isToday ? styles.mobileDayHeaderToday : {}),
                   }}>
-                    <span style={styles.dayName}>{DAY_NAMES[i]}</span>
-                    <span style={styles.dayNumber}>{day.getDate()}</span>
+                    <span style={styles.mobileDayName}>
+                      {DAY_NAMES_FULL[i]}
+                    </span>
+                    <span style={{
+                      ...styles.dayBadge,
+                      ...(isToday ? styles.dayBadgeToday : {}),
+                    }}>
+                      {day.getDate()}
+                    </span>
                   </div>
                   <div style={styles.mobileMeals}>
                     {MEAL_TYPES.map((mealType) => {
                       const slotEntries = getEntriesForSlot(day, mealType)
+                      const mealColors = MEAL_TYPE_COLORS[mealType]
                       return (
                         <div key={mealType} className="meal-slot" style={styles.mealSlot}>
-                          <div style={styles.mealSlotLabel}>
-                            {mealType}
+                          <div style={styles.mealSlotHeader}>
+                            <span style={{
+                              ...styles.mealDot,
+                              background: mealColors.dot,
+                            }} />
+                            <span style={{
+                              ...styles.mealSlotLabel,
+                              color: mealColors.text,
+                            }}>
+                              {mealType}
+                            </span>
                           </div>
+                          <div style={styles.mealSlotContent}>
+                            {slotEntries.map((entry) => (
+                              <div key={entry.id} style={styles.recipeChip}>
+                                <Link
+                                  to={`/recipes/${entry.recipe.id}`}
+                                  style={styles.recipeChipLink}
+                                >
+                                  {entry.recipe.title}
+                                </Link>
+                                <button
+                                  onClick={() => handleRemoveEntry(entry.id)}
+                                  className="meal-remove-btn"
+                                  style={styles.recipeChipRemove}
+                                  aria-label={`Remove ${entry.recipe.title}`}
+                                >
+                                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                    <line x1="18" y1="6" x2="6" y2="18" />
+                                    <line x1="6" y1="6" x2="18" y2="18" />
+                                  </svg>
+                                </button>
+                              </div>
+                            ))}
+                            <button
+                              onClick={() =>
+                                setPickerOpen({
+                                  date: formatDateParam(day),
+                                  mealType,
+                                })
+                              }
+                              className="meal-add-btn"
+                              style={styles.addButton}
+                            >
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <line x1="12" y1="5" x2="12" y2="19" />
+                                <line x1="5" y1="12" x2="19" y2="12" />
+                              </svg>
+                              Add
+                            </button>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        ) : (
+          <div style={styles.calendarGrid}>
+            {days.map((day, i) => {
+              const isToday = isSameDay(day, today)
+              return (
+                <div key={i} style={{
+                  ...styles.dayColumn,
+                  ...(isToday ? styles.dayColumnToday : {}),
+                }}>
+                  <div style={{
+                    ...styles.dayHeader,
+                    ...(isToday ? styles.dayHeaderToday : {}),
+                  }}>
+                    <div style={{
+                      ...styles.dayName,
+                      ...(isToday ? { color: 'rgba(255,255,255,0.85)' } : {}),
+                    }}>
+                      {DAY_NAMES[i]}
+                    </div>
+                    <div style={{
+                      ...styles.dayBadge,
+                      ...(isToday ? styles.dayBadgeToday : {}),
+                    }}>
+                      {day.getDate()}
+                    </div>
+                  </div>
+                  {MEAL_TYPES.map((mealType) => {
+                    const slotEntries = getEntriesForSlot(day, mealType)
+                    const mealColors = MEAL_TYPE_COLORS[mealType]
+                    return (
+                      <div key={mealType} className="meal-slot" style={styles.mealSlot}>
+                        <div style={styles.mealSlotHeader}>
+                          <span style={{
+                            ...styles.mealDot,
+                            background: mealColors.dot,
+                          }} />
+                          <span style={{
+                            ...styles.mealSlotLabel,
+                            color: mealColors.text,
+                          }}>
+                            {mealType}
+                          </span>
+                        </div>
+                        <div style={styles.mealSlotContent}>
                           {slotEntries.map((entry) => (
-                            <div key={entry.id} style={styles.assignedRecipeRow}>
+                            <div key={entry.id} style={styles.recipeChip}>
                               <Link
                                 to={`/recipes/${entry.recipe.id}`}
-                                style={styles.assignedRecipe}
+                                style={styles.recipeChipLink}
                               >
                                 {entry.recipe.title}
                               </Link>
                               <button
                                 onClick={() => handleRemoveEntry(entry.id)}
                                 className="meal-remove-btn"
-                                style={styles.removeButton}
+                                style={styles.recipeChipRemove}
+                                aria-label={`Remove ${entry.recipe.title}`}
                               >
-                                ×
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                  <line x1="18" y1="6" x2="6" y2="18" />
+                                  <line x1="6" y1="6" x2="18" y2="18" />
+                                </svg>
                               </button>
                             </div>
                           ))}
@@ -342,64 +504,13 @@ export default function MealPlan() {
                             className="meal-add-btn"
                             style={styles.addButton}
                           >
-                            + Add
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <line x1="12" y1="5" x2="12" y2="19" />
+                              <line x1="5" y1="12" x2="19" y2="12" />
+                            </svg>
+                            Add
                           </button>
                         </div>
-                      )
-                    })}
-                  </div>
-                </div>
-              )
-            })}
-          </div>
-        ) : (
-          // Desktop: 7-column grid
-          <div style={styles.calendarGrid}>
-            {days.map((day, i) => {
-              const isToday = isSameDay(day, today)
-              return (
-                <div key={i} style={styles.dayColumn}>
-                  <div style={{
-                    ...styles.dayHeader,
-                    ...(isToday ? styles.dayHeaderToday : {}),
-                  }}>
-                    <div style={styles.dayName}>{DAY_NAMES[i]}</div>
-                    <div style={styles.dayNumber}>{day.getDate()}</div>
-                  </div>
-                  {MEAL_TYPES.map((mealType) => {
-                    const slotEntries = getEntriesForSlot(day, mealType)
-                    return (
-                      <div key={mealType} style={styles.mealSlot}>
-                        <div style={styles.mealSlotLabel}>
-                          {mealType}
-                        </div>
-                        {slotEntries.map((entry) => (
-                          <div key={entry.id} style={styles.assignedRecipeRow}>
-                            <Link
-                              to={`/recipes/${entry.recipe.id}`}
-                              style={styles.assignedRecipe}
-                            >
-                              {entry.recipe.title}
-                            </Link>
-                            <button
-                              onClick={() => handleRemoveEntry(entry.id)}
-                              style={styles.removeButton}
-                            >
-                              ×
-                            </button>
-                          </div>
-                        ))}
-                        <button
-                          onClick={() =>
-                            setPickerOpen({
-                              date: formatDateParam(day),
-                              mealType,
-                            })
-                          }
-                          style={styles.addButton}
-                        >
-                          + Add
-                        </button>
                       </div>
                     )
                   })}
@@ -422,9 +533,24 @@ export default function MealPlan() {
             }
           }}
         >
-          <div className="modal-card">
+          <div className="modal-card" style={styles.pickerModal}>
             <div style={styles.pickerHeader}>
-              <h2 style={styles.pickerTitle}>Pick a Recipe</h2>
+              <div>
+                <h2 style={styles.pickerTitle}>Add Recipe</h2>
+                <p style={styles.pickerSubtitle}>
+                  <span style={{
+                    ...styles.pickerMealBadge,
+                    background: MEAL_TYPE_COLORS[pickerOpen.mealType].bg,
+                    color: MEAL_TYPE_COLORS[pickerOpen.mealType].text,
+                    borderColor: MEAL_TYPE_COLORS[pickerOpen.mealType].dot,
+                  }}>
+                    {pickerOpen.mealType.charAt(0).toUpperCase() + pickerOpen.mealType.slice(1)}
+                  </span>
+                  <span style={styles.pickerDateText}>
+                    {formatPickerDate(pickerOpen.date)}
+                  </span>
+                </p>
+              </div>
               <button
                 onClick={() => {
                   setPickerOpen(null)
@@ -432,58 +558,79 @@ export default function MealPlan() {
                   setPickerTypeFilter(null)
                 }}
                 style={styles.pickerClose}
+                aria-label="Close"
               >
-                ×
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
               </button>
             </div>
-            <p style={styles.pickerSubtitle}>
-              {pickerOpen.mealType.charAt(0).toUpperCase() + pickerOpen.mealType.slice(1)} · {pickerOpen.date}
-            </p>
+
+            <div style={styles.pickerSearchWrapper}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={styles.searchIcon}>
+                <circle cx="11" cy="11" r="8" />
+                <line x1="21" y1="21" x2="16.65" y2="16.65" />
+              </svg>
+              <input
+                type="text"
+                placeholder="Search recipes..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                style={styles.pickerSearch}
+                autoFocus
+              />
+            </div>
+
             <div style={styles.pickerTypeFilters}>
               {PICKER_TYPE_FILTERS.map((t) => (
                 <button
                   key={t.label}
                   onClick={() => setPickerTypeFilter(pickerTypeFilter === t.value ? null : t.value)}
                   className={`filter-chip${pickerTypeFilter === t.value ? ' active' : ''}`}
-                  style={{ fontSize: '0.6875rem', padding: '0.25rem 0.5rem' }}
+                  style={{ fontSize: '0.6875rem', padding: '0.25rem 0.625rem' }}
                 >
                   {t.label}
                 </button>
               ))}
             </div>
-            <input
-              type="text"
-              placeholder="Search recipes..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              style={styles.pickerSearch}
-              autoFocus
-            />
+
             <div style={styles.pickerList}>
               {filteredRecipes.length === 0 ? (
-                <p style={styles.pickerEmpty}>
-                  {recipes.length === 0 ? 'No recipes yet. Create one first!' : 'No recipes match your search.'}
-                </p>
+                <div style={styles.pickerEmpty}>
+                  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginBottom: '0.75rem', opacity: 0.5 }}>
+                    <path d="M15 11h.01M11 15h.01M16 16c-.5-1.5-2.8-2-4-2s-3.5.5-4 2" />
+                    <circle cx="12" cy="12" r="10" />
+                  </svg>
+                  <p style={{ margin: 0, fontSize: '0.875rem' }}>
+                    {recipes.length === 0 ? 'No recipes yet. Create one first!' : 'No recipes match your filters.'}
+                  </p>
+                </div>
               ) : (
                 filteredRecipes.map((recipe) => (
                   <button
                     key={recipe.id}
                     onClick={() => handleAssignRecipe(recipe.id)}
                     className="picker-recipe"
+                    style={styles.pickerRecipeItem}
                   >
-                    <span style={styles.pickerRecipeTitle}>{recipe.title}</span>
-                    <span style={styles.pickerRecipeMeta}>
-                      <span style={{ padding: '0.0625rem 0.375rem', borderRadius: radius.full, background: colors.warmBg, fontSize: '0.625rem', marginRight: '0.375rem' }}>
-                        {RECIPE_TYPE_LABELS[recipe.type] || recipe.type}
+                    <div style={styles.pickerRecipeLeft}>
+                      <span style={styles.pickerRecipeTitle}>{recipe.title}</span>
+                      <span style={styles.pickerRecipeMeta}>
+                        {recipe.prepTime && `${recipe.prepTime}m prep`}
+                        {recipe.prepTime && recipe.cookTime && ' · '}
+                        {recipe.cookTime && `${recipe.cookTime}m cook`}
                       </span>
-                      {recipe.prepTime && `${recipe.prepTime}m prep`}
-                      {recipe.prepTime && recipe.cookTime && ' · '}
-                      {recipe.cookTime && `${recipe.cookTime}m cook`}
+                    </div>
+                    <span style={styles.pickerTypeBadge}>
+                      {RECIPE_TYPE_LABELS[recipe.type] || recipe.type}
                     </span>
                   </button>
                 ))
               )}
             </div>
+
+            <div style={styles.pickerDivider} />
             <div style={styles.pickerCreateRow}>
               <button
                 onClick={() => {
@@ -497,7 +644,11 @@ export default function MealPlan() {
                 className="picker-create-btn"
                 style={styles.pickerCreateButton}
               >
-                + Wizard
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
+                  <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
+                </svg>
+                Wizard
               </button>
               <button
                 onClick={() => {
@@ -511,7 +662,10 @@ export default function MealPlan() {
                 className="picker-create-btn"
                 style={styles.pickerCreateButton}
               >
-                + Chat with AI
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" />
+                </svg>
+                Chat with AI
               </button>
             </div>
           </div>
@@ -528,183 +682,377 @@ const styles: Record<string, React.CSSProperties> = {
     paddingTop: '4.5rem',
   },
   content: {
-    padding: '2rem 1rem',
+    padding: '1.5rem 1rem 2rem',
     maxWidth: '1100px',
     margin: '0 auto',
   },
-  header: {
+
+  // Header card
+  headerCard: {
+    background: colors.surface,
+    borderRadius: radius.lg,
+    padding: '1.25rem 1.5rem',
+    marginBottom: '1.5rem',
+    boxShadow: shadows.sm,
+    border: `1px solid ${colors.borderLight}`,
+  },
+  headerTop: {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: '1.5rem',
+    marginBottom: '1rem',
     flexWrap: 'wrap',
-    gap: '1rem',
+    gap: '0.75rem',
   },
   headerLeft: {
     display: 'flex',
+    alignItems: 'baseline',
+    gap: '0.75rem',
+  },
+  headerActions: {
+    display: 'flex',
     alignItems: 'center',
-    gap: '1rem',
+    gap: '0.5rem',
   },
   title: {
     margin: 0,
-    fontSize: '1.75rem',
+    fontSize: '1.5rem',
     fontWeight: 700,
     letterSpacing: '-0.02em',
     color: colors.text,
+  },
+  mealCount: {
+    fontSize: '0.8125rem',
+    color: colors.textMuted,
+    fontWeight: 400,
   },
   groceryButton: {
     padding: '0.5rem 1rem',
     fontSize: '0.8125rem',
     minHeight: 'unset',
-  },
-  weekNav: {
     display: 'flex',
     alignItems: 'center',
+    gap: '0.375rem',
+  },
+
+  // Week navigation
+  weekNavRow: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
     gap: '0.75rem',
   },
-  weekLabel: {
-    fontSize: '0.9375rem',
-    fontWeight: 500,
-    color: colors.text,
-    minWidth: '140px',
-    textAlign: 'center',
+  weekNavButton: {
+    width: '36px',
+    height: '36px',
+    minHeight: '36px',
+    borderRadius: radius.full,
+    border: `1px solid ${colors.border}`,
+    background: colors.surface,
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    color: colors.textSecondary,
+    transition: 'all 150ms ease',
   },
+  weekLabelGroup: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    minWidth: '140px',
+  },
+  weekLabel: {
+    fontSize: '1rem',
+    fontWeight: 600,
+    color: colors.text,
+    letterSpacing: '-0.01em',
+  },
+  yearLabel: {
+    fontSize: '0.6875rem',
+    color: colors.textMuted,
+    fontWeight: 400,
+  },
+  todayButton: {
+    padding: '0.375rem 0.875rem',
+    fontSize: '0.75rem',
+    fontWeight: 600,
+    borderRadius: radius.full,
+    border: 'none',
+    background: colors.primary,
+    color: 'white',
+    cursor: 'pointer',
+    minHeight: 'unset',
+    letterSpacing: '0.02em',
+    textTransform: 'uppercase' as const,
+    transition: 'all 150ms ease',
+  },
+
   // Desktop grid
   calendarGrid: {
     display: 'grid',
     gridTemplateColumns: 'repeat(7, 1fr)',
-    gap: '0.5rem',
+    gap: '0.625rem',
   },
   dayColumn: {
     display: 'flex',
     flexDirection: 'column',
-    gap: '0.5rem',
+    gap: '0.375rem',
+    borderRadius: radius.md,
+    transition: 'all 200ms ease',
+  },
+  dayColumnToday: {
+    // subtle glow behind the whole column
   },
   dayHeader: {
     textAlign: 'center',
-    padding: '0.75rem 0.25rem',
+    padding: '0.625rem 0.25rem 0.75rem',
     borderRadius: radius.md,
-    background: colors.accentWarm,
+    background: `linear-gradient(135deg, ${colors.accentWarm}, ${colors.warmBg})`,
     color: colors.text,
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: '0.25rem',
   },
   dayHeaderToday: {
-    background: colors.primary,
+    background: `linear-gradient(135deg, ${colors.primary}, ${colors.primaryHover})`,
     color: 'white',
+    boxShadow: '0 4px 14px rgba(208, 135, 112, 0.35)',
   },
   dayName: {
-    fontSize: '0.75rem',
+    fontSize: '0.6875rem',
     fontWeight: 600,
     textTransform: 'uppercase',
-    letterSpacing: '0.03em',
+    letterSpacing: '0.06em',
+    color: colors.textSecondary,
   },
-  dayNumber: {
-    fontSize: '1.125rem',
-    fontWeight: 600,
+  dayBadge: {
+    width: '32px',
+    height: '32px',
+    borderRadius: radius.full,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontSize: '0.9375rem',
+    fontWeight: 700,
+    background: 'rgba(255,255,255,0.5)',
+    color: colors.text,
   },
+  dayBadgeToday: {
+    background: 'rgba(255,255,255,0.25)',
+    color: 'white',
+  },
+
+  // Meal slots
   mealSlot: {
-    background: 'white',
+    background: colors.surface,
     borderRadius: radius.md,
-    padding: '0.75rem',
-    minHeight: '70px',
-    border: `1px solid ${colors.border}`,
+    padding: '0.625rem',
+    minHeight: '72px',
+    border: `1px solid ${colors.borderLight}`,
+    display: 'flex',
+    flexDirection: 'column',
+  },
+  mealSlotHeader: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.375rem',
+    marginBottom: '0.375rem',
+  },
+  mealDot: {
+    width: '6px',
+    height: '6px',
+    borderRadius: radius.full,
+    flexShrink: 0,
   },
   mealSlotLabel: {
     fontSize: '0.625rem',
-    fontWeight: 600,
+    fontWeight: 700,
     textTransform: 'uppercase',
-    color: colors.textMuted,
-    marginBottom: '0.375rem',
-    letterSpacing: '0.03em',
+    letterSpacing: '0.05em',
   },
-  assignedRecipeRow: {
+  mealSlotContent: {
     display: 'flex',
-    alignItems: 'flex-start',
+    flexDirection: 'column',
+    gap: '0.25rem',
+    flex: 1,
+  },
+
+  // Recipe chips
+  recipeChip: {
+    display: 'flex',
+    alignItems: 'center',
     justifyContent: 'space-between',
     gap: '0.25rem',
+    padding: '0.3125rem 0.5rem',
+    borderRadius: radius.sm,
+    background: colors.warmBg,
+    transition: 'all 150ms ease',
   },
-  assignedRecipe: {
-    fontSize: '0.8125rem',
+  recipeChipLink: {
+    fontSize: '0.75rem',
     fontWeight: 500,
     color: colors.text,
     cursor: 'pointer',
     textDecoration: 'none',
-    display: 'block',
     lineHeight: 1.3,
+    flex: 1,
+    minWidth: 0,
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
   },
-  removeButton: {
-    fontSize: '1rem',
-    color: colors.textMuted,
+  recipeChipRemove: {
     background: 'none',
     border: 'none',
     cursor: 'pointer',
-    padding: '0',
+    padding: '2px',
     lineHeight: 1,
     flexShrink: 0,
+    color: colors.textMuted,
+    borderRadius: '4px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 'unset',
+    width: '20px',
+    height: '20px',
+    transition: 'all 150ms ease',
   },
+
+  // Add button
   addButton: {
-    fontSize: '0.75rem',
-    color: colors.primary,
+    fontSize: '0.6875rem',
+    color: colors.textMuted,
     background: 'none',
-    border: 'none',
+    border: `1px dashed ${colors.border}`,
+    borderRadius: radius.sm,
     cursor: 'pointer',
     fontWeight: 500,
-    padding: 0,
+    padding: '0.25rem 0.5rem',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '0.25rem',
+    marginTop: 'auto',
+    minHeight: '28px',
+    transition: 'all 150ms ease',
   },
+
   // Mobile layout
   mobileList: {
     display: 'flex',
     flexDirection: 'column',
-    gap: '1rem',
+    gap: '0.75rem',
   },
   mobileDay: {
-    background: 'white',
-    borderRadius: radius.md,
+    background: colors.surface,
+    borderRadius: radius.lg,
     overflow: 'hidden',
-    border: `1px solid ${colors.border}`,
+    boxShadow: shadows.sm,
+    border: `1px solid ${colors.borderLight}`,
+    transition: 'all 200ms ease',
+  },
+  mobileDayToday: {
+    boxShadow: '0 4px 20px rgba(208, 135, 112, 0.2)',
+    borderColor: colors.primary,
   },
   mobileDayHeader: {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: '0.75rem 1rem',
-    background: colors.accentWarm,
+    padding: '0.875rem 1rem',
+    background: `linear-gradient(135deg, ${colors.accentWarm}, ${colors.warmBg})`,
     color: colors.text,
   },
   mobileDayHeaderToday: {
-    background: colors.primary,
+    background: `linear-gradient(135deg, ${colors.primary}, ${colors.primaryHover})`,
     color: 'white',
   },
+  mobileDayName: {
+    fontSize: '0.9375rem',
+    fontWeight: 600,
+  },
   mobileMeals: {
-    padding: '0.5rem',
+    padding: '0.75rem',
     display: 'flex',
     flexDirection: 'column',
     gap: '0.5rem',
   },
-  // Modal
+
+  // Picker modal
+  pickerModal: {
+    maxWidth: '440px',
+    padding: '1.5rem',
+  },
   pickerHeader: {
     display: 'flex',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'flex-start',
+    marginBottom: '1rem',
   },
   pickerTitle: {
     margin: 0,
-    fontSize: '1.125rem',
-    fontWeight: 600,
+    fontSize: '1.25rem',
+    fontWeight: 700,
     color: colors.text,
+    letterSpacing: '-0.01em',
+  },
+  pickerSubtitle: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.5rem',
+    marginTop: '0.375rem',
+  },
+  pickerMealBadge: {
+    fontSize: '0.6875rem',
+    fontWeight: 600,
+    padding: '0.125rem 0.5rem',
+    borderRadius: radius.full,
+    border: '1px solid',
+    letterSpacing: '0.02em',
+  },
+  pickerDateText: {
+    fontSize: '0.8125rem',
+    color: colors.textSecondary,
   },
   pickerClose: {
     background: 'none',
     border: 'none',
-    fontSize: '1.5rem',
     cursor: 'pointer',
     color: colors.textMuted,
-    padding: '0.25rem',
+    padding: '0.375rem',
     lineHeight: 1,
+    borderRadius: radius.sm,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 'unset',
+    transition: 'all 150ms ease',
   },
-  pickerSubtitle: {
-    fontSize: '0.8125rem',
-    color: colors.textSecondary,
-    margin: '0.25rem 0 0.75rem',
+  pickerSearchWrapper: {
+    position: 'relative',
+    marginBottom: '0.75rem',
+  },
+  searchIcon: {
+    position: 'absolute',
+    left: '0.75rem',
+    top: '50%',
+    transform: 'translateY(-50%)',
+    pointerEvents: 'none',
+  },
+  pickerSearch: {
+    width: '100%',
+    padding: '0.625rem 0.75rem 0.625rem 2.25rem',
+    borderRadius: radius.full,
+    border: `1px solid ${colors.border}`,
+    fontSize: '0.875rem',
+    boxSizing: 'border-box',
+    background: colors.warmBg,
+    color: colors.text,
+    outline: 'none',
+    transition: 'all 150ms ease',
   },
   pickerTypeFilters: {
     display: 'flex',
@@ -712,49 +1060,87 @@ const styles: Record<string, React.CSSProperties> = {
     gap: '0.375rem',
     marginBottom: '0.75rem',
   },
-  pickerSearch: {
-    width: '100%',
-    padding: '0.75rem',
-    borderRadius: radius.sm,
-    border: `1px solid ${colors.border}`,
-    fontSize: '0.875rem',
-    marginBottom: '0.75rem',
-    boxSizing: 'border-box',
-  },
   pickerList: {
     overflow: 'auto',
     flex: 1,
+    margin: '0 -0.25rem',
+    padding: '0 0.25rem',
   },
   pickerEmpty: {
     textAlign: 'center',
     color: colors.textSecondary,
-    padding: '2rem 0',
-    fontSize: '0.875rem',
+    padding: '2rem 1rem',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+  },
+  pickerRecipeItem: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    width: '100%',
+    padding: '0.75rem',
+    borderRadius: radius.md,
+    cursor: 'pointer',
+    border: `1px solid ${colors.borderLight}`,
+    marginBottom: '0.375rem',
+    background: colors.surface,
+    textAlign: 'left',
+    transition: 'all 150ms ease',
+    gap: '0.75rem',
+  },
+  pickerRecipeLeft: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '0.125rem',
+    flex: 1,
+    minWidth: 0,
   },
   pickerRecipeTitle: {
-    fontWeight: 500,
+    fontWeight: 600,
     fontSize: '0.875rem',
     color: colors.text,
+    lineHeight: 1.3,
   },
   pickerRecipeMeta: {
-    fontSize: '0.75rem',
+    fontSize: '0.6875rem',
+    color: colors.textMuted,
+  },
+  pickerTypeBadge: {
+    fontSize: '0.625rem',
+    fontWeight: 600,
+    padding: '0.125rem 0.5rem',
+    borderRadius: radius.full,
+    background: colors.warmBg,
     color: colors.textSecondary,
-    marginTop: '0.25rem',
+    flexShrink: 0,
+    letterSpacing: '0.02em',
+    textTransform: 'uppercase' as const,
+  },
+  pickerDivider: {
+    height: '1px',
+    background: colors.borderLight,
+    margin: '0.5rem 0',
   },
   pickerCreateRow: {
     display: 'flex',
     gap: '0.5rem',
-    marginTop: '0.5rem',
   },
   pickerCreateButton: {
     flex: 1,
-    padding: '0.75rem',
-    borderRadius: radius.sm,
-    border: `1px dashed ${colors.primary}`,
-    background: colors.bg,
-    color: colors.primary,
+    padding: '0.625rem 0.75rem',
+    borderRadius: radius.md,
+    border: `1px dashed ${colors.border}`,
+    background: colors.warmBg,
+    color: colors.textSecondary,
     cursor: 'pointer',
     fontSize: '0.8125rem',
     fontWeight: 500,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '0.375rem',
+    minHeight: 'unset',
+    transition: 'all 150ms ease',
   },
 }

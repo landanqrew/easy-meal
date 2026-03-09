@@ -26,7 +26,6 @@ export default function CreateGroceryList() {
   const [error, setError] = useState('')
   const [initialized, setInitialized] = useState(false)
 
-  // Read pre-selection state from MealPlan navigation
   const mealPlanState = location.state as {
     fromMealPlan?: boolean
     recipeIds?: string[]
@@ -48,7 +47,6 @@ export default function CreateGroceryList() {
     }
   }, [session, isPending, navigate])
 
-  // Pre-select recipes from meal plan navigation
   useEffect(() => {
     if (!initialized && !isLoading && recipes.length > 0 && mealPlanState?.recipeIds?.length) {
       const preSelected = new Map<string, number>()
@@ -127,14 +125,13 @@ export default function CreateGroceryList() {
           </div>
           <div>
             <div className="skeleton" style={{ width: '120px', height: '0.875rem', marginBottom: '0.5rem' }} />
-            <div className="skeleton" style={{ width: '280px', height: '0.8125rem', marginBottom: '1rem' }} />
             {Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} style={{ border: `1px solid ${colors.border}`, borderRadius: '8px', padding: '1rem', marginBottom: '0.75rem' }}>
+              <div key={i} style={{ border: `1px solid ${colors.borderLight}`, borderRadius: radius.md, padding: '1rem', marginBottom: '0.625rem' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                  <div className="skeleton" style={{ width: '24px', height: '24px', borderRadius: '4px' }} />
+                  <div className="skeleton" style={{ width: '22px', height: '22px', borderRadius: '6px' }} />
                   <div style={{ flex: 1 }}>
                     <div className="skeleton" style={{ width: '60%', height: '0.9375rem', marginBottom: '0.25rem' }} />
-                    <div className="skeleton" style={{ width: '100px', height: '0.8125rem' }} />
+                    <div className="skeleton" style={{ width: '100px', height: '0.75rem' }} />
                   </div>
                 </div>
               </div>
@@ -150,8 +147,11 @@ export default function CreateGroceryList() {
     <div style={styles.container}>
       <div style={styles.card}>
         <div style={styles.header}>
-          <Link to="/grocery-lists" className="back-link">
-            ← Back
+          <Link to="/grocery-lists" className="back-link" style={styles.backLink}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="15 18 9 12 15 6" />
+            </svg>
+            Back
           </Link>
           <h1 style={styles.title}>Create Grocery List</h1>
         </div>
@@ -170,17 +170,25 @@ export default function CreateGroceryList() {
         </div>
 
         <div style={styles.section}>
-          <label style={styles.label}>
-            Select Recipes ({selectedRecipes.size} selected)
-          </label>
+          <div style={styles.sectionHeader}>
+            <label style={styles.label}>Select Recipes</label>
+            {selectedRecipes.size > 0 && (
+              <span style={styles.selectedCount}>
+                {selectedRecipes.size} selected
+              </span>
+            )}
+          </div>
           <p style={styles.hint}>
             Choose recipes and adjust servings. Ingredients will be combined automatically.
           </p>
 
           {recipes.length === 0 ? (
             <div style={styles.emptyState}>
-              <p style={{ fontSize: '1.5rem', marginBottom: '0.25rem' }}>📝</p>
-              <p>No recipes yet.</p>
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginBottom: '0.5rem', opacity: 0.5 }}>
+                <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
+                <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
+              </svg>
+              <p style={{ margin: '0 0 0.5rem' }}>No recipes yet.</p>
               <Link to="/recipes/create" style={styles.emptyLink}>
                 Create your first recipe
               </Link>
@@ -194,15 +202,23 @@ export default function CreateGroceryList() {
                 return (
                   <div
                     key={recipe.id}
-                    className="selectable-recipe"
+                    className="grocery-recipe-card"
                     style={{
                       ...styles.recipeCard,
                       ...(isSelected ? styles.recipeCardSelected : {}),
                     }}
+                    onClick={() => toggleRecipe(recipe)}
                   >
-                    <div style={styles.recipeMain} onClick={() => toggleRecipe(recipe)}>
-                      <div style={styles.checkbox}>
-                        {isSelected ? '✓' : ''}
+                    <div style={styles.recipeMain}>
+                      <div style={{
+                        ...styles.checkbox,
+                        ...(isSelected ? styles.checkboxSelected : {}),
+                      }}>
+                        {isSelected && (
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                            <polyline points="20 6 9 17 4 12" />
+                          </svg>
+                        )}
                       </div>
                       <div style={styles.recipeInfo}>
                         <span style={styles.recipeTitle}>{recipe.title}</span>
@@ -210,32 +226,42 @@ export default function CreateGroceryList() {
                           {recipe.prepTime && `${recipe.prepTime}m prep`}
                           {recipe.prepTime && recipe.cookTime && ' · '}
                           {recipe.cookTime && `${recipe.cookTime}m cook`}
+                          {!recipe.prepTime && !recipe.cookTime && `${recipe.servings} servings`}
                         </span>
                       </div>
                     </div>
 
                     {isSelected && (
-                      <div style={styles.servingsControl}>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            updateServings(recipe.id, servings - 1)
-                          }}
-                          style={styles.servingsButton}
-                        >
-                          −
-                        </button>
-                        <span style={styles.servingsValue}>{servings}</span>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            updateServings(recipe.id, servings + 1)
-                          }}
-                          style={styles.servingsButton}
-                        >
-                          +
-                        </button>
-                        <span style={styles.servingsLabel}>servings</span>
+                      <div style={styles.servingsControl} onClick={(e) => e.stopPropagation()}>
+                        <span style={styles.servingsLabel}>Servings</span>
+                        <div style={styles.servingsStepper}>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              updateServings(recipe.id, servings - 1)
+                            }}
+                            style={styles.servingsButton}
+                            aria-label="Decrease servings"
+                          >
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                              <line x1="5" y1="12" x2="19" y2="12" />
+                            </svg>
+                          </button>
+                          <span style={styles.servingsValue}>{servings}</span>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              updateServings(recipe.id, servings + 1)
+                            }}
+                            style={styles.servingsButton}
+                            aria-label="Increase servings"
+                          >
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                              <line x1="12" y1="5" x2="12" y2="19" />
+                              <line x1="5" y1="12" x2="19" y2="12" />
+                            </svg>
+                          </button>
+                        </div>
                       </div>
                     )}
                   </div>
@@ -249,9 +275,23 @@ export default function CreateGroceryList() {
           onClick={handleCreate}
           disabled={creating || selectedRecipes.size === 0}
           className="btn-primary"
-          style={{ width: '100%', padding: '0.875rem', fontSize: '1rem' }}
+          style={styles.createBtn}
         >
-          {creating ? 'Creating...' : 'Create Grocery List'}
+          {creating ? (
+            <>
+              <span className="spinner" style={{ width: '18px', height: '18px', borderWidth: '2px' }} />
+              Creating...
+            </>
+          ) : (
+            <>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z" />
+                <line x1="3" y1="6" x2="21" y2="6" />
+                <path d="M16 10a4 4 0 01-8 0" />
+              </svg>
+              Create Grocery List
+            </>
+          )}
         </button>
       </div>
     </div>
@@ -262,11 +302,11 @@ const styles: Record<string, React.CSSProperties> = {
   container: {
     minHeight: '100vh',
     background: colors.bg,
-    padding: '2rem 1rem',
+    padding: '1.5rem 1rem 2rem',
     paddingTop: '4.5rem',
   },
   card: {
-    background: 'white',
+    background: colors.surface,
     padding: '2rem',
     borderRadius: radius.lg,
     boxShadow: shadows.md,
@@ -277,33 +317,58 @@ const styles: Record<string, React.CSSProperties> = {
   header: {
     marginBottom: '1.5rem',
   },
+  backLink: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '0.25rem',
+  },
   title: {
-    margin: '0.5rem 0 0',
-    fontSize: '1.75rem',
+    margin: '0.625rem 0 0',
+    fontSize: '1.5rem',
     fontWeight: 700,
     letterSpacing: '-0.02em',
+    color: colors.text,
   },
   section: {
     marginBottom: '1.5rem',
   },
+  sectionHeader: {
+    display: 'flex',
+    alignItems: 'baseline',
+    justifyContent: 'space-between',
+    marginBottom: '0.25rem',
+  },
   label: {
     display: 'block',
     fontSize: '0.875rem',
-    fontWeight: 500,
+    fontWeight: 600,
+    color: colors.text,
     marginBottom: '0.5rem',
+  },
+  selectedCount: {
+    fontSize: '0.75rem',
+    fontWeight: 600,
+    color: colors.primary,
+    background: colors.primaryLight,
+    padding: '0.125rem 0.5rem',
+    borderRadius: radius.full,
   },
   hint: {
     fontSize: '0.8125rem',
     color: colors.textSecondary,
     margin: '0 0 1rem',
+    lineHeight: 1.4,
   },
   input: {
     width: '100%',
-    padding: '0.75rem',
-    borderRadius: radius.sm,
+    padding: '0.75rem 1rem',
+    borderRadius: radius.md,
     border: `1px solid ${colors.border}`,
-    fontSize: '1rem',
+    fontSize: '0.9375rem',
     boxSizing: 'border-box',
+    background: colors.warmBg,
+    color: colors.text,
+    transition: 'all 150ms ease',
   },
   emptyState: {
     textAlign: 'center',
@@ -311,22 +376,27 @@ const styles: Record<string, React.CSSProperties> = {
     color: colors.textSecondary,
     background: colors.warmBg,
     borderRadius: radius.md,
+    fontSize: '0.875rem',
   },
   emptyLink: {
     color: colors.primary,
     textDecoration: 'none',
+    fontWeight: 500,
   },
   recipeList: {
     display: 'flex',
     flexDirection: 'column',
-    gap: '0.75rem',
+    gap: '0.625rem',
   },
   recipeCard: {
-    border: `1px solid ${colors.border}`,
+    borderWidth: 1,
+    borderStyle: 'solid',
+    borderColor: colors.border,
     borderRadius: radius.md,
-    padding: '1rem',
+    padding: '0.875rem 1rem',
     cursor: 'pointer',
-    transition: 'all 0.15s',
+    background: colors.surface,
+    outline: 'none',
   },
   recipeCardSelected: {
     borderColor: colors.primary,
@@ -338,56 +408,91 @@ const styles: Record<string, React.CSSProperties> = {
     gap: '0.75rem',
   },
   checkbox: {
-    width: '24px',
-    height: '24px',
-    borderRadius: radius.sm,
-    border: `2px solid ${colors.border}`,
+    width: 22,
+    height: 22,
+    borderRadius: 6,
+    borderWidth: 2,
+    borderStyle: 'solid',
+    borderColor: colors.textMuted,
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    fontSize: '0.875rem',
-    fontWeight: 600,
-    color: colors.primary,
-    background: 'white',
+    color: 'white',
+    background: colors.surface,
     flexShrink: 0,
+  },
+  checkboxSelected: {
+    background: colors.primary,
+    borderColor: colors.primary,
   },
   recipeInfo: {
     flex: 1,
+    minWidth: 0,
   },
   recipeTitle: {
     display: 'block',
     fontWeight: 500,
+    fontSize: '0.9375rem',
+    color: colors.text,
+    lineHeight: 1.3,
   },
   recipeMeta: {
-    fontSize: '0.8125rem',
-    color: colors.textSecondary,
+    fontSize: '0.75rem',
+    color: colors.textMuted,
+    marginTop: '0.125rem',
+    display: 'block',
   },
   servingsControl: {
     display: 'flex',
     alignItems: 'center',
-    gap: '0.5rem',
+    justifyContent: 'space-between',
     marginTop: '0.75rem',
-    marginLeft: '2.25rem',
+    marginLeft: '2.5rem',
+    padding: '0.5rem 0.75rem',
+    background: colors.warmBg,
+    borderRadius: radius.sm,
+  },
+  servingsLabel: {
+    fontSize: '0.75rem',
+    color: colors.textSecondary,
+    fontWeight: 500,
+  },
+  servingsStepper: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.125rem',
+    background: colors.surface,
+    borderRadius: radius.sm,
+    border: `1px solid ${colors.borderLight}`,
   },
   servingsButton: {
-    width: '28px',
-    height: '28px',
+    width: '32px',
+    height: '32px',
+    minHeight: '32px',
     borderRadius: radius.sm,
-    border: `1px solid ${colors.border}`,
-    background: 'white',
+    border: 'none',
+    background: 'transparent',
     cursor: 'pointer',
-    fontSize: '1rem',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
+    color: colors.textSecondary,
+    transition: 'all 150ms ease',
   },
   servingsValue: {
     minWidth: '2rem',
     textAlign: 'center',
-    fontWeight: 500,
+    fontWeight: 600,
+    fontSize: '0.9375rem',
+    color: colors.text,
   },
-  servingsLabel: {
-    fontSize: '0.8125rem',
-    color: colors.textSecondary,
+  createBtn: {
+    width: '100%',
+    padding: '0.875rem',
+    fontSize: '0.9375rem',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '0.5rem',
   },
 }

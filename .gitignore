@@ -4,3 +4,9 @@ dist/
 .env.local
 *.log
 .DS_Store
+
+# TypeScript build artifacts (tsc --build output)
+*.tsbuildinfo
+packages/web/src/**/*.js
+packages/web/src/**/*.d.ts
+packages/web/src/**/*.d.ts.map
