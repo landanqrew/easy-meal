@@ -14,6 +14,12 @@ export const createMealPlanSchema = z.object({
   mealType,
 })
 
+export const patchMealPlanSchema = z.object({
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be YYYY-MM-DD'),
+  mealType,
+  sortOrder: z.number().int().min(0),
+})
+
 // ── Grocery Lists ───────────────────────────────────────────
 export const createGroceryListSchema = z.object({
   name: z.string().min(1, 'Name is required').trim(),

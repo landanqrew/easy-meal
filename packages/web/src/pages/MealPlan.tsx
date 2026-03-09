@@ -1,9 +1,21 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useSession } from '../lib/auth'
 import { colors, radius, shadows } from '../lib/theme'
-import { apiFetch, apiPost, apiDelete, queryKeys } from '../lib/api'
+import { apiFetch, apiPost, apiPatch, apiDelete, queryKeys } from '../lib/api'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import {
+  DndContext,
+  DragOverlay,
+  PointerSensor,
+  TouchSensor,
+  useSensor,
+  useSensors,
+  useDraggable,
+  useDroppable,
+  type DragStartEvent,
+  type DragEndEvent,
+} from '@dnd-kit/core'
 import type { MealType, RecipeType, MealPlanEntry } from '@easy-meal/shared'
 
 type Recipe = {
@@ -46,6 +58,100 @@ const MEAL_TYPE_COLORS: Record<MealType, { dot: string; bg: string; text: string
   lunch: { dot: '#81A384', bg: 'rgba(129, 163, 132, 0.08)', text: '#5B7A5E' },
   dinner: { dot: '#D08770', bg: 'rgba(208, 135, 112, 0.08)', text: '#B06A52' },
   snack: { dot: '#B8A596', bg: 'rgba(184, 165, 150, 0.08)', text: '#857163' },
+}
+
+// Drag-and-drop sub-components
+function DraggableRecipeChip({
+  entry,
+  onRemove,
+}: {
+  entry: MealPlanEntry
+  onRemove: (id: string) => void
+}) {
+  const { attributes, listeners, setNodeRef, isDragging, active } = useDraggable({
+    id: entry.id,
+    data: { entry },
+  })
+
+  const handleClick = (e: React.MouseEvent) => {
+    // If a drag just ended, don't navigate
+    if (active) {
+      e.preventDefault()
+      return
+    }
+  }
+
+  return (
+    <div
+      ref={setNodeRef}
+      {...listeners}
+      {...attributes}
+      style={{
+        ...styles.recipeChip,
+        opacity: isDragging ? 0.3 : 1,
+        cursor: isDragging ? 'grabbing' : 'grab',
+        touchAction: 'none',
+      }}
+    >
+      <Link
+        to={`/recipes/${entry.recipe.id}`}
+        style={styles.recipeChipLink}
+        onClick={handleClick}
+        draggable={false}
+      >
+        {entry.recipe.title}
+      </Link>
+      <button
+        onClick={(e) => {
+          e.stopPropagation()
+          onRemove(entry.id)
+        }}
+        onPointerDown={(e) => e.stopPropagation()}
+        className="meal-remove-btn"
+        style={styles.recipeChipRemove}
+        aria-label={`Remove ${entry.recipe.title}`}
+      >
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18" />
+          <line x1="6" y1="6" x2="18" y2="18" />
+        </svg>
+      </button>
+    </div>
+  )
+}
+
+function DroppableMealSlot({
+  droppableId,
+  mealType,
+  children,
+}: {
+  droppableId: string
+  mealType: MealType
+  children: React.ReactNode
+}) {
+  const { setNodeRef, isOver } = useDroppable({
+    id: droppableId,
+    data: { mealType },
+  })
+
+  const mealColors = MEAL_TYPE_COLORS[mealType]
+
+  return (
+    <div
+      ref={setNodeRef}
+      className="meal-slot"
+      style={{
+        ...styles.mealSlot,
+        ...(isOver ? {
+          background: mealColors.bg,
+          borderColor: mealColors.dot,
+          borderStyle: 'dashed',
+        } : {}),
+      }}
+    >
+      {children}
+    </div>
+  )
 }
 
 function getMonday(date: Date): Date {
@@ -144,6 +250,86 @@ export default function MealPlan() {
       setError(err.message || 'Failed to remove entry')
     },
   })
+
+  const moveMutation = useMutation({
+    mutationFn: (args: { id: string; date: string; mealType: MealType; sortOrder: number }) =>
+      apiPatch(`/api/meal-plans/${args.id}`, {
+        date: args.date,
+        mealType: args.mealType,
+        sortOrder: args.sortOrder,
+      }),
+    onError: (err: Error) => {
+      // Revert optimistic update
+      queryClient.invalidateQueries({ queryKey: queryKeys.mealPlanEntries(weekParam) })
+      setError(err.message || 'Failed to move entry')
+    },
+  })
+
+  const [activeEntry, setActiveEntry] = useState<MealPlanEntry | null>(null)
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: { delay: 200, tolerance: 5 },
+    }),
+    useSensor(TouchSensor, {
+      activationConstraint: { delay: 250, tolerance: 5 },
+    })
+  )
+
+  const handleDragStart = useCallback((event: DragStartEvent) => {
+    const entry = event.active.data.current?.entry as MealPlanEntry | undefined
+    if (entry) setActiveEntry(entry)
+  }, [])
+
+  const handleDragEnd = useCallback((event: DragEndEvent) => {
+    setActiveEntry(null)
+    const { active, over } = event
+    if (!over) return
+
+    const entry = active.data.current?.entry as MealPlanEntry | undefined
+    if (!entry) return
+
+    // droppableId format: "slot-{date}-{mealType}"
+    const overId = String(over.id)
+    if (!overId.startsWith('slot-')) return
+
+    const parts = overId.split('-')
+    // "slot-2026-03-08-breakfast" → date = "2026-03-08", mealType = last part
+    const newMealType = parts[parts.length - 1] as MealType
+    const newDate = parts.slice(1, parts.length - 1).join('-')
+
+    const oldDate = entry.date.slice(0, 10)
+    const oldMealType = entry.mealType
+
+    // No change
+    if (oldDate === newDate && oldMealType === newMealType) return
+
+    // Count existing entries in target slot for sortOrder
+    const targetEntries = entries.filter((e) => {
+      return e.date.slice(0, 10) === newDate && e.mealType === newMealType
+    })
+    const newSortOrder = targetEntries.length
+
+    // Optimistic update
+    queryClient.setQueryData<MealPlanEntry[]>(
+      queryKeys.mealPlanEntries(weekParam),
+      (old) => {
+        if (!old) return old
+        return old.map((e) =>
+          e.id === entry.id
+            ? { ...e, date: newDate + 'T00:00:00.000Z', mealType: newMealType, sortOrder: newSortOrder }
+            : e
+        )
+      }
+    )
+
+    moveMutation.mutate({
+      id: entry.id,
+      date: newDate,
+      mealType: newMealType,
+      sortOrder: newSortOrder,
+    })
+  }, [entries, weekParam, queryClient, moveMutation])
 
   useEffect(() => {
     if (!isPending && !session) {
@@ -341,35 +527,118 @@ export default function MealPlan() {
 
         {error && <div className="error-message">{error}</div>}
 
-        {isMobile ? (
-          <div style={styles.mobileList}>
-            {days.map((day, i) => {
-              const isToday = isSameDay(day, today)
-              return (
-                <div key={i} style={{
-                  ...styles.mobileDay,
-                  ...(isToday ? styles.mobileDayToday : {}),
-                }}>
-                  <div style={{
-                    ...styles.mobileDayHeader,
-                    ...(isToday ? styles.mobileDayHeaderToday : {}),
+        <DndContext
+          sensors={sensors}
+          onDragStart={handleDragStart}
+          onDragEnd={handleDragEnd}
+        >
+          {isMobile ? (
+            <div style={styles.mobileList}>
+              {days.map((day, i) => {
+                const isToday = isSameDay(day, today)
+                return (
+                  <div key={i} style={{
+                    ...styles.mobileDay,
+                    ...(isToday ? styles.mobileDayToday : {}),
                   }}>
-                    <span style={styles.mobileDayName}>
-                      {DAY_NAMES_FULL[i]}
-                    </span>
-                    <span style={{
-                      ...styles.dayBadge,
-                      ...(isToday ? styles.dayBadgeToday : {}),
+                    <div style={{
+                      ...styles.mobileDayHeader,
+                      ...(isToday ? styles.mobileDayHeaderToday : {}),
                     }}>
-                      {day.getDate()}
-                    </span>
+                      <span style={styles.mobileDayName}>
+                        {DAY_NAMES_FULL[i]}
+                      </span>
+                      <span style={{
+                        ...styles.dayBadge,
+                        ...(isToday ? styles.dayBadgeToday : {}),
+                      }}>
+                        {day.getDate()}
+                      </span>
+                    </div>
+                    <div style={styles.mobileMeals}>
+                      {MEAL_TYPES.map((mealType) => {
+                        const slotEntries = getEntriesForSlot(day, mealType)
+                        const mealColors = MEAL_TYPE_COLORS[mealType]
+                        const droppableId = `slot-${formatDateParam(day)}-${mealType}`
+                        return (
+                          <DroppableMealSlot key={mealType} droppableId={droppableId} mealType={mealType}>
+                            <div style={styles.mealSlotHeader}>
+                              <span style={{
+                                ...styles.mealDot,
+                                background: mealColors.dot,
+                              }} />
+                              <span style={{
+                                ...styles.mealSlotLabel,
+                                color: mealColors.text,
+                              }}>
+                                {mealType}
+                              </span>
+                            </div>
+                            <div style={styles.mealSlotContent}>
+                              {slotEntries.map((entry) => (
+                                <DraggableRecipeChip
+                                  key={entry.id}
+                                  entry={entry}
+                                  onRemove={handleRemoveEntry}
+                                />
+                              ))}
+                              <button
+                                onClick={() =>
+                                  setPickerOpen({
+                                    date: formatDateParam(day),
+                                    mealType,
+                                  })
+                                }
+                                className="meal-add-btn"
+                                style={styles.addButton}
+                              >
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                  <line x1="12" y1="5" x2="12" y2="19" />
+                                  <line x1="5" y1="12" x2="19" y2="12" />
+                                </svg>
+                                Add
+                              </button>
+                            </div>
+                          </DroppableMealSlot>
+                        )
+                      })}
+                    </div>
                   </div>
-                  <div style={styles.mobileMeals}>
+                )
+              })}
+            </div>
+          ) : (
+            <div style={styles.calendarGrid}>
+              {days.map((day, i) => {
+                const isToday = isSameDay(day, today)
+                return (
+                  <div key={i} style={{
+                    ...styles.dayColumn,
+                    ...(isToday ? styles.dayColumnToday : {}),
+                  }}>
+                    <div style={{
+                      ...styles.dayHeader,
+                      ...(isToday ? styles.dayHeaderToday : {}),
+                    }}>
+                      <div style={{
+                        ...styles.dayName,
+                        ...(isToday ? { color: 'rgba(255,255,255,0.85)' } : {}),
+                      }}>
+                        {DAY_NAMES[i]}
+                      </div>
+                      <div style={{
+                        ...styles.dayBadge,
+                        ...(isToday ? styles.dayBadgeToday : {}),
+                      }}>
+                        {day.getDate()}
+                      </div>
+                    </div>
                     {MEAL_TYPES.map((mealType) => {
                       const slotEntries = getEntriesForSlot(day, mealType)
                       const mealColors = MEAL_TYPE_COLORS[mealType]
+                      const droppableId = `slot-${formatDateParam(day)}-${mealType}`
                       return (
-                        <div key={mealType} className="meal-slot" style={styles.mealSlot}>
+                        <DroppableMealSlot key={mealType} droppableId={droppableId} mealType={mealType}>
                           <div style={styles.mealSlotHeader}>
                             <span style={{
                               ...styles.mealDot,
@@ -384,25 +653,11 @@ export default function MealPlan() {
                           </div>
                           <div style={styles.mealSlotContent}>
                             {slotEntries.map((entry) => (
-                              <div key={entry.id} style={styles.recipeChip}>
-                                <Link
-                                  to={`/recipes/${entry.recipe.id}`}
-                                  style={styles.recipeChipLink}
-                                >
-                                  {entry.recipe.title}
-                                </Link>
-                                <button
-                                  onClick={() => handleRemoveEntry(entry.id)}
-                                  className="meal-remove-btn"
-                                  style={styles.recipeChipRemove}
-                                  aria-label={`Remove ${entry.recipe.title}`}
-                                >
-                                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                                    <line x1="18" y1="6" x2="6" y2="18" />
-                                    <line x1="6" y1="6" x2="18" y2="18" />
-                                  </svg>
-                                </button>
-                              </div>
+                              <DraggableRecipeChip
+                                key={entry.id}
+                                entry={entry}
+                                onRemove={handleRemoveEntry}
+                              />
                             ))}
                             <button
                               onClick={() =>
@@ -421,104 +676,34 @@ export default function MealPlan() {
                               Add
                             </button>
                           </div>
-                        </div>
+                        </DroppableMealSlot>
                       )
                     })}
                   </div>
-                </div>
-              )
-            })}
-          </div>
-        ) : (
-          <div style={styles.calendarGrid}>
-            {days.map((day, i) => {
-              const isToday = isSameDay(day, today)
-              return (
-                <div key={i} style={{
-                  ...styles.dayColumn,
-                  ...(isToday ? styles.dayColumnToday : {}),
-                }}>
-                  <div style={{
-                    ...styles.dayHeader,
-                    ...(isToday ? styles.dayHeaderToday : {}),
-                  }}>
-                    <div style={{
-                      ...styles.dayName,
-                      ...(isToday ? { color: 'rgba(255,255,255,0.85)' } : {}),
-                    }}>
-                      {DAY_NAMES[i]}
-                    </div>
-                    <div style={{
-                      ...styles.dayBadge,
-                      ...(isToday ? styles.dayBadgeToday : {}),
-                    }}>
-                      {day.getDate()}
-                    </div>
-                  </div>
-                  {MEAL_TYPES.map((mealType) => {
-                    const slotEntries = getEntriesForSlot(day, mealType)
-                    const mealColors = MEAL_TYPE_COLORS[mealType]
-                    return (
-                      <div key={mealType} className="meal-slot" style={styles.mealSlot}>
-                        <div style={styles.mealSlotHeader}>
-                          <span style={{
-                            ...styles.mealDot,
-                            background: mealColors.dot,
-                          }} />
-                          <span style={{
-                            ...styles.mealSlotLabel,
-                            color: mealColors.text,
-                          }}>
-                            {mealType}
-                          </span>
-                        </div>
-                        <div style={styles.mealSlotContent}>
-                          {slotEntries.map((entry) => (
-                            <div key={entry.id} style={styles.recipeChip}>
-                              <Link
-                                to={`/recipes/${entry.recipe.id}`}
-                                style={styles.recipeChipLink}
-                              >
-                                {entry.recipe.title}
-                              </Link>
-                              <button
-                                onClick={() => handleRemoveEntry(entry.id)}
-                                className="meal-remove-btn"
-                                style={styles.recipeChipRemove}
-                                aria-label={`Remove ${entry.recipe.title}`}
-                              >
-                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                                  <line x1="18" y1="6" x2="6" y2="18" />
-                                  <line x1="6" y1="6" x2="18" y2="18" />
-                                </svg>
-                              </button>
-                            </div>
-                          ))}
-                          <button
-                            onClick={() =>
-                              setPickerOpen({
-                                date: formatDateParam(day),
-                                mealType,
-                              })
-                            }
-                            className="meal-add-btn"
-                            style={styles.addButton}
-                          >
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                              <line x1="12" y1="5" x2="12" y2="19" />
-                              <line x1="5" y1="12" x2="19" y2="12" />
-                            </svg>
-                            Add
-                          </button>
-                        </div>
-                      </div>
-                    )
-                  })}
-                </div>
-              )
-            })}
-          </div>
-        )}
+                )
+              })}
+            </div>
+          )}
+
+          <DragOverlay>
+            {activeEntry && (
+              <div style={{
+                ...styles.recipeChip,
+                boxShadow: '0 8px 24px rgba(184, 165, 150, 0.35)',
+                background: colors.surface,
+                borderWidth: 1,
+                borderStyle: 'solid',
+                borderColor: colors.primary,
+                transform: 'scale(1.05)',
+                cursor: 'grabbing',
+              }}>
+                <span style={styles.recipeChipLink}>
+                  {activeEntry.recipe.title}
+                </span>
+              </div>
+            )}
+          </DragOverlay>
+        </DndContext>
       </div>
 
       {/* Recipe picker modal */}
@@ -791,8 +976,10 @@ const styles: Record<string, React.CSSProperties> = {
   // Desktop grid
   calendarGrid: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(7, 1fr)',
+    gridTemplateColumns: 'repeat(7, minmax(140px, 1fr))',
     gap: '0.625rem',
+    overflowX: 'auto',
+    WebkitOverflowScrolling: 'touch',
   },
   dayColumn: {
     display: 'flex',
@@ -883,7 +1070,6 @@ const styles: Record<string, React.CSSProperties> = {
   recipeChip: {
     display: 'flex',
     alignItems: 'center',
-    justifyContent: 'space-between',
     gap: '0.25rem',
     padding: '0.3125rem 0.5rem',
     borderRadius: radius.sm,

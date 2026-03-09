@@ -4,7 +4,7 @@ import { db } from '../db'
 import { mealPlans, recipes } from '../db/schema'
 import { getSession, getUserWithHousehold } from '../lib/auth-helpers'
 import { getWeekStartMonday } from '../lib/dates'
-import { validate, createMealPlanSchema } from '../lib/validators'
+import { validate, createMealPlanSchema, patchMealPlanSchema } from '../lib/validators'
 
 const mealPlansRouter = new Hono()
 
@@ -149,6 +149,72 @@ mealPlansRouter.post('/', async (c) => {
     },
     201
   )
+})
+
+// PATCH /:id - Move a meal plan entry (drag-and-drop)
+mealPlansRouter.patch('/:id', async (c) => {
+  const session = await getSession(c)
+  if (!session) {
+    return c.json({ error: 'Unauthorized' }, 401)
+  }
+
+  const currentUser = await getUserWithHousehold(session.user.id)
+  if (!currentUser?.householdId) {
+    return c.json({ error: 'You must be in a household' }, 400)
+  }
+
+  const id = c.req.param('id')
+
+  const entry = await db.query.mealPlans.findFirst({
+    where: and(eq(mealPlans.id, id), eq(mealPlans.householdId, currentUser.householdId)),
+  })
+
+  if (!entry) {
+    return c.json({ error: 'Meal plan entry not found' }, 404)
+  }
+
+  const body = await c.req.json()
+  const parsed = validate(patchMealPlanSchema, body)
+  if (!parsed.success) {
+    return c.json({ error: parsed.error }, 400)
+  }
+  const { date, mealType, sortOrder } = parsed.data
+
+  const dateValue = new Date(date + 'T00:00:00Z')
+
+  const [updated] = await db
+    .update(mealPlans)
+    .set({
+      date: dateValue,
+      mealType,
+      sortOrder,
+      updatedByUserId: session.user.id,
+      updatedAt: new Date(),
+    })
+    .where(eq(mealPlans.id, id))
+    .returning()
+
+  // Fetch recipe info for the response
+  const recipe = await db.query.recipes.findFirst({
+    where: eq(recipes.id, updated.recipeId),
+  })
+
+  return c.json({
+    data: {
+      id: updated.id,
+      recipeId: updated.recipeId,
+      date: updated.date.toISOString(),
+      mealType: updated.mealType,
+      sortOrder: updated.sortOrder,
+      recipe: {
+        id: recipe!.id,
+        title: recipe!.title,
+        prepTime: recipe!.prepTime,
+        cookTime: recipe!.cookTime,
+        type: recipe!.type,
+      },
+    },
+  })
 })
 
 // DELETE /:id - Remove a meal plan entry
