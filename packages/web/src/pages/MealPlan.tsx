@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from 'react'
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useSession } from '../lib/auth'
 import { colors, radius, shadows } from '../lib/theme'
@@ -212,6 +212,8 @@ export default function MealPlan() {
   const [searchQuery, setSearchQuery] = useState('')
   const [pickerTypeFilter, setPickerTypeFilter] = useState<RecipeType | null>(null)
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768)
+  const gridRef = useRef<HTMLDivElement>(null)
+  const todayColumnRef = useRef<HTMLDivElement>(null)
 
   const weekParam = formatDateParam(weekStart)
 
@@ -348,6 +350,16 @@ export default function MealPlan() {
     window.addEventListener('resize', handleResize)
     return () => window.removeEventListener('resize', handleResize)
   }, [])
+
+  // Scroll today's column into view when week changes
+  useEffect(() => {
+    if (!isMobile && todayColumnRef.current && gridRef.current) {
+      const grid = gridRef.current
+      const col = todayColumnRef.current
+      const scrollLeft = col.offsetLeft - grid.offsetLeft - (grid.clientWidth / 2) + (col.offsetWidth / 2)
+      grid.scrollTo({ left: Math.max(0, scrollLeft), behavior: 'smooth' })
+    }
+  }, [weekParam, isMobile, entriesLoading])
 
   const getEntriesForSlot = (date: Date, mealType: MealType): MealPlanEntry[] => {
     const dateStr = formatDateParam(date)
@@ -608,14 +620,18 @@ export default function MealPlan() {
               })}
             </div>
           ) : (
-            <div style={styles.calendarGrid}>
+            <div ref={gridRef} style={styles.calendarGrid}>
               {days.map((day, i) => {
                 const isToday = isSameDay(day, today)
                 return (
-                  <div key={i} style={{
-                    ...styles.dayColumn,
-                    ...(isToday ? styles.dayColumnToday : {}),
-                  }}>
+                  <div
+                    key={i}
+                    ref={isToday ? todayColumnRef : undefined}
+                    style={{
+                      ...styles.dayColumn,
+                      ...(isToday ? styles.dayColumnToday : {}),
+                    }}
+                  >
                     <div style={{
                       ...styles.dayHeader,
                       ...(isToday ? styles.dayHeaderToday : {}),
@@ -973,13 +989,15 @@ const styles: Record<string, React.CSSProperties> = {
     transition: 'all 150ms ease',
   },
 
-  // Desktop grid
+  // Desktop grid — Trello-style horizontal scroll
   calendarGrid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(7, minmax(140px, 1fr))',
+    display: 'flex',
     gap: '0.625rem',
     overflowX: 'auto',
     WebkitOverflowScrolling: 'touch',
+    paddingBottom: '0.5rem',
+    scrollbarWidth: 'thin',
+    scrollbarColor: `${colors.border} transparent`,
   },
   dayColumn: {
     display: 'flex',
@@ -987,6 +1005,9 @@ const styles: Record<string, React.CSSProperties> = {
     gap: '0.375rem',
     borderRadius: radius.md,
     transition: 'all 200ms ease',
+    minWidth: '220px',
+    width: '220px',
+    flexShrink: 0,
   },
   dayColumnToday: {
     // subtle glow behind the whole column
@@ -1082,12 +1103,13 @@ const styles: Record<string, React.CSSProperties> = {
     color: colors.text,
     cursor: 'pointer',
     textDecoration: 'none',
-    lineHeight: 1.3,
+    lineHeight: 1.4,
     flex: 1,
     minWidth: 0,
+    display: '-webkit-box',
+    WebkitLineClamp: 2,
+    WebkitBoxOrient: 'vertical',
     overflow: 'hidden',
-    textOverflow: 'ellipsis',
-    whiteSpace: 'nowrap',
   },
   recipeChipRemove: {
     background: 'none',
