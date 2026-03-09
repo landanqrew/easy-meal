@@ -131,6 +131,11 @@ export default function GroceryListDetail() {
   const handleMarkComplete = async () => {
     if (!groceryList) return
 
+    const unchecked = totalCount - checkedCount
+    if (!allChecked && unchecked > 0) {
+      if (!confirm(`${unchecked} item${unchecked !== 1 ? 's' : ''} still unchecked. Mark as complete anyway?`)) return
+    }
+
     try {
       await apiPatch(`/api/grocery-lists/${id}`, { status: 'completed' })
       queryClient.setQueryData(queryKeys.groceryList(id!), (old: GroceryList | undefined) =>
