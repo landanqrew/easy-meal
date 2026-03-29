@@ -1,7 +1,7 @@
 import { Hono } from 'hono'
 import { eq, and, desc, ilike, or, sql, count } from 'drizzle-orm'
 import { db } from '../db'
-import { recipes, recipeIngredients, ingredients, recipeCheckins } from '../db/schema'
+import { recipes, recipeIngredients, recipeCheckins } from '../db/schema'
 import { user } from '../db/auth-schema'
 import { getSession, getUserWithHousehold } from '../lib/auth-helpers'
 

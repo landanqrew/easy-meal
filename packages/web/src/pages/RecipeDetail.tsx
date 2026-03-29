@@ -180,7 +180,7 @@ export default function RecipeDetail() {
     try {
       await apiDelete(`/api/checkins/${checkinId}`)
       queryClient.invalidateQueries({ queryKey: queryKeys.checkins(id!) })
-    } catch {}
+    } catch { /* ignored */ }
   }
 
   const startEditing = () => {

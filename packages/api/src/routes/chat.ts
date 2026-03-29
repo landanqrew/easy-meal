@@ -33,7 +33,7 @@ chatRouter.post('/recipe', async (c) => {
         if (Array.isArray(parsed) && parsed.length > 0) {
           dietaryRestrictions = parsed
         }
-      } catch {}
+      } catch { /* ignored */ }
     }
 
     const result = await chatRecipeGeneration(messages, dietaryRestrictions)

@@ -116,7 +116,7 @@ export default function PublicRecipeDetail() {
     try {
       await apiDelete(`/api/checkins/${checkinId}`)
       queryClient.invalidateQueries({ queryKey: queryKeys.publicRecipe(id!) })
-    } catch {}
+    } catch { /* ignored */ }
   }
 
   if (isPending || isLoading) {

@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { useSession } from '../lib/auth'
-import { colors, radius, shadows } from '../lib/theme'
+import { colors, radius } from '../lib/theme'
 import { API_URL, queryKeys } from '../lib/api'
 import type { Pagination } from '@easy-meal/shared'
 

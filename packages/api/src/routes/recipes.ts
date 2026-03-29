@@ -31,7 +31,7 @@ recipesRouter.post('/generate', async (c) => {
         if (Array.isArray(restrictions) && restrictions.length > 0) {
           preferences.dietaryRestrictions = restrictions
         }
-      } catch {}
+      } catch { /* ignored */ }
     }
 
     const recipe = await generateRecipe(preferences)
@@ -389,11 +389,10 @@ recipesRouter.patch('/:id', async (c) => {
   if (instructions !== undefined) updates.instructions = instructions
   if (type !== undefined) updates.type = type
 
-  const [updated] = await db
+  await db
     .update(recipes)
     .set(updates)
     .where(eq(recipes.id, recipeId))
-    .returning()
 
   // Replace ingredients if provided
   if (recipeIngs && Array.isArray(recipeIngs)) {

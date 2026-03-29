@@ -1,4 +1,4 @@
-import { describe, test, expect, beforeEach } from 'bun:test'
+import { describe, test, expect } from 'bun:test'
 import { Hono } from 'hono'
 import { rateLimit } from './error-handler'
 import { requestSizeLimit } from './security'

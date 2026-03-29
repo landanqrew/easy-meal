@@ -1138,6 +1138,7 @@ body {
 
 .dietary-chip {
   transition: all var(--transition-fast);
+  background: white;
 }
 .dietary-chip:hover {
   border-color: var(--color-primary);
