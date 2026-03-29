@@ -10,7 +10,7 @@ import {
 } from '../db/schema'
 import { user } from '../db/auth-schema'
 import { getSession, getUserWithHousehold } from '../lib/auth-helpers'
-import { normalizeUnit, convertToBaseUnit, convertFromBaseUnit, roundQuantity } from '../lib/units'
+import { convertToBaseUnit, convertFromBaseUnit, roundQuantity } from '../lib/units'
 import {
   validate,
   createGroceryListSchema,
@@ -520,7 +520,7 @@ groceryListsRouter.post('/:id/items', async (c) => {
     .limit(1)
 
   if (!ingredient) {
-    ;[ingredient] = await db
+    [ingredient] = await db
       .insert(ingredients)
       .values({
         name: ingredientName.toLowerCase(),
