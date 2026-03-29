@@ -241,7 +241,6 @@ const styles: Record<string, React.CSSProperties> = {
     padding: '0.5rem 1rem',
     borderRadius: radius.full,
     border: `1px solid ${colors.border}`,
-    background: 'white',
     cursor: 'pointer',
     fontSize: '0.875rem',
     textTransform: 'capitalize',
