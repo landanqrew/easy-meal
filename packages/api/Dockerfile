@@ -1,12 +1,13 @@
 # Build stage
-FROM oven/bun:1 AS builder
+FROM oven/bun:1.2.18 AS builder
 
 WORKDIR /app
 
 # Copy package files
-COPY package.json bun.lockb ./
+COPY package.json bun.lock ./
 COPY packages/api/package.json ./packages/api/
 COPY packages/shared/package.json ./packages/shared/
+COPY packages/web/package.json ./packages/web/
 
 # Install dependencies
 RUN bun install --frozen-lockfile
@@ -15,12 +16,8 @@ RUN bun install --frozen-lockfile
 COPY packages/shared ./packages/shared
 COPY packages/api ./packages/api
 
-# Build shared package
-WORKDIR /app/packages/shared
-RUN bun run build
-
 # Production stage
-FROM oven/bun:1-slim
+FROM oven/bun:1.2.18-slim
 
 WORKDIR /app
 
