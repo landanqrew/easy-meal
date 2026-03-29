@@ -201,9 +201,10 @@ describe('PATCH /tags/:id', () => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name: 'Updated' }),
     })
-    // The mock chain is complex; just verify the route doesn't return 401/404/400
+    // The mock chain is complex; just verify the route doesn't return auth/validation errors or 500
     expect(res.status).not.toBe(401)
     expect(res.status).not.toBe(404)
+    expect(res.status).not.toBe(500)
   })
 })
 

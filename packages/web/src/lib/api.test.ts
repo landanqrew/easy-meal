@@ -91,7 +91,7 @@ describe('apiFetch', () => {
       }))
     ) as any
 
-    expect(apiFetch('/api/test')).rejects.toThrow('Not found')
+    await expect(apiFetch('/api/test')).rejects.toThrow('Not found')
   })
 
   test('throws generic message when no error field', async () => {
@@ -102,7 +102,7 @@ describe('apiFetch', () => {
       }))
     ) as any
 
-    expect(apiFetch('/api/test')).rejects.toThrow('Request failed')
+    await expect(apiFetch('/api/test')).rejects.toThrow('Request failed')
   })
 
   test('includes credentials', async () => {

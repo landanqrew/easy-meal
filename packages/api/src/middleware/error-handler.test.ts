@@ -1,6 +1,7 @@
 import { describe, test, expect, beforeEach } from 'bun:test'
 import { Hono } from 'hono'
 import { rateLimit } from './error-handler'
+import { requestSizeLimit } from './security'
 
 describe('rateLimit', () => {
   test('allows requests under the limit', async () => {
@@ -70,9 +71,6 @@ describe('rateLimit', () => {
 })
 
 describe('requestSizeLimit', () => {
-  // Import here to avoid circular deps
-  const { requestSizeLimit } = require('./security')
-
   test('allows requests under the limit', async () => {
     const app = new Hono()
     app.use('*', requestSizeLimit(1024))
