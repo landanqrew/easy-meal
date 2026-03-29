@@ -393,7 +393,6 @@ recipesRouter.patch('/:id', async (c) => {
     .update(recipes)
     .set(updates)
     .where(eq(recipes.id, recipeId))
-    .returning()
 
   // Replace ingredients if provided
   if (recipeIngs && Array.isArray(recipeIngs)) {
