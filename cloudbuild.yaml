@@ -91,6 +91,8 @@ steps:
       - '--platform'
       - 'managed'
       - '--allow-unauthenticated'
+      - '--set-env-vars'
+      - 'API_URL=https://${_API_SERVICE}-${_PROJECT_NUMBER}.${_REGION}.run.app'
       - '--min-instances'
       - '0'
       - '--max-instances'

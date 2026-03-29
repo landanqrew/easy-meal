@@ -25,11 +25,14 @@ RUN bun run build
 # Production stage - serve with nginx
 FROM nginx:alpine
 
-# Copy nginx config
-COPY packages/web/nginx.conf /etc/nginx/conf.d/default.conf
+# Copy nginx config as template (uses envsubst for API_URL)
+COPY packages/web/nginx.conf /etc/nginx/templates/default.conf.template
 
 # Copy built files
 COPY --from=builder /app/packages/web/dist /usr/share/nginx/html
+
+# Default API URL (overridden at deploy time)
+ENV API_URL=http://localhost:3001
 
 # Expose port
 EXPOSE 8080
@@ -38,4 +41,5 @@ EXPOSE 8080
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
   CMD wget -q --spider http://localhost:8080/ || exit 1
 
-CMD ["nginx", "-g", "daemon off;"]
+# envsubst replaces ${API_URL} in the template, then start nginx
+CMD ["/bin/sh", "-c", "envsubst '${API_URL}' < /etc/nginx/templates/default.conf.template > /etc/nginx/conf.d/default.conf && nginx -g 'daemon off;'"]
