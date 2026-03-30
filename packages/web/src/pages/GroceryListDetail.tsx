@@ -177,15 +177,15 @@ export default function GroceryListDetail() {
 
     setRemovingItems((prev) => new Set(prev).add(itemId))
 
-    // Optimistic update: remove item from UI immediately
-    const previousData = groceryList
+    // Snapshot before optimistic update so concurrent removals roll back correctly
+    const previousData = queryClient.getQueryData(queryKeys.groceryList(id!))
     queryClient.setQueryData(queryKeys.groceryList(id!), {
       ...groceryList,
       items: groceryList.items.filter((item) => item.id !== itemId),
       itemsByCategory: Object.fromEntries(
         Object.entries(groceryList.itemsByCategory).map(([category, items]) => [
           category,
-          items.filter((item) => item.id !== itemId),
+          (items as GroceryItem[]).filter((item) => item.id !== itemId),
         ])
       ),
     })
@@ -193,10 +193,10 @@ export default function GroceryListDetail() {
     try {
       await apiDelete(`/api/grocery-lists/${id}/items/${itemId}`)
       queryClient.invalidateQueries({ queryKey: queryKeys.groceryList(id!) })
-    } catch (err: any) {
+    } catch (err: unknown) {
       // Revert optimistic update on failure
       queryClient.setQueryData(queryKeys.groceryList(id!), previousData)
-      setError(err.message || 'Failed to remove item')
+      setError(err instanceof Error ? err.message : 'Failed to remove item')
     } finally {
       setRemovingItems((prev) => {
         const next = new Set(prev)
