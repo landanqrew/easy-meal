@@ -423,7 +423,7 @@ groceryListsRouter.delete('/:id', async (c) => {
 
   await db.delete(groceryLists).where(eq(groceryLists.id, id))
 
-  return c.json({ success: true })
+  return c.json({ data: { success: true } })
 })
 
 // PATCH /grocery-lists/:id/items/:itemId - Toggle item checked status
@@ -598,7 +598,7 @@ groceryListsRouter.delete('/:id/items/:itemId', async (c) => {
     return c.json({ error: 'Item not found' }, 404)
   }
 
-  return c.json({ success: true })
+  return c.json({ data: { success: true } })
 })
 
 // GET /grocery-lists/:id/export - Export grocery list for Google Tasks
