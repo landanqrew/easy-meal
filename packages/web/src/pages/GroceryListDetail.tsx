@@ -76,6 +76,7 @@ export default function GroceryListDetail() {
   const [newItem, setNewItem] = useState({ name: '', quantity: '1', unit: '' })
   const [adding, setAdding] = useState(false)
   const [copied, setCopied] = useState(false)
+  const [removingItems, setRemovingItems] = useState<Set<string>>(new Set())
 
   const { data: groceryList, isLoading, error: queryError } = useQuery({
     queryKey: queryKeys.groceryList(id!),
@@ -172,11 +173,40 @@ export default function GroceryListDetail() {
   }
 
   const handleRemoveItem = async (itemId: string) => {
+    if (!groceryList || removingItems.has(itemId)) return
+    setError('')
+
+    // Snapshot before optimistic update so concurrent removals roll back correctly
+    const previousData = queryClient.getQueryData<GroceryList>(queryKeys.groceryList(id!))
+    if (!previousData) return
+
+    setRemovingItems((prev) => new Set(prev).add(itemId))
+
+    queryClient.setQueryData(queryKeys.groceryList(id!), {
+      ...previousData,
+      items: previousData.items.filter((item) => item.id !== itemId),
+      itemsByCategory: Object.fromEntries(
+        Object.entries(previousData.itemsByCategory).map(([category, items]) => [
+          category,
+          (items as GroceryItem[]).filter((item) => item.id !== itemId),
+        ])
+      ),
+    })
+
     try {
       await apiDelete(`/api/grocery-lists/${id}/items/${itemId}`)
       queryClient.invalidateQueries({ queryKey: queryKeys.groceryList(id!) })
-    } catch {
-      setError('Failed to remove item')
+    } catch (err: unknown) {
+      // Revert optimistic update on failure, then refetch to ensure cache consistency
+      queryClient.setQueryData(queryKeys.groceryList(id!), previousData)
+      queryClient.invalidateQueries({ queryKey: queryKeys.groceryList(id!) })
+      setError(err instanceof Error ? err.message : 'Failed to remove item')
+    } finally {
+      setRemovingItems((prev) => {
+        const next = new Set(prev)
+        next.delete(itemId)
+        return next
+      })
     }
   }
 
@@ -399,6 +429,7 @@ export default function GroceryListDetail() {
                     <button
                       onClick={() => handleRemoveItem(item.id)}
                       className="grocery-remove"
+                      disabled={removingItems.has(item.id)}
                       aria-label={`Remove ${item.ingredient.name}`}
                     >
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
