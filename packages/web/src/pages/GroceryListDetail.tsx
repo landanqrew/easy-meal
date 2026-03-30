@@ -76,6 +76,7 @@ export default function GroceryListDetail() {
   const [newItem, setNewItem] = useState({ name: '', quantity: '1', unit: '' })
   const [adding, setAdding] = useState(false)
   const [copied, setCopied] = useState(false)
+  const [removingItems, setRemovingItems] = useState<Set<string>>(new Set())
 
   const { data: groceryList, isLoading, error: queryError } = useQuery({
     queryKey: queryKeys.groceryList(id!),
@@ -172,7 +173,9 @@ export default function GroceryListDetail() {
   }
 
   const handleRemoveItem = async (itemId: string) => {
-    if (!groceryList) return
+    if (!groceryList || removingItems.has(itemId)) return
+
+    setRemovingItems((prev) => new Set(prev).add(itemId))
 
     // Optimistic update: remove item from UI immediately
     const previousData = groceryList
@@ -194,6 +197,12 @@ export default function GroceryListDetail() {
       // Revert optimistic update on failure
       queryClient.setQueryData(queryKeys.groceryList(id!), previousData)
       setError(err.message || 'Failed to remove item')
+    } finally {
+      setRemovingItems((prev) => {
+        const next = new Set(prev)
+        next.delete(itemId)
+        return next
+      })
     }
   }
 
@@ -416,6 +425,7 @@ export default function GroceryListDetail() {
                     <button
                       onClick={() => handleRemoveItem(item.id)}
                       className="grocery-remove"
+                      disabled={removingItems.has(item.id)}
                       aria-label={`Remove ${item.ingredient.name}`}
                     >
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
