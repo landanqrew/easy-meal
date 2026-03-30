@@ -1,6 +1,4 @@
-export const API_URL = import.meta.env.DEV
-  ? 'http://localhost:3001'
-  : ''
+export const API_URL = ''
 
 export async function apiFetch<T = unknown>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${API_URL}${path}`, {

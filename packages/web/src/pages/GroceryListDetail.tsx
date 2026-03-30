@@ -172,11 +172,28 @@ export default function GroceryListDetail() {
   }
 
   const handleRemoveItem = async (itemId: string) => {
+    if (!groceryList) return
+
+    // Optimistic update: remove item from UI immediately
+    const previousData = groceryList
+    queryClient.setQueryData(queryKeys.groceryList(id!), {
+      ...groceryList,
+      items: groceryList.items.filter((item) => item.id !== itemId),
+      itemsByCategory: Object.fromEntries(
+        Object.entries(groceryList.itemsByCategory).map(([category, items]) => [
+          category,
+          items.filter((item) => item.id !== itemId),
+        ])
+      ),
+    })
+
     try {
       await apiDelete(`/api/grocery-lists/${id}/items/${itemId}`)
       queryClient.invalidateQueries({ queryKey: queryKeys.groceryList(id!) })
-    } catch {
-      setError('Failed to remove item')
+    } catch (err: any) {
+      // Revert optimistic update on failure
+      queryClient.setQueryData(queryKeys.groceryList(id!), previousData)
+      setError(err.message || 'Failed to remove item')
     }
   }
 
