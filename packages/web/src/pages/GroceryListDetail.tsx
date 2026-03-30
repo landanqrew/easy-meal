@@ -178,12 +178,14 @@ export default function GroceryListDetail() {
     setRemovingItems((prev) => new Set(prev).add(itemId))
 
     // Snapshot before optimistic update so concurrent removals roll back correctly
-    const previousData = queryClient.getQueryData(queryKeys.groceryList(id!))
+    const previousData = queryClient.getQueryData<GroceryList>(queryKeys.groceryList(id!))
+    if (!previousData) return
+
     queryClient.setQueryData(queryKeys.groceryList(id!), {
-      ...groceryList,
-      items: groceryList.items.filter((item) => item.id !== itemId),
+      ...previousData,
+      items: previousData.items.filter((item) => item.id !== itemId),
       itemsByCategory: Object.fromEntries(
-        Object.entries(groceryList.itemsByCategory).map(([category, items]) => [
+        Object.entries(previousData.itemsByCategory).map(([category, items]) => [
           category,
           (items as GroceryItem[]).filter((item) => item.id !== itemId),
         ])
