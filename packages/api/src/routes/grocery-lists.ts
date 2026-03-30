@@ -587,16 +587,22 @@ groceryListsRouter.delete('/:id/items/:itemId', async (c) => {
     return c.json({ error: 'Grocery list not found' }, 404)
   }
 
-  const deleted = await db
-    .delete(groceryListItems)
+  // Verify the item exists and belongs to this grocery list
+  const [item] = await db
+    .select({ id: groceryListItems.id })
+    .from(groceryListItems)
     .where(
       and(eq(groceryListItems.id, itemId), eq(groceryListItems.groceryListId, listId))
     )
-    .returning()
+    .limit(1)
 
-  if (deleted.length === 0) {
+  if (!item) {
     return c.json({ error: 'Item not found' }, 404)
   }
+
+  await db
+    .delete(groceryListItems)
+    .where(eq(groceryListItems.id, itemId))
 
   return c.json({ data: { success: true } })
 })

@@ -174,6 +174,7 @@ export default function GroceryListDetail() {
 
   const handleRemoveItem = async (itemId: string) => {
     if (!groceryList || removingItems.has(itemId)) return
+    setError('')
 
     // Snapshot before optimistic update so concurrent removals roll back correctly
     const previousData = queryClient.getQueryData<GroceryList>(queryKeys.groceryList(id!))
