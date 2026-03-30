@@ -602,7 +602,7 @@ groceryListsRouter.delete('/:id/items/:itemId', async (c) => {
 
   await db
     .delete(groceryListItems)
-    .where(eq(groceryListItems.id, itemId))
+    .where(and(eq(groceryListItems.id, itemId), eq(groceryListItems.groceryListId, listId)))
 
   return c.json({ data: { success: true } })
 })
