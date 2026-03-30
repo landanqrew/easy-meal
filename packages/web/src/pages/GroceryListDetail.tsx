@@ -175,11 +175,11 @@ export default function GroceryListDetail() {
   const handleRemoveItem = async (itemId: string) => {
     if (!groceryList || removingItems.has(itemId)) return
 
-    setRemovingItems((prev) => new Set(prev).add(itemId))
-
     // Snapshot before optimistic update so concurrent removals roll back correctly
     const previousData = queryClient.getQueryData<GroceryList>(queryKeys.groceryList(id!))
     if (!previousData) return
+
+    setRemovingItems((prev) => new Set(prev).add(itemId))
 
     queryClient.setQueryData(queryKeys.groceryList(id!), {
       ...previousData,
