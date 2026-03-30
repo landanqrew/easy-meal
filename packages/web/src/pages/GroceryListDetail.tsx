@@ -194,8 +194,9 @@ export default function GroceryListDetail() {
       await apiDelete(`/api/grocery-lists/${id}/items/${itemId}`)
       queryClient.invalidateQueries({ queryKey: queryKeys.groceryList(id!) })
     } catch (err: unknown) {
-      // Revert optimistic update on failure
+      // Revert optimistic update on failure, then refetch to ensure cache consistency
       queryClient.setQueryData(queryKeys.groceryList(id!), previousData)
+      queryClient.invalidateQueries({ queryKey: queryKeys.groceryList(id!) })
       setError(err instanceof Error ? err.message : 'Failed to remove item')
     } finally {
       setRemovingItems((prev) => {
