@@ -63,7 +63,7 @@ steps:
       - 'managed'
       - '--allow-unauthenticated'
       - '--set-env-vars'
-      - 'NODE_ENV=production,BETTER_AUTH_URL=https://${_API_SERVICE}-${_PROJECT_NUMBER}.${_REGION}.run.app,FRONTEND_URL=https://${_WEB_SERVICE}-${_PROJECT_NUMBER}.${_REGION}.run.app'
+      - 'NODE_ENV=production,BETTER_AUTH_URL=https://${_WEB_SERVICE}-${_PROJECT_NUMBER}.${_REGION}.run.app,FRONTEND_URL=https://${_WEB_SERVICE}-${_PROJECT_NUMBER}.${_REGION}.run.app'
       - '--set-secrets'
       - 'DATABASE_URL=easy-meal-db-url:latest,GEMINI_API_KEY=easy-meal-ai-key:latest,BETTER_AUTH_SECRET=easy-meal-auth-secret:latest,GOOGLE_CLIENT_ID=easy-meal-google-client-id:latest,GOOGLE_CLIENT_SECRET=easy-meal-google-client-secret:latest'
       - '--min-instances'
