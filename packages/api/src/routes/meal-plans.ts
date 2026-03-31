@@ -4,7 +4,7 @@ import { db } from '../db'
 import { mealPlans, recipes } from '../db/schema'
 import { getSession, getUserWithHousehold } from '../lib/auth-helpers'
 import { getWeekStartMonday } from '../lib/dates'
-import { validate, createMealPlanSchema, patchMealPlanSchema } from '../lib/validators'
+import { validate, createMealPlanSchema, patchMealPlanSchema, copyWeekSchema } from '../lib/validators'
 
 const mealPlansRouter = new Hono()
 
@@ -149,6 +149,76 @@ mealPlansRouter.post('/', async (c) => {
     },
     201
   )
+})
+
+// POST /copy-week - Copy all entries from one week to another
+mealPlansRouter.post('/copy-week', async (c) => {
+  const session = await getSession(c)
+  if (!session) {
+    return c.json({ error: 'Unauthorized' }, 401)
+  }
+
+  const currentUser = await getUserWithHousehold(session.user.id)
+  if (!currentUser?.householdId) {
+    return c.json({ error: 'You must be in a household' }, 400)
+  }
+
+  const body = await c.req.json()
+  const parsed = validate(copyWeekSchema, body)
+  if (!parsed.success) {
+    return c.json({ error: parsed.error }, 400)
+  }
+  const { sourceWeekStart, targetWeekStart } = parsed.data
+
+  if (sourceWeekStart === targetWeekStart) {
+    return c.json({ error: 'Source and target weeks must be different' }, 400)
+  }
+
+  const sourceStart = new Date(sourceWeekStart + 'T00:00:00Z')
+  const sourceEnd = new Date(sourceStart)
+  sourceEnd.setUTCDate(sourceEnd.getUTCDate() + 7)
+
+  const targetStart = new Date(targetWeekStart + 'T00:00:00Z')
+
+  // Fetch source week entries
+  const sourceEntries = await db
+    .select()
+    .from(mealPlans)
+    .where(
+      and(
+        eq(mealPlans.householdId, currentUser.householdId),
+        gte(mealPlans.date, sourceStart),
+        lt(mealPlans.date, sourceEnd)
+      )
+    )
+    .orderBy(asc(mealPlans.date), asc(mealPlans.mealType), asc(mealPlans.sortOrder))
+
+  if (sourceEntries.length === 0) {
+    return c.json({ error: 'No entries found in the source week' }, 400)
+  }
+
+  // Create new entries with offset dates
+  const newEntries = sourceEntries.map((entry) => {
+    const dayOffset = Math.floor(
+      (entry.date.getTime() - sourceStart.getTime()) / (1000 * 60 * 60 * 24)
+    )
+    const targetDate = new Date(targetStart)
+    targetDate.setUTCDate(targetDate.getUTCDate() + dayOffset)
+
+    return {
+      householdId: currentUser.householdId!,
+      recipeId: entry.recipeId,
+      date: targetDate,
+      mealType: entry.mealType,
+      sortOrder: entry.sortOrder,
+      createdByUserId: session.user.id,
+      updatedByUserId: session.user.id,
+    }
+  })
+
+  await db.insert(mealPlans).values(newEntries)
+
+  return c.json({ data: { copiedCount: newEntries.length } }, 201)
 })
 
 // PATCH /:id - Move a meal plan entry (drag-and-drop)

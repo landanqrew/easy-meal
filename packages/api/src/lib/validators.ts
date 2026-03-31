@@ -20,6 +20,11 @@ export const patchMealPlanSchema = z.object({
   sortOrder: z.number().int().min(0),
 })
 
+export const copyWeekSchema = z.object({
+  sourceWeekStart: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be YYYY-MM-DD'),
+  targetWeekStart: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be YYYY-MM-DD'),
+})
+
 // ── Grocery Lists ───────────────────────────────────────────
 export const createGroceryListSchema = z.object({
   name: z.string().min(1, 'Name is required').trim(),
