@@ -288,7 +288,7 @@ const styles: Record<string, React.CSSProperties> = {
   page: {
     minHeight: '100vh',
     background: colors.bg,
-    paddingTop: '4.5rem',
+    paddingTop: '5.5rem',
   },
   header: {
     display: 'flex',

@@ -446,8 +446,8 @@ body {
 .chat-container {
   display: flex;
   flex-direction: column;
-  height: calc(100vh - 1rem);
-  max-height: calc(100dvh - 1rem);
+  height: calc(100vh - 5.5rem);
+  max-height: calc(100dvh - 5.5rem);
   max-width: 700px;
   margin: 0 auto;
   padding: 1rem 1rem 0;
