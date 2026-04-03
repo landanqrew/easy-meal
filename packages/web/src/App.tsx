@@ -1,6 +1,6 @@
-import { lazy, Suspense } from 'react'
-import { BrowserRouter, Routes, Route, Link, Navigate } from 'react-router-dom'
-import { useSession } from './lib/auth'
+import { lazy, Suspense, useState } from 'react'
+import { BrowserRouter, Routes, Route, Link, Navigate, useLocation, useNavigate } from 'react-router-dom'
+import { useSession, signOut } from './lib/auth'
 import { colors, radius, shadows } from './lib/theme'
 import NavBar from './components/NavBar'
 import RouteErrorBoundary from './components/RouteErrorBoundary'
@@ -26,6 +26,19 @@ const PublicRecipeDetail = lazy(() => import('./pages/PublicRecipeDetail'))
 
 function Home() {
   const { data: session, isPending } = useSession()
+  const location = useLocation()
+  const navigate = useNavigate()
+  const [menuOpen, setMenuOpen] = useState(false)
+
+  const isActive = (path: string) => location.pathname.startsWith(path)
+
+  const handleSignOut = async () => {
+    setMenuOpen(false)
+    await signOut()
+    navigate('/login')
+  }
+
+  const closeMenu = () => setMenuOpen(false)
 
   if (isPending) {
     return <div style={styles.loading}>Loading...</div>
@@ -52,14 +65,23 @@ function Home() {
 
           <div style={styles.rightActions}>
             {session ? (
-              <Link to="/profile" className="profile-pill">
-                <div style={styles.avatar}>
-                  {(session.user.name || session.user.email || '?').charAt(0).toUpperCase()}
-                </div>
-                <span style={styles.profileName}>
-                  {session.user.name?.split(' ')[0] || session.user.email?.split('@')[0] || 'Profile'}
-                </span>
-              </Link>
+              <>
+                <Link to="/profile" className="profile-pill">
+                  <div style={styles.avatar}>
+                    {(session.user.name || session.user.email || '?').charAt(0).toUpperCase()}
+                  </div>
+                  <span style={styles.profileName}>
+                    {session.user.name?.split(' ')[0] || session.user.email?.split('@')[0] || 'Profile'}
+                  </span>
+                </Link>
+                <button
+                  className="hamburger-btn"
+                  onClick={() => setMenuOpen(!menuOpen)}
+                  aria-label="Toggle menu"
+                >
+                  {menuOpen ? '✕' : '☰'}
+                </button>
+              </>
             ) : (
               <>
                 <Link to="/login" className="home-nav-link" style={{ fontWeight: 600 }}>
@@ -73,6 +95,18 @@ function Home() {
           </div>
         </div>
       </nav>
+
+      {session && (
+        <div className={`mobile-menu-overlay${menuOpen ? ' open' : ''}`}>
+          <Link to="/recipes" className={isActive('/recipes') ? 'active' : ''} onClick={closeMenu}>Recipes</Link>
+          <Link to="/discover" className={isActive('/discover') ? 'active' : ''} onClick={closeMenu}>Discover</Link>
+          <Link to="/meal-plan" className={isActive('/meal-plan') ? 'active' : ''} onClick={closeMenu}>Meal Plan</Link>
+          <Link to="/grocery-lists" className={isActive('/grocery-lists') ? 'active' : ''} onClick={closeMenu}>Groceries</Link>
+          <Link to="/household" className={isActive('/household') ? 'active' : ''} onClick={closeMenu}>Household</Link>
+          <Link to="/profile" className={isActive('/profile') ? 'active' : ''} onClick={closeMenu}>Profile</Link>
+          <button onClick={handleSignOut}>Sign Out</button>
+        </div>
+      )}
 
       <main style={styles.main}>
         <div style={styles.hero}>

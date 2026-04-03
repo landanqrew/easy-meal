@@ -183,7 +183,7 @@ const styles: Record<string, React.CSSProperties> = {
     minHeight: '100vh',
     background: colors.bg,
     padding: '1.5rem 1rem 2rem',
-    paddingTop: '4.5rem',
+    paddingTop: '5.5rem',
   },
   headerCard: {
     background: colors.surface,

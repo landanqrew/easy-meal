@@ -221,7 +221,7 @@ const styles: Record<string, React.CSSProperties> = {
     minHeight: '100vh',
     background: colors.bg,
     padding: '2rem 1rem',
-    paddingTop: '4.5rem',
+    paddingTop: '5.5rem',
   },
   card: {
     background: 'white',
