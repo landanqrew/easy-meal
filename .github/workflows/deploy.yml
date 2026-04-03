@@ -1,0 +1,233 @@
+name: Deploy
+
+on:
+  # Auto-deploy after CI passes on main
+  push:
+    branches: [main]
+  # Manual deploy with environment selection
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Deployment environment"
+        required: true
+        default: "production"
+        type: choice
+        options:
+          - production
+          - staging
+
+# Prevent concurrent deployments
+concurrency:
+  group: deploy-${{ github.event.inputs.environment || 'production' }}
+  cancel-in-progress: false
+
+env:
+  GCP_REGION: us-central1
+  API_SERVICE: easy-meal-api
+  WEB_SERVICE: easy-meal-web
+
+jobs:
+  # Run CI checks first (skip if triggered by push, since ci.yml runs separately)
+  ci:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.2"
+      - run: bun install --frozen-lockfile
+      - run: bun run typecheck
+      - run: bun run lint
+      - run: bun run test
+
+  # Wait for CI workflow to pass on push events
+  wait-for-ci:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Wait for CI to complete
+        uses: lewagon/wait-on-check-action@v1.3.4
+        with:
+          ref: ${{ github.sha }}
+          check-name: "test"
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          wait-interval: 10
+
+  deploy:
+    needs: [ci, wait-for-ci]
+    # Run if either dependency succeeded (the other will be skipped)
+    if: always() && (needs.ci.result == 'success' || needs.ci.result == 'skipped') && (needs.wait-for-ci.result == 'success' || needs.wait-for-ci.result == 'skipped')
+    runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.environment || 'production' }}
+    permissions:
+      contents: read
+      id-token: write  # Required for Workload Identity Federation
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Configure Docker for GCR
+        run: gcloud auth configure-docker --quiet
+
+      - name: Set environment variables
+        run: |
+          if [ "${{ github.event.inputs.environment }}" = "staging" ]; then
+            echo "API_SERVICE=easy-meal-api-staging" >> $GITHUB_ENV
+            echo "WEB_SERVICE=easy-meal-web-staging" >> $GITHUB_ENV
+            echo "API_MAX_INSTANCES=3" >> $GITHUB_ENV
+            echo "WEB_MAX_INSTANCES=2" >> $GITHUB_ENV
+          else
+            echo "API_MAX_INSTANCES=10" >> $GITHUB_ENV
+            echo "WEB_MAX_INSTANCES=5" >> $GITHUB_ENV
+          fi
+
+      - name: Build API image
+        run: |
+          docker build \
+            -t gcr.io/${{ secrets.GCP_PROJECT_ID }}/${{ env.API_SERVICE }}:${{ github.sha }} \
+            -t gcr.io/${{ secrets.GCP_PROJECT_ID }}/${{ env.API_SERVICE }}:latest \
+            -f packages/api/Dockerfile \
+            .
+
+      - name: Build Web image
+        run: |
+          docker build \
+            -t gcr.io/${{ secrets.GCP_PROJECT_ID }}/${{ env.WEB_SERVICE }}:${{ github.sha }} \
+            -t gcr.io/${{ secrets.GCP_PROJECT_ID }}/${{ env.WEB_SERVICE }}:latest \
+            -f packages/web/Dockerfile \
+            --build-arg VITE_API_URL=${{ secrets.API_URL }} \
+            .
+
+      - name: Push images
+        run: |
+          docker push gcr.io/${{ secrets.GCP_PROJECT_ID }}/${{ env.API_SERVICE }}:${{ github.sha }}
+          docker push gcr.io/${{ secrets.GCP_PROJECT_ID }}/${{ env.API_SERVICE }}:latest
+          docker push gcr.io/${{ secrets.GCP_PROJECT_ID }}/${{ env.WEB_SERVICE }}:${{ github.sha }}
+          docker push gcr.io/${{ secrets.GCP_PROJECT_ID }}/${{ env.WEB_SERVICE }}:latest
+
+      - name: Deploy API to Cloud Run
+        run: |
+          gcloud run deploy ${{ env.API_SERVICE }} \
+            --image gcr.io/${{ secrets.GCP_PROJECT_ID }}/${{ env.API_SERVICE }}:${{ github.sha }} \
+            --region ${{ env.GCP_REGION }} \
+            --platform managed \
+            --allow-unauthenticated \
+            --set-env-vars "NODE_ENV=production,BETTER_AUTH_URL=${{ secrets.API_URL }},FRONTEND_URL=${{ secrets.FRONTEND_URL }}" \
+            --set-secrets "DATABASE_URL=easy-meal-db-url:latest,GEMINI_API_KEY=easy-meal-ai-key:latest,BETTER_AUTH_SECRET=easy-meal-auth-secret:latest,GOOGLE_CLIENT_ID=easy-meal-google-client-id:latest,GOOGLE_CLIENT_SECRET=easy-meal-google-client-secret:latest" \
+            --min-instances 0 \
+            --max-instances ${{ env.API_MAX_INSTANCES }} \
+            --memory 512Mi \
+            --cpu 1
+
+      - name: Deploy Web to Cloud Run
+        run: |
+          gcloud run deploy ${{ env.WEB_SERVICE }} \
+            --image gcr.io/${{ secrets.GCP_PROJECT_ID }}/${{ env.WEB_SERVICE }}:${{ github.sha }} \
+            --region ${{ env.GCP_REGION }} \
+            --platform managed \
+            --allow-unauthenticated \
+            --set-env-vars "API_URL=${{ secrets.API_URL }}" \
+            --min-instances 0 \
+            --max-instances ${{ env.WEB_MAX_INSTANCES }} \
+            --memory 256Mi \
+            --cpu 1
+
+      - name: Verify deployment
+        run: |
+          API_URL=$(gcloud run services describe ${{ env.API_SERVICE }} --region ${{ env.GCP_REGION }} --format 'value(status.url)')
+          WEB_URL=$(gcloud run services describe ${{ env.WEB_SERVICE }} --region ${{ env.GCP_REGION }} --format 'value(status.url)')
+          echo "API deployed to: $API_URL"
+          echo "Web deployed to: $WEB_URL"
+          # Health check
+          echo "Checking API health..."
+          curl -sf --retry 3 --retry-delay 5 "$API_URL/health" || (echo "API health check failed!" && exit 1)
+          echo ""
+          echo "Checking Web health..."
+          curl -sf --retry 3 --retry-delay 5 "$WEB_URL/" || (echo "Web health check failed!" && exit 1)
+          echo ""
+          echo "All health checks passed."
+
+      - name: Output deployment summary
+        if: always()
+        run: |
+          echo "## Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|---|---|" >> $GITHUB_STEP_SUMMARY
+          echo "| **Environment** | ${{ github.event.inputs.environment || 'production' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Commit** | \`${{ github.sha }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Triggered by** | ${{ github.actor }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| **API Service** | ${{ env.API_SERVICE }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Web Service** | ${{ env.WEB_SERVICE }} |" >> $GITHUB_STEP_SUMMARY
+
+  rollback:
+    needs: [deploy]
+    if: failure()
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Rollback API to previous revision
+        run: |
+          echo "Deployment failed. Rolling back API..."
+          PREV_REVISION=$(gcloud run revisions list \
+            --service ${{ env.API_SERVICE }} \
+            --region ${{ env.GCP_REGION }} \
+            --format 'value(metadata.name)' \
+            --sort-by '~metadata.creationTimestamp' \
+            --limit 2 | tail -1)
+          if [ -n "$PREV_REVISION" ]; then
+            gcloud run services update-traffic ${{ env.API_SERVICE }} \
+              --region ${{ env.GCP_REGION }} \
+              --to-revisions "$PREV_REVISION=100"
+            echo "API rolled back to $PREV_REVISION"
+          else
+            echo "No previous revision found for API rollback"
+          fi
+
+      - name: Rollback Web to previous revision
+        run: |
+          echo "Deployment failed. Rolling back Web..."
+          PREV_REVISION=$(gcloud run revisions list \
+            --service ${{ env.WEB_SERVICE }} \
+            --region ${{ env.GCP_REGION }} \
+            --format 'value(metadata.name)' \
+            --sort-by '~metadata.creationTimestamp' \
+            --limit 2 | tail -1)
+          if [ -n "$PREV_REVISION" ]; then
+            gcloud run services update-traffic ${{ env.WEB_SERVICE }} \
+              --region ${{ env.GCP_REGION }} \
+              --to-revisions "$PREV_REVISION=100"
+            echo "Web rolled back to $PREV_REVISION"
+          else
+            echo "No previous revision found for Web rollback"
+          fi
+
+      - name: Notify rollback
+        run: |
+          echo "## Rollback Triggered" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Deployment of commit \`${{ github.sha }}\` failed." >> $GITHUB_STEP_SUMMARY
+          echo "Services have been rolled back to their previous revisions." >> $GITHUB_STEP_SUMMARY
