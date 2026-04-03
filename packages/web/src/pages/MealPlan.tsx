@@ -882,7 +882,7 @@ const styles: Record<string, React.CSSProperties> = {
   container: {
     minHeight: '100vh',
     background: colors.bg,
-    paddingTop: '4.5rem',
+    paddingTop: '5.5rem',
   },
   content: {
     padding: '1.5rem 1rem 2rem',

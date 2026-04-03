@@ -792,14 +792,14 @@ body {
   min-height: 100vh;
   background: var(--color-bg);
   padding: 2rem 1rem;
-  padding-top: 4.5rem;
+  padding-top: 5.5rem;
 }
 
 .page-container-detail {
   min-height: 100vh;
   background: var(--color-bg);
   padding: 2rem 1rem;
-  padding-top: 4.5rem;
+  padding-top: 5.5rem;
 }
 
 .content-card {
