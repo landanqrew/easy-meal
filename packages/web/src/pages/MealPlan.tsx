@@ -277,6 +277,7 @@ export default function MealPlan() {
   })
 
   const handleCopyPreviousWeek = () => {
+    if (!confirm('Copy all meals from the previous week into this week?')) return
     const prevMonday = new Date(weekStart)
     prevMonday.setDate(prevMonday.getDate() - 7)
     setError('')

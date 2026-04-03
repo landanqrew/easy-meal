@@ -175,10 +175,18 @@ mealPlansRouter.post('/copy-week', async (c) => {
   }
 
   const sourceStart = new Date(sourceWeekStart + 'T00:00:00Z')
+  const targetStart = new Date(targetWeekStart + 'T00:00:00Z')
+
+  // Validate both dates are Mondays
+  if (sourceStart.getUTCDay() !== 1 || targetStart.getUTCDay() !== 1) {
+    return c.json({ error: 'Both dates must be Mondays' }, 400)
+  }
+
   const sourceEnd = new Date(sourceStart)
   sourceEnd.setUTCDate(sourceEnd.getUTCDate() + 7)
 
-  const targetStart = new Date(targetWeekStart + 'T00:00:00Z')
+  const targetEnd = new Date(targetStart)
+  targetEnd.setUTCDate(targetEnd.getUTCDate() + 7)
 
   // Fetch source week entries
   const sourceEntries = await db
@@ -195,6 +203,23 @@ mealPlansRouter.post('/copy-week', async (c) => {
 
   if (sourceEntries.length === 0) {
     return c.json({ error: 'No entries found in the source week' }, 400)
+  }
+
+  // Check for existing entries in target week to prevent duplicates
+  const existingTargetEntries = await db
+    .select({ id: mealPlans.id })
+    .from(mealPlans)
+    .where(
+      and(
+        eq(mealPlans.householdId, currentUser.householdId),
+        gte(mealPlans.date, targetStart),
+        lt(mealPlans.date, targetEnd)
+      )
+    )
+    .limit(1)
+
+  if (existingTargetEntries.length > 0) {
+    return c.json({ error: 'Target week already has meal plan entries. Please clear it first.' }, 409)
   }
 
   // Create new entries with offset dates
