@@ -58,7 +58,7 @@ const ingredientSchema = z.object({
   quantity: z.number(),
   unit: z.string(),
   category: ingredientCategory.optional().default('other'),
-  preparation: z.string().optional(),
+  preparation: z.string().nullable().optional(),
 })
 
 export const createRecipeSchema = z.object({
