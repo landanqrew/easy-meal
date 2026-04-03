@@ -85,20 +85,108 @@ DATABASE_URL="postgresql://easymeal:<PASSWORD>@localhost:5432/easymeal" bun run 
 
 ## Deployment
 
-### Automatic Deployment (Cloud Build)
+### Automatic Deployment (GitHub Actions)
 
-Set up a Cloud Build trigger:
+The project uses a GitHub Actions pipeline (`.github/workflows/deploy.yml`) that automatically deploys to Cloud Run when changes are merged to `main`. The pipeline:
+
+1. Waits for CI checks (typecheck, lint, test) to pass
+2. Builds Docker images for API and Web
+3. Pushes images to Google Container Registry
+4. Deploys both services to Cloud Run
+5. Runs health checks to verify the deployment
+6. Automatically rolls back if health checks fail
+
+#### Required GitHub Secrets
+
+Configure these in **Settings > Secrets and variables > Actions**:
+
+| Secret | Description |
+|--------|-------------|
+| `GCP_PROJECT_ID` | Your Google Cloud project ID |
+| `GCP_WORKLOAD_IDENTITY_PROVIDER` | Workload Identity Federation provider (see setup below) |
+| `GCP_SERVICE_ACCOUNT` | Service account email for deployments |
+| `API_URL` | Public URL of the API service (e.g., `https://easy-meal-api-xxx.run.app`) |
+| `FRONTEND_URL` | Public URL of the web service (e.g., `https://easy-meal-web-xxx.run.app`) |
+
+#### Set Up Workload Identity Federation (Keyless Auth)
+
+This is more secure than storing service account keys as secrets:
 
 ```bash
-# Connect to GitHub
+# Create a service account for deployments
+gcloud iam service-accounts create github-deployer \
+  --display-name="GitHub Actions Deployer"
+
+# Grant necessary roles
+gcloud projects add-iam-policy-binding $PROJECT_ID \
+  --member="serviceAccount:github-deployer@$PROJECT_ID.iam.gserviceaccount.com" \
+  --role="roles/run.admin"
+
+gcloud projects add-iam-policy-binding $PROJECT_ID \
+  --member="serviceAccount:github-deployer@$PROJECT_ID.iam.gserviceaccount.com" \
+  --role="roles/storage.admin"
+
+gcloud projects add-iam-policy-binding $PROJECT_ID \
+  --member="serviceAccount:github-deployer@$PROJECT_ID.iam.gserviceaccount.com" \
+  --role="roles/iam.serviceAccountUser"
+
+gcloud projects add-iam-policy-binding $PROJECT_ID \
+  --member="serviceAccount:github-deployer@$PROJECT_ID.iam.gserviceaccount.com" \
+  --role="roles/secretmanager.secretAccessor"
+
+# Create Workload Identity Pool
+gcloud iam workload-identity-pools create github-pool \
+  --location="global" \
+  --display-name="GitHub Pool"
+
+# Create Workload Identity Provider
+gcloud iam workload-identity-pools providers create-oidc github-provider \
+  --location="global" \
+  --workload-identity-pool="github-pool" \
+  --display-name="GitHub Provider" \
+  --attribute-mapping="google.subject=assertion.sub,attribute.repository=assertion.repository" \
+  --issuer-uri="https://token.actions.githubusercontent.com"
+
+# Allow the GitHub repo to impersonate the service account
+gcloud iam service-accounts add-iam-policy-binding \
+  github-deployer@$PROJECT_ID.iam.gserviceaccount.com \
+  --role="roles/iam.workloadIdentityUser" \
+  --member="principalSet://iam.googleapis.com/projects/$PROJECT_NUMBER/locations/global/workloadIdentityPools/github-pool/attribute.repository/landanqrew/easy-meal"
+```
+
+Then set the GitHub secrets:
+- `GCP_WORKLOAD_IDENTITY_PROVIDER`: `projects/<PROJECT_NUMBER>/locations/global/workloadIdentityPools/github-pool/providers/github-provider`
+- `GCP_SERVICE_ACCOUNT`: `github-deployer@<PROJECT_ID>.iam.gserviceaccount.com`
+
+#### Manual Trigger
+
+You can also trigger a deployment manually from the **Actions** tab by selecting the "Deploy" workflow and choosing an environment (production or staging).
+
+#### Rollback
+
+If a deployment fails, the pipeline automatically rolls back both services to their previous revisions. You can also roll back manually:
+
+```bash
+# List revisions
+gcloud run revisions list --service easy-meal-api --region us-central1
+
+# Route traffic to previous revision
+gcloud run services update-traffic easy-meal-api \
+  --to-revisions=easy-meal-api-00001-abc=100 \
+  --region us-central1
+```
+
+#### Legacy: Cloud Build Trigger
+
+Alternatively, you can use Cloud Build triggers directly (see `cloudbuild.yaml`):
+
+```bash
 gcloud builds triggers create github \
   --repo-name=easy-meal \
   --repo-owner=<GITHUB_USERNAME> \
   --branch-pattern="^main$" \
   --build-config=cloudbuild.yaml
 ```
-
-Then push to main branch to trigger deployment.
 
 ### Manual Deployment
 
@@ -185,12 +273,4 @@ gcloud run services logs read easy-meal-web --region us-central1
 
 ## Rollback
 
-```bash
-# List revisions
-gcloud run revisions list --service easy-meal-api --region us-central1
-
-# Route traffic to previous revision
-gcloud run services update-traffic easy-meal-api \
-  --to-revisions=easy-meal-api-00001-abc=100 \
-  --region us-central1
-```
+See the [Automatic Deployment](#automatic-deployment-github-actions) section above for rollback instructions.
