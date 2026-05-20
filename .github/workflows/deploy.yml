@@ -124,7 +124,7 @@ jobs:
             --region ${{ env.GCP_REGION }} \
             --platform managed \
             --allow-unauthenticated \
-            --set-env-vars "NODE_ENV=production,BETTER_AUTH_URL=${{ secrets.API_URL }},FRONTEND_URL=${{ secrets.FRONTEND_URL }}" \
+            --set-env-vars "NODE_ENV=production,BETTER_AUTH_URL=${{ secrets.FRONTEND_URL }},FRONTEND_URL=${{ secrets.FRONTEND_URL }}" \
             --set-secrets "DATABASE_URL=easy-meal-db-url:latest,GEMINI_API_KEY=easy-meal-ai-key:latest,BETTER_AUTH_SECRET=easy-meal-auth-secret:latest,GOOGLE_CLIENT_ID=easy-meal-google-client-id:latest,GOOGLE_CLIENT_SECRET=easy-meal-google-client-secret:latest" \
             --min-instances 0 \
             --max-instances ${{ env.API_MAX_INSTANCES }} \
@@ -183,7 +183,7 @@ jobs:
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v2
         with:
-          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}c
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
           service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
 
       - name: Set up Cloud SDK
